@@ -64,7 +64,7 @@ export default async function ProDashboard() {
         Publier une offre
       </Link>
 
-      <h2 className="mb-3 text-sm font-extrabold text-ec-ink">Inbox</h2>
+      <h2 className="mb-3 text-sm font-extrabold text-ec-ink">Demandes</h2>
       <PendingInbox items={pending} />
 
       <div className="mt-5 flex flex-col gap-2 text-center">

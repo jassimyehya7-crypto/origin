@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ReservationStatusBadge } from "@/components/StatusBadge";
@@ -8,6 +8,13 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { offerPhoto } from "@/lib/offer-photos";
 import { hasClientPhone } from "@/lib/phone";
+import {
+  dismissPendingId,
+  filterOutDismissed,
+  isPendingDismissed,
+  pruneDismissedAgainst,
+  undismissPendingId,
+} from "@/lib/pro-dismissed";
 import type { Offer, Reservation } from "@/lib/types";
 import { formatDateTime } from "@/lib/utils";
 import { VisualMark } from "@/components/VisualMark";
@@ -67,21 +74,31 @@ function OfferThumb({
   return <VisualMark label={title || "Offre"} stored={emoji} size="md" />;
 }
 
+function pendingOnly(items: InboxRow[]): InboxRow[] {
+  return filterOutDismissed(
+    items.filter((r) => r.status === "EN_ATTENTE" && !isPendingDismissed(r.id))
+  );
+}
+
 export function PendingInbox({ items }: { items: InboxRow[] }) {
   const router = useRouter();
-  const [rows, setRows] = useState(() =>
-    items.filter((r) => r.status === "EN_ATTENTE")
-  );
-  const [gone, setGone] = useState<Record<string, true>>({});
+  const [rows, setRows] = useState(() => pendingOnly(items));
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Bump to re-read module/session dismissed set after remount/hydration.
+  const [dismissTick, setDismissTick] = useState(0);
+
+  const serverPendingIds = useMemo(
+    () =>
+      items.filter((r) => r.status === "EN_ATTENTE").map((r) => r.id),
+    [items]
+  );
 
   useEffect(() => {
-    setRows(
-      items.filter((r) => r.status === "EN_ATTENTE" && !gone[r.id])
-    );
-  }, [items, gone]);
+    pruneDismissedAgainst(serverPendingIds);
+    setRows(pendingOnly(items));
+  }, [items, serverPendingIds, dismissTick]);
 
   useEffect(() => {
     if (!toast) return;
@@ -92,8 +109,9 @@ export function PendingInbox({ items }: { items: InboxRow[] }) {
   async function act(id: string, status: Reservation["status"]) {
     setBusy(id);
     setError(null);
-    // Optimistic: retire tout de suite (évite carte qui reste / revient)
-    setGone((g) => ({ ...g, [id]: true }));
+    // Optimistic: persist dismiss so remount after refresh cannot flash the card back
+    dismissPendingId(id);
+    setDismissTick((n) => n + 1);
     setRows((prev) => prev.filter((r) => r.id !== id));
     try {
       const data = await patchReservation(id, status);
@@ -108,14 +126,14 @@ export function PendingInbox({ items }: { items: InboxRow[] }) {
       }
       router.refresh();
     } catch (e) {
-      // rollback
-      setGone((g) => {
-        const n = { ...g };
-        delete n[id];
-        return n;
-      });
-      setRows(items.filter((r) => r.status === "EN_ATTENTE"));
-      setError(e instanceof Error ? e.message : "Erreur");
+      undismissPendingId(id);
+      setDismissTick((n) => n + 1);
+      setRows(pendingOnly(items));
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Impossible de mettre à jour. Réessayez."
+      );
     } finally {
       setBusy(null);
     }

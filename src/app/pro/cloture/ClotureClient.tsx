@@ -21,22 +21,35 @@ export function ClotureClient({
   shopId: string;
 }) {
   const router = useRouter();
+  const [removed, setRemoved] = useState<Record<string, true>>({});
   const [rows, setRows] = useState(initial);
   const [busy, setBusy] = useState<string | null>(null);
   const [closing, setClosing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setRows(initial);
-  }, [initial]);
+    setRows(initial.filter((r) => !removed[r.id]));
+  }, [initial, removed]);
 
   async function act(id: string, status: InboxRow["status"]) {
     setBusy(id);
+    setError(null);
+    setRemoved((r) => ({ ...r, [id]: true }));
+    setRows((prev) => prev.filter((r) => r.id !== id));
     try {
       await patchReservation(id, status);
-      setRows((prev) => prev.filter((r) => r.id !== id));
       router.refresh();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Erreur");
+      setRemoved((r) => {
+        const n = { ...r };
+        delete n[id];
+        return n;
+      });
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Impossible de mettre à jour. Réessayez."
+      );
     } finally {
       setBusy(null);
     }
@@ -71,6 +84,11 @@ export function ClotureClient({
 
   return (
     <div className="space-y-4">
+      {error && (
+        <p className="rounded-[12px] border border-ec-red/30 bg-ec-paper px-3 py-2 text-sm font-bold text-ec-red">
+          {error}
+        </p>
+      )}
       {rows.length === 0 ? (
         <p className="ec-corner-cut border border-dashed border-ec-rule bg-ec-surface px-4 py-8 text-center text-sm font-semibold text-ec-muted">
           Aucune confirmée en attente de retrait

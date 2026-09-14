@@ -35,7 +35,7 @@ export default async function ProCloturePage() {
         href="/pro"
         className="mt-6 block text-center text-sm font-extrabold text-ec-blue"
       >
-        ← Retour inbox
+        ← Retour à traiter
       </Link>
     </div>
   );
