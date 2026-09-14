@@ -49,10 +49,18 @@ export function buildReservationSmsBody(p: ReservationSmsPayload): string {
   return `Épicerie Club — demande envoyée. Code ${p.code}. Suivi : ${link}`;
 }
 
+export function buildConfirmedSmsBody(p: ReservationSmsPayload): string {
+  const link = `${appBase()}/reservations`;
+  return `Épicerie Club — réservation confirmée. Code ${p.code}. Suivi : ${link}`;
+}
+
 export async function sendReservationSms(
-  p: ReservationSmsPayload
+  p: ReservationSmsPayload & { kind?: "demande" | "confirmee" }
 ): Promise<SmsResult> {
-  const body = buildReservationSmsBody(p);
+  const body =
+    p.kind === "confirmee"
+      ? buildConfirmedSmsBody(p)
+      : buildReservationSmsBody(p);
   const e164 = toE164CH(p.to) || p.to.trim();
   const apiKey = process.env.SEVEN_API_KEY?.trim();
   const from = process.env.SEVEN_FROM?.trim() || "EpicerieClb"; // max 11 alnum

@@ -6,6 +6,8 @@ import {
   updateReservationStatus,
 } from "@/lib/store";
 import { getStrikeStatus } from "@/lib/phone-risk";
+import { sendReservationSms } from "@/lib/sms";
+import { toE164CH } from "@/lib/phone";
 import { requireStaff } from "@/lib/staff-auth";
 import type { ReservationStatus } from "@/lib/types";
 
@@ -104,11 +106,29 @@ export async function PATCH(
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 400 });
   }
+
+  let sms:
+    | Awaited<ReturnType<typeof sendReservationSms>>
+    | undefined;
+  if (status === "CONFIRMEE" && result.reservation.clientPhone) {
+    const e164 =
+      toE164CH(result.reservation.clientPhone) ||
+      result.reservation.clientPhone;
+    sms = await sendReservationSms({
+      to: e164,
+      code: result.reservation.code,
+      reservationId: result.reservation.id,
+      kind: "confirmee",
+    });
+  }
+
   const notifications =
     status === "CONFIRMEE"
       ? {
           push: `[placeholder] Push: réservation confirmée — code ${result.reservation.code}`,
           email: `[placeholder] Email: votre code ${result.reservation.code}`,
+          sms: sms?.body,
+          smsSent: sms?.ok === true && !("stub" in sms && sms.stub),
         }
       : status === "REFUSEE"
         ? {
@@ -135,6 +155,7 @@ export async function PATCH(
     offer: await getOffer(result.reservation.offerId),
     shop: await getShop(result.reservation.shopId),
     notifications,
+    sms,
     strike,
   });
 }
