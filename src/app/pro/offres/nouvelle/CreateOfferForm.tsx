@@ -15,6 +15,7 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
   const [uploading, setUploading] = useState(false);
   const [polishing, setPolishing] = useState(false);
   const [error, setError] = useState("");
+  const [toast, setToast] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: "",
@@ -23,6 +24,11 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
     price: "",
     quantityTotal: "5",
   });
+
+  function flashToast(msg: string) {
+    setToast(msg);
+    window.setTimeout(() => setToast(null), 2200);
+  }
 
   async function uploadFile(file: File) {
     setUploading(true);
@@ -63,6 +69,8 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
     setPolishing(true);
     setError("");
     try {
+      const prevTitle = form.title;
+      const prevDesc = form.description;
       const res = await fetch("/api/pro/polish-offer", {
         method: "POST",
         credentials: "include",
@@ -78,14 +86,23 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
         setError(data.error || "Amélioration impossible");
         return;
       }
+      const nextTitle =
+        typeof data.title === "string" && data.title.trim()
+          ? data.title.trim()
+          : prevTitle;
+      const nextDesc =
+        typeof data.description === "string"
+          ? data.description
+          : prevDesc;
       setForm((f) => ({
         ...f,
-        title: data.title || f.title,
-        description:
-          typeof data.description === "string"
-            ? data.description
-            : f.description,
+        title: nextTitle,
+        description: nextDesc,
       }));
+      const unchanged =
+        nextTitle === prevTitle.trim() &&
+        (nextDesc || "").trim() === (prevDesc || "").trim();
+      flashToast(unchanged ? "Déjà clair" : "Texte amélioré");
     } catch {
       setError("Amélioration impossible");
     } finally {
@@ -97,6 +114,12 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
     e.preventDefault();
     setLoading(true);
     setError("");
+    const price = Number(form.price);
+    if (!Number.isFinite(price) || price <= 0) {
+      setError("Indique un prix avant de publier");
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch("/api/offers", {
         method: "POST",
@@ -107,7 +130,7 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
           title: form.title,
           description: form.description,
           type: form.type,
-          price: Number(form.price),
+          price,
           quantityTotal: Number(form.quantityTotal),
           unit: "lot",
           imageUrl: imageUrl || undefined,
@@ -119,7 +142,7 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
         setError(data.error || "Erreur");
         return;
       }
-      router.push("/pro");
+      router.push("/pro/offres?toast=publiee");
       router.refresh();
     } catch {
       setError("Impossible de publier");
@@ -130,6 +153,12 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
 
   return (
     <form onSubmit={submit} className="space-y-5">
+      {toast && (
+        <div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-ec-ink px-4 py-2 text-sm font-extrabold text-white shadow-lg">
+          {toast}
+        </div>
+      )}
+
       <div>
         <label className="mb-1.5 block text-sm font-extrabold text-ec-ink">
           Photo produit
@@ -196,19 +225,9 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
       </div>
 
       <div>
-        <div className="mb-1.5 flex items-end justify-between gap-2">
-          <label className="block text-sm font-extrabold text-ec-ink">
-            Titre
-          </label>
-          <button
-            type="button"
-            onClick={() => void polishText()}
-            disabled={polishing || !form.title.trim()}
-            className="text-xs font-extrabold text-ec-blue disabled:text-ec-muted"
-          >
-            {polishing ? "Amélioration…" : "Améliorer le texte"}
-          </button>
-        </div>
+        <label className="mb-1.5 block text-sm font-extrabold text-ec-ink">
+          Titre
+        </label>
         <input
           required
           className="h-14 w-full rounded-[12px] border border-ec-rule bg-ec-surface px-4 text-base outline-none focus:ring-2 focus:ring-ec-blue"
@@ -216,6 +235,14 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
           onChange={(e) => setForm({ ...form, title: e.target.value })}
           placeholder="Ex. Mangues mûres à point"
         />
+        <button
+          type="button"
+          onClick={() => void polishText()}
+          disabled={polishing || !form.title.trim()}
+          className="mt-2 inline-flex h-12 w-full items-center justify-center rounded-[12px] border-2 border-ec-blue bg-ec-surface text-sm font-extrabold text-ec-blue disabled:border-ec-rule disabled:text-ec-muted"
+        >
+          {polishing ? "Amélioration…" : "Améliorer le texte"}
+        </button>
       </div>
 
       <div>
@@ -242,7 +269,7 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
             required
             type="number"
             step="0.1"
-            min="0"
+            min="0.1"
             inputMode="decimal"
             className="h-14 w-full rounded-[12px] border border-ec-rule bg-ec-surface px-4 text-base outline-none focus:ring-2 focus:ring-ec-blue"
             value={form.price}
@@ -277,7 +304,7 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
               key={t}
               type="button"
               onClick={() => setForm({ ...form, type: t })}
-              className={`h-12 rounded-[12px] border text-sm font-extrabold ${
+              className={`min-h-12 rounded-[12px] border px-2 text-sm font-extrabold ${
                 form.type === t
                   ? "border-ec-ink bg-ec-ink text-white"
                   : "border-ec-rule bg-ec-surface text-ec-ink"
@@ -298,7 +325,8 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
       <Button
         type="submit"
         full
-        className="h-14 text-base font-extrabold"
+        variant="confirm"
+        className="h-16 text-lg font-extrabold"
         disabled={loading || uploading}
       >
         {loading ? "Publication…" : "Publier"}

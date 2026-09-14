@@ -21,6 +21,7 @@ async function polishWithLlm(input: {
 
   const system = `Tu reformules des offres pour Épicerie Club (Villeneuve, CH).
 Règles: français clair et chaleureux, zéro emoji, titre ≤ 45 caractères, description courte si fournie.
+Corrige les fautes (ex. mauto→moto, vandre→vendre, croisan→croissant) sans inventer de produit.
 Style commerçant de quartier — concret, appétissant, sans superlatifs creux.
 Réponds UNIQUEMENT en JSON: {"title":"...","description":"..."}`;
 
@@ -87,19 +88,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Titre requis" }, { status: 400 });
   }
 
-  const llm = await polishWithLlm({
+  // Always run deterministic typo polish first (works without API keys).
+  const local = polishOfferCopyDeterministic({
     title,
     description: body.description,
+    type: body.type,
+  });
+
+  const llm = await polishWithLlm({
+    title: local.title,
+    description: local.description,
     type: body.type,
   });
   if (llm) {
-    return NextResponse.json({ ...llm, source: "llm" });
+    // Re-apply deterministic on LLM output to catch residual typos.
+    const merged = polishOfferCopyDeterministic({
+      title: llm.title,
+      description: llm.description,
+      type: body.type,
+    });
+    return NextResponse.json({ ...merged, source: "llm" });
   }
 
-  const fallback = polishOfferCopyDeterministic({
-    title,
-    description: body.description,
-    type: body.type,
-  });
-  return NextResponse.json({ ...fallback, source: "local" });
+  return NextResponse.json({ ...local, source: "local" });
 }

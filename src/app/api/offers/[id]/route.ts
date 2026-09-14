@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  deleteOffer,
   getOffer,
   getShop,
   incrementOfferViews,
@@ -39,6 +40,19 @@ export async function PATCH(
     return NextResponse.json({ offer });
   }
   const offer = await updateOffer(params.id, body);
+  if (!offer) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
+  return NextResponse.json({ offer });
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const gate = requireStaff(req, "pro");
+  if (!gate.ok) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
+  const offer = await deleteOffer(params.id);
   if (!offer) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
   return NextResponse.json({ offer });
 }

@@ -54,6 +54,32 @@ export function zurichParts(now = new Date()): {
   };
 }
 
+/** Instant of openUntil (HH:mm) on a Zurich calendar dateKey (YYYY-MM-DD). */
+export function closingInstantOnDate(openUntil: string, dateKey: string): Date {
+  const [h, m] = openUntil.split(":").map(Number);
+  const hh = Number.isFinite(h) ? h : 19;
+  const mm = Number.isFinite(m) ? m : 0;
+  let utc = Date.parse(`${dateKey}T${pad2(hh)}:${pad2(mm)}:00.000Z`);
+  for (let i = 0; i < 5; i++) {
+    const z = zurichParts(new Date(utc));
+    const dayDelta =
+      dateKey === z.dateKey ? 0 : dateKey > z.dateKey ? 1 : -1;
+    const deltaMin =
+      dayDelta * 24 * 60 + (hh * 60 + mm) - (z.h * 60 + z.m);
+    if (deltaMin === 0) break;
+    utc += deltaMin * 60_000;
+  }
+  return new Date(utc);
+}
+
+/** Today's shop closing instant in Europe/Zurich. */
+export function closingInstantToday(
+  openUntil = "19:00",
+  now = new Date()
+): Date {
+  return closingInstantOnDate(openUntil, zurichParts(now).dateKey);
+}
+
 /** True when Zurich local time is at/after shop openUntil (HH:mm). */
 export function isPastShopClosing(openUntil: string, now = new Date()): boolean {
   const [ch, cm] = openUntil.split(":").map(Number);
@@ -63,23 +89,74 @@ export function isPastShopClosing(openUntil: string, now = new Date()): boolean 
 }
 
 /** End of shop day as ISO, anchored to Europe/Zurich calendar date. */
-export function todayEndOfDayISO(openUntil = "19:00"): string {
-  const [h, m] = openUntil.split(":").map(Number);
-  const { dateKey } = zurichParts();
-  // Start from a UTC guess, then nudge until Zurich local matches HH:mm on dateKey.
-  let utc = Date.parse(
-    `${dateKey}T${pad2(h)}:${pad2(m)}:00.000Z`
-  );
-  for (let i = 0; i < 5; i++) {
-    const z = zurichParts(new Date(utc));
-    const dayDelta =
-      dateKey === z.dateKey ? 0 : dateKey > z.dateKey ? 1 : -1;
-    const deltaMin =
-      dayDelta * 24 * 60 + (h * 60 + m) - (z.h * 60 + z.m);
-    if (deltaMin === 0) break;
-    utc += deltaMin * 60_000;
+export function todayEndOfDayISO(openUntil = "19:00", now = new Date()): string {
+  return closingInstantToday(openUntil, now).toISOString();
+}
+
+/**
+ * Offer validity end: today's openUntil, or tomorrow's openUntil if already past close.
+ */
+export function offerValidUntilISO(openUntil = "19:00", now = new Date()): string {
+  const closeToday = closingInstantToday(openUntil, now);
+  if (now.getTime() < closeToday.getTime()) {
+    return closeToday.toISOString();
   }
-  return new Date(utc).toISOString();
+  // Walk hour-by-hour until Zurich calendar day flips (DST-safe).
+  const todayKey = zurichParts(now).dateKey;
+  let t = closeToday.getTime() + 60 * 60 * 1000;
+  for (let i = 0; i < 48; i++) {
+    const key = zurichParts(new Date(t)).dateKey;
+    if (key > todayKey) {
+      return closingInstantOnDate(openUntil, key).toISOString();
+    }
+    t += 60 * 60 * 1000;
+  }
+  // Fallback: +24h from close
+  return new Date(closeToday.getTime() + 24 * 60 * 60 * 1000).toISOString();
+}
+
+/** CONFIRMEE → EXPIREE only after today's close, if confirm was before that close. */
+export function shouldExpireConfirmed(
+  resa: { confirmedAt?: string; createdAt: string },
+  openUntil: string,
+  now = new Date()
+): boolean {
+  if (!isPastShopClosing(openUntil, now)) return false;
+  const close = closingInstantToday(openUntil, now);
+  const anchor = new Date(resa.confirmedAt || resa.createdAt).getTime();
+  if (!Number.isFinite(anchor)) return false;
+  return anchor < close.getTime();
+}
+
+/** EN_ATTENTE after pastClose (same-day rule) — leave the file, 0 strike. */
+export function shouldExpirePending(
+  resa: { createdAt: string },
+  openUntil: string,
+  now = new Date()
+): boolean {
+  if (!isPastShopClosing(openUntil, now)) return false;
+  const close = closingInstantToday(openUntil, now);
+  const anchor = new Date(resa.createdAt).getTime();
+  if (!Number.isFinite(anchor)) return false;
+  return anchor < close.getTime();
+}
+
+/**
+ * PUBLIEE → EXPIREE when validUntil past, or pastClose with same-day rule
+ * (do not expire brand-new offers created after today's close).
+ */
+export function shouldExpirePublishedOffer(
+  offer: { validUntil: string; createdAt: string; publishedAt?: string },
+  openUntil: string,
+  now = new Date()
+): boolean {
+  const pastValid = new Date(offer.validUntil).getTime() < now.getTime();
+  if (pastValid) return true;
+  if (!isPastShopClosing(openUntil, now)) return false;
+  const close = closingInstantToday(openUntil, now);
+  const anchor = new Date(offer.publishedAt || offer.createdAt).getTime();
+  if (!Number.isFinite(anchor)) return false;
+  return anchor < close.getTime();
 }
 
 export function generateCode(): string {

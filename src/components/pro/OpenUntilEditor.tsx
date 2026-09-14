@@ -47,24 +47,24 @@ export function OpenUntilEditor({
 
   return (
     <div className="space-y-3">
-      <label className="block text-sm font-extrabold text-ec-ink">
+      <label className="block text-base font-extrabold text-ec-ink">
         Heure de fin
         <input
           type="time"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="mt-2 block w-full rounded-[12px] border border-ec-rule bg-ec-paper px-3 py-3 text-base font-semibold text-ec-ink"
+          className="mt-3 block h-16 w-full rounded-[12px] border-2 border-ec-rule bg-ec-paper px-4 text-2xl font-extrabold tabular-nums text-ec-ink"
         />
       </label>
-      <p className="text-sm font-semibold text-ec-muted">
-        Fin de journée automatique à {value}. À cette heure, les réservations
-        non retirées passent en terminées et le stock revient.
+      <p className="text-sm font-semibold leading-relaxed text-ec-muted">
+        À {value}, les réservations non retirées se terminent et le stock
+        revient. Reprise demain.
       </p>
       {dirty && (
         <Button
           type="button"
           variant="confirm"
-          className="h-12 w-full font-extrabold"
+          className="h-14 w-full text-base font-extrabold"
           disabled={busy}
           onClick={() => void save()}
         >

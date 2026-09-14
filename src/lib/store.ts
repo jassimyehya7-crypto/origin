@@ -106,6 +106,12 @@ export async function publishOffer(id: string): Promise<Offer | undefined> {
     : Promise.resolve(local.publishOffer(id));
 }
 
+export async function deleteOffer(id: string): Promise<Offer | undefined> {
+  return preferSupabase()
+    ? remote.deleteOffer(id)
+    : Promise.resolve(local.deleteOffer(id));
+}
+
 export async function incrementOfferViews(id: string): Promise<void> {
   if (preferSupabase()) return remote.incrementOfferViews(id);
   local.incrementOfferViews(id);

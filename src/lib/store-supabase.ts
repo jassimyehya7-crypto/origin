@@ -27,7 +27,15 @@ import type {
   ReservationStatus,
   Shop,
 } from "@/lib/types";
-import { generateCode, generateId, isPastShopClosing, percent } from "@/lib/utils";
+import {
+  generateCode,
+  generateId,
+  offerValidUntilISO,
+  percent,
+  shouldExpireConfirmed,
+  shouldExpirePending,
+  shouldExpirePublishedOffer,
+} from "@/lib/utils";
 import {
   decrementStrike,
   isPaused,
@@ -126,7 +134,15 @@ export async function getOffers(opts?: {
   if (opts?.publishedOnly) q = q.eq("status", "PUBLIEE");
   const { data, error } = await q;
   if (error) throw error;
-  return sortOffers((data as EcOfferRow[]).map(rowToOffer));
+  let offers = sortOffers((data as EcOfferRow[]).map(rowToOffer));
+  if (opts?.publishedOnly) {
+    const now = Date.now();
+    offers = offers.filter(
+      (o) =>
+        o.quantityLeft > 0 && new Date(o.validUntil).getTime() >= now
+    );
+  }
+  return offers;
 }
 
 export async function getOffer(id: string): Promise<Offer | undefined> {
@@ -154,12 +170,7 @@ export async function createOffer(input: {
 }): Promise<Offer> {
   const shop = await getShop(input.shopId);
   const now = new Date().toISOString();
-  const validUntil = (() => {
-    const d = new Date();
-    const [h, m] = (shop?.openUntil || "19:00").split(":").map(Number);
-    d.setHours(h, m, 0, 0);
-    return d.toISOString();
-  })();
+  const validUntil = offerValidUntilISO(shop?.openUntil || "19:00");
   const offer: Offer = {
     id: generateId("offer"),
     shopId: input.shopId,
@@ -210,10 +221,20 @@ export async function updateOffer(
 export async function publishOffer(id: string): Promise<Offer | undefined> {
   const offer = await getOffer(id);
   if (!offer) return undefined;
+  const shop = await getShop(offer.shopId);
   return updateOffer(id, {
     status: "PUBLIEE",
     publishedAt: new Date().toISOString(),
+    validUntil: offerValidUntilISO(shop?.openUntil || "19:00"),
   });
+}
+
+/** Soft-delete: mark EXPIREE (staff). */
+export async function deleteOffer(id: string): Promise<Offer | undefined> {
+  const offer = await getOffer(id);
+  if (!offer) return undefined;
+  if (offer.status === "EXPIREE") return offer;
+  return updateOffer(id, { status: "EXPIREE" });
 }
 
 export async function incrementOfferViews(id: string): Promise<void> {
@@ -787,20 +808,16 @@ export async function resetDemo(): Promise<AppState> {
 
 export async function cancelExpiredConfirmed(): Promise<number> {
   // Default without Pro gesture = EXPIREE (0 strike). NEVER auto-NON_RECUPEREE.
+  // Only openUntil crossing + same-day confirm rule — never offer.validUntil alone.
   const reservations = await getReservations();
-  const offers = await getOffers();
   const shops = await getShops();
-  const now = Date.now();
+  const now = new Date();
   let count = 0;
   for (const resa of reservations) {
     if (resa.status !== "CONFIRMEE") continue;
     const shop = shops.find((s) => s.id === resa.shopId);
-    const offer = offers.find((o) => o.id === resa.offerId);
-    const pastClose = shop ? isPastShopClosing(shop.openUntil) : false;
-    const pastValid = offer
-      ? new Date(offer.validUntil).getTime() < now
-      : false;
-    if (pastClose || pastValid) {
+    if (!shop) continue;
+    if (shouldExpireConfirmed(resa, shop.openUntil, now)) {
       await updateReservationStatus(resa.id, "EXPIREE");
       count++;
     }
@@ -823,8 +840,10 @@ export async function expireConfirmedRemaining(shopId?: string): Promise<number>
 
 /**
  * Idempotent end-of-day for a shop (Europe/Zurich openUntil).
- * CONFIRMEE past closing / validUntil → EXPIREE (stock restored, 0 strike).
- * PUBLIEE past validUntil or past closing → EXPIREE.
+ * CONFIRMEE → EXPIREE only if pastClose AND confirmed during the day that ended.
+ * EN_ATTENTE → EXPIREE after pastClose (same-day rule), 0 strike.
+ * PUBLIEE → EXPIREE if validUntil past OR pastClose same-day (not brand-new after close).
+ * Never expire CONFIRMEE solely because offer.validUntil is past.
  */
 export async function ensureShopDayClosed(
   shopId: string
@@ -832,16 +851,14 @@ export async function ensureShopDayClosed(
   const shop = await getShop(shopId);
   if (!shop) return { expiredReservations: 0, expiredOffers: 0 };
 
-  const now = Date.now();
-  const pastClose = isPastShopClosing(shop.openUntil);
+  const now = new Date();
   let expiredOffers = 0;
   let expiredReservations = 0;
 
   const offers = await getOffers({ shopId });
   for (const offer of offers) {
     if (offer.status !== "PUBLIEE") continue;
-    const pastValid = new Date(offer.validUntil).getTime() < now;
-    if (pastValid || pastClose) {
+    if (shouldExpirePublishedOffer(offer, shop.openUntil, now)) {
       await updateOffer(offer.id, { status: "EXPIREE" });
       expiredOffers++;
     }
@@ -849,14 +866,16 @@ export async function ensureShopDayClosed(
 
   const reservations = await getReservations({ shopId });
   for (const resa of reservations) {
-    if (resa.status !== "CONFIRMEE") continue;
-    const offer = offers.find((o) => o.id === resa.offerId) || (await getOffer(resa.offerId));
-    const pastValid = offer
-      ? new Date(offer.validUntil).getTime() < now
-      : false;
-    if (pastClose || pastValid) {
-      await updateReservationStatus(resa.id, "EXPIREE");
-      expiredReservations++;
+    if (resa.status === "CONFIRMEE") {
+      if (shouldExpireConfirmed(resa, shop.openUntil, now)) {
+        await updateReservationStatus(resa.id, "EXPIREE");
+        expiredReservations++;
+      }
+    } else if (resa.status === "EN_ATTENTE") {
+      if (shouldExpirePending(resa, shop.openUntil, now)) {
+        await updateReservationStatus(resa.id, "EXPIREE");
+        expiredReservations++;
+      }
     }
   }
 
