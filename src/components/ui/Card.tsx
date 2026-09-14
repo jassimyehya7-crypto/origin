@@ -12,7 +12,7 @@ export function Card({
   return (
     <div
       className={cn(
-        "rounded-[20px] border border-ec-rule bg-ec-surface",
+        "ec-corner-cut border border-ec-rule bg-ec-surface",
         padding && "p-4",
         className
       )}

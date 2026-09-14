@@ -156,7 +156,7 @@ export async function createOffer(input: {
     quantityTotal: input.quantityTotal,
     quantityLeft: input.quantityTotal,
     unit: input.unit || "lot",
-    emoji: input.emoji || "🛍️",
+    emoji: input.emoji || "",
     validUntil,
     createdAt: now,
     publishedAt: input.publish ? now : undefined,

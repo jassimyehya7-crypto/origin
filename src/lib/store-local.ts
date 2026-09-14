@@ -168,7 +168,7 @@ export function createOffer(input: {
     quantityTotal: input.quantityTotal,
     quantityLeft: input.quantityTotal,
     unit: input.unit || "lot",
-    emoji: input.emoji || "🛍️",
+    emoji: input.emoji || "",
     validUntil: (() => {
       const d = new Date();
       const [h, m] = (shop?.openUntil || "19:00").split(":").map(Number);

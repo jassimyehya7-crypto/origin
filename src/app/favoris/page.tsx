@@ -5,6 +5,7 @@ import { Logo } from "@/components/Logo";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CATEGORY_LABELS } from "@/lib/labels";
 import { getFavorites, getOffers, getShop } from "@/lib/store";
+import { VisualMark } from "@/components/VisualMark";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,6 @@ export default async function FavorisPage() {
       <main className="safe-pb space-y-3 px-4 pt-4">
         {rows.length === 0 ? (
           <EmptyState
-            emoji="💚"
             title="Aucun favori"
             description="Ajoutez un commerce depuis une offre."
           />
@@ -51,9 +51,9 @@ export default async function FavorisPage() {
             <Link
               key={f.shopId}
               href={`/q/${shop.slug}`}
-              className="flex items-center gap-3 rounded-[20px] border border-ec-rule bg-ec-surface p-4"
+              className="ec-corner-cut flex items-center gap-3 border border-ec-rule bg-ec-surface p-4"
             >
-              <div className="text-3xl">{shop.emoji}</div>
+              <VisualMark label={shop.name} stored={shop.emoji} size="md" />
               <div className="flex-1">
                 <div className="font-extrabold text-ec-ink">{shop.name}</div>
                 <div className="text-xs font-semibold text-ec-muted">

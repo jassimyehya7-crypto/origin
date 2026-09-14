@@ -41,3 +41,4 @@ next-env.d.ts
 
 # local strike store / demo ban
 /data/ec_strikes.json
+.env*

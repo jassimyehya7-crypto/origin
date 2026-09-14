@@ -22,6 +22,7 @@ import {
   fetchClientRisk,
   type ClientRiskStatus,
 } from "@/lib/risk-status";
+import { VisualMark } from "@/components/VisualMark";
 import {
   discountPercent,
   formatCHF,
@@ -220,7 +221,7 @@ export function OfferDetailClient({
             className={`h-5 w-5 ${favorite ? "fill-ec-red text-ec-red" : "text-ec-muted"}`}
           />
         </button>
-        <span className="text-8xl">{offer.emoji}</span>
+        <VisualMark label={offer.title} stored={offer.emoji} size="hero" />
         <div className="absolute bottom-4 left-4">
           <OfferTypeBadge type={offer.type} />
         </div>
@@ -244,7 +245,7 @@ export function OfferDetailClient({
             )}
           </p>
           <p className="text-sm font-semibold text-ec-muted">
-            {shop.emoji} {shop.name}
+            {shop.name}
           </p>
 
           <p className="inline-flex items-center gap-1.5 text-sm font-bold text-ec-blue">
@@ -304,7 +305,7 @@ export function OfferDetailClient({
           <div
             ref={reserveRef}
             id="reserver"
-            className="space-y-4 rounded-[20px] border border-ec-rule p-4 transition"
+            className="ec-corner-cut space-y-4 border border-ec-rule p-4 transition"
           >
             <div className="flex items-center justify-between">
               <span className="font-extrabold">Quantité</span>

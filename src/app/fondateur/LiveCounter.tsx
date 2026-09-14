@@ -11,7 +11,7 @@ export function LiveCounter({ initial }: { initial: number }) {
   }, [initial]);
 
   return (
-    <div className="rounded-[20px] border border-ec-rule bg-ec-surface p-4">
+    <div className="ec-corner-cut border border-ec-rule bg-ec-surface p-4">
       <div className="flex items-center gap-2 text-xs font-extrabold uppercase text-ec-muted">
         <span className="live-dot inline-block h-2.5 w-2.5 rounded-full bg-ec-green" />
         Clients connectés

@@ -13,19 +13,21 @@ export const CATEGORY_LABELS: Record<ShopCategory, string> = {
   autre: "Autre local",
 };
 
+/** Non-emoji category marks (initials) for chips / lists. */
 export const CATEGORY_ICONS: Record<ShopCategory, string> = {
-  epicerie: "🛒",
-  boulangerie: "🥖",
-  kiosque: "📰",
-  cremiere: "🧀",
-  autre: "🏪",
+  epicerie: "É",
+  boulangerie: "B",
+  kiosque: "K",
+  cremiere: "C",
+  autre: "A",
 };
 
+/** Visible French retail labels — DB enum values stay FLASH/PROMO/… */
 export const OFFER_TYPE_LABELS: Record<OfferType, string> = {
-  FLASH: "Flash",
-  PROMO: "Promo",
-  ARRIVAGE: "Arrivage",
-  DERNIERE_MINUTE: "Dernière minute",
+  FLASH: "OFFRES",
+  PROMO: "Promo en réduction",
+  ARRIVAGE: "Nouveautés",
+  DERNIERE_MINUTE: "Dernière chance",
 };
 
 export const OFFER_STATUS_LABELS: Record<OfferStatus, string> = {

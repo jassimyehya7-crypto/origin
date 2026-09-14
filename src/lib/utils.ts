@@ -77,3 +77,32 @@ export function formatWalkDistance(lat: number, lng: number): string {
   const mins = Math.max(1, Math.round(meters / 80));
   return `À ${mins} min`;
 }
+
+
+/** True if string looks like emoji / symbol icon (not a letter mark). */
+export function isEmojiIcon(value?: string | null): boolean {
+  if (!value) return false;
+  const s = value.trim();
+  if (!s) return false;
+  // Allow short alphanumeric initials (incl. accented Latin)
+  if (/^[A-Za-zÀ-ÿ0-9]{1,3}$/.test(s)) return false;
+  return true;
+}
+
+/** Letter/initial for shop or offer visuals (no emoji). */
+export function visualMark(label: string, stored?: string | null): string {
+  if (stored && !isEmojiIcon(stored)) {
+    return stored.trim().slice(0, 3).toUpperCase();
+  }
+  const words = label
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^A-Za-z0-9\s]/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (words.length >= 2) {
+    return (words[0][0] + words[1][0]).toUpperCase();
+  }
+  return (words[0]?.slice(0, 2) || "?").toUpperCase();
+}

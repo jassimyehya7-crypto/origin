@@ -114,7 +114,7 @@ export function rowToShop(r: EcShopRow): Shop {
     published: r.active,
     devicePlan: (r.device_plan as DevicePlan) || "telephone",
     trialEndsAt: r.trial_ends_at || new Date().toISOString(),
-    emoji: r.emoji || "🛒",
+    emoji: r.emoji || "",
     color: r.color || "#2E7D32",
   };
 }
@@ -156,7 +156,7 @@ export function rowToOffer(r: EcOfferRow): Offer {
     quantityTotal: r.quantity_total,
     quantityLeft: r.quantity_left,
     unit: r.unit || "lot",
-    emoji: r.image_emoji || "🛍️",
+    emoji: r.image_emoji || "",
     validUntil: r.ends_at,
     createdAt: r.created_at,
     publishedAt: r.published_at || undefined,

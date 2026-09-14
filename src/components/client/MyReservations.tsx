@@ -13,6 +13,7 @@ import {
 } from "@/lib/soft-profile";
 import { formatCHF, formatDateTime } from "@/lib/utils";
 import type { Offer, Reservation, Shop } from "@/lib/types";
+import { VisualMark } from "@/components/VisualMark";
 
 type Row = Reservation & { offer?: Offer | null; shop?: Shop | null };
 
@@ -102,13 +103,11 @@ export function MyReservations({ tab }: { tab: "avenir" | "historique" }) {
       <div className="safe-pb space-y-3 px-4">
         {!prenom && list.length === 0 ? (
           <EmptyState
-            emoji="🧾"
             title="Aucune réservation"
             description="Réserve une offre — ton prénom restera sur cet appareil."
           />
         ) : list.length === 0 ? (
           <EmptyState
-            emoji="🧾"
             title={
               tab === "avenir"
                 ? "Aucune réservation en cours"
@@ -120,15 +119,17 @@ export function MyReservations({ tab }: { tab: "avenir" | "historique" }) {
           list.map((r) => (
             <div
               key={r.id}
-              className="rounded-[20px] border border-ec-rule bg-ec-surface p-3"
+              className="ec-corner-cut border border-ec-rule bg-ec-surface p-3"
             >
               <Link
                 href={`/confirmation/${r.id}`}
                 className="flex gap-3"
               >
-                <div className="flex h-16 w-16 items-center justify-center rounded-[13px] bg-ec-soft text-3xl">
-                  {r.offer?.emoji || "🛍️"}
-                </div>
+                <VisualMark
+                  label={r.offer?.title || "Offre"}
+                  stored={r.offer?.emoji}
+                  size="lg"
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="truncate font-extrabold text-ec-ink">

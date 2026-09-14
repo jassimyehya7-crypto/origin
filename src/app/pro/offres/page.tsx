@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { getOffers } from "@/lib/store";
 import { formatCHF } from "@/lib/utils";
 import { PublishButton } from "./PublishButton";
+import { VisualMark } from "@/components/VisualMark";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,6 @@ export default async function ProOffresPage() {
 
       {offers.length === 0 ? (
         <EmptyState
-          emoji="🏷️"
           title="Aucune offre"
           description="Publiez en quelques champs."
         />
@@ -40,10 +40,10 @@ export default async function ProOffresPage() {
           {offers.map((o) => (
             <div
               key={o.id}
-              className="rounded-[20px] border border-ec-rule bg-ec-surface p-4"
+              className="ec-corner-cut border border-ec-rule bg-ec-surface p-4"
             >
               <div className="flex items-start gap-3">
-                <div className="text-3xl">{o.emoji}</div>
+                <VisualMark label={o.title} stored={o.emoji} size="md" />
                 <div className="min-w-0 flex-1">
                   <p className="font-extrabold text-ec-ink">{o.title}</p>
                   <div className="mt-1 flex flex-wrap gap-1.5">

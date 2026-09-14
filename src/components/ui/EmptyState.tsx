@@ -1,21 +1,30 @@
 import { Button } from "./Button";
 
 export function EmptyState({
-  emoji = "🧺",
   title,
   description,
   actionLabel,
   onAction,
+  mark,
 }: {
+  /** @deprecated emoji removed — use mark letter if needed */
   emoji?: string;
+  mark?: string;
   title: string;
   description?: string;
   actionLabel?: string;
   onAction?: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-[20px] border border-ec-rule bg-ec-surface px-6 py-12 text-center">
-      <div className="mb-3 text-4xl">{emoji}</div>
+    <div className="ec-corner-cut flex flex-col items-center justify-center border border-ec-rule bg-ec-surface px-6 py-12 text-center">
+      {mark ? (
+        <div
+          aria-hidden
+          className="mb-3 flex h-12 w-12 items-center justify-center bg-ec-ink text-lg font-black uppercase text-ec-yellow"
+        >
+          {mark}
+        </div>
+      ) : null}
       <h3 className="font-display text-xl text-ec-ink">{title}</h3>
       {description && (
         <p className="mt-2 max-w-sm text-sm text-ec-muted">{description}</p>

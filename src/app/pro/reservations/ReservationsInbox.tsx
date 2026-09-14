@@ -12,6 +12,7 @@ import {
 } from "@/components/pro/PendingInbox";
 import { hasClientPhone } from "@/lib/phone";
 import { formatDateTime } from "@/lib/utils";
+import { VisualMark } from "@/components/VisualMark";
 
 function PhoneLine({ phone }: { phone: string }) {
   if (!hasClientPhone(phone)) {
@@ -91,7 +92,6 @@ export function ReservationsInbox({
 
       {filtered.length === 0 ? (
         <EmptyState
-          emoji="📥"
           title="Boîte vide"
           description="Les nouvelles demandes apparaîtront ici."
         />
@@ -100,13 +100,15 @@ export function ReservationsInbox({
           {filtered.map((r) => (
             <div
               key={r.id}
-              className="rounded-[20px] border border-ec-rule bg-ec-surface p-4"
+              className="ec-corner-cut border border-ec-rule bg-ec-surface p-4"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex min-w-0 gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-[13px] bg-ec-soft text-2xl">
-                    {r.offer?.emoji || "🛍️"}
-                  </div>
+                  <VisualMark
+                    label={r.offer?.title || "Offre"}
+                    stored={r.offer?.emoji}
+                    size="md"
+                  />
                   <div className="min-w-0">
                     <p className="font-extrabold text-ec-ink">{r.clientName}</p>
                     <div className="mt-0.5">

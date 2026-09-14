@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Clock, MapPin, PackageCheck } from "lucide-react";
 import { OfferTypeBadge } from "./StatusBadge";
+import { VisualMark } from "./VisualMark";
 import type { Offer, Shop } from "@/lib/types";
 import {
   discountPercent,
@@ -42,7 +43,7 @@ export function OfferCard({
   const distance = shop ? formatWalkDistance(shop.lat, shop.lng) : null;
 
   return (
-    <article className="overflow-hidden rounded-[20px] border border-ec-rule bg-ec-surface transition duration-300 hover:-translate-y-0.5 hover:shadow-card">
+    <article className="ec-corner-cut overflow-hidden border border-ec-rule bg-ec-surface transition duration-300 hover:-translate-y-0.5 hover:shadow-card">
       <Link href={detailHref} className="group block">
         <div className="relative flex h-44 items-center justify-center overflow-hidden bg-ec-soft">
           {photo ? (
@@ -54,7 +55,7 @@ export function OfferCard({
               sizes="(max-width: 512px) 100vw, 512px"
             />
           ) : (
-            <span className="text-6xl drop-shadow-sm">{offer.emoji}</span>
+            <VisualMark label={offer.title} stored={offer.emoji} size="hero" />
           )}
           <div className="absolute left-3 top-3">
             <OfferTypeBadge type={offer.type} />
@@ -84,7 +85,7 @@ export function OfferCard({
             </p>
             {shop && (
               <p className="mt-1 truncate text-xs font-semibold text-ec-muted">
-                {shop.emoji} {shop.name}
+                {shop.name}
               </p>
             )}
           </div>

@@ -102,8 +102,13 @@ export default async function HomePage({
                       : "border-ec-rule bg-ec-surface text-ec-ink"
                   }`}
                 >
-                  <span aria-hidden>
-                    {c === "all" ? "✨" : CATEGORY_ICONS[c]}
+                  <span
+                    aria-hidden
+                    className={`inline-flex h-5 w-5 items-center justify-center text-[10px] font-black ${
+                      active ? "text-ec-yellow" : "text-ec-ink"
+                    }`}
+                  >
+                    {c === "all" ? "T" : CATEGORY_ICONS[c]}
                   </span>
                   {c === "all" ? "Tout" : CATEGORY_LABELS[c]}
                 </Link>
@@ -113,8 +118,7 @@ export default async function HomePage({
         </div>
 
         {offers.length === 0 ? (
-          <div className="rounded-[20px] border border-dashed border-ec-rule bg-ec-surface px-6 py-12 text-center">
-            <div className="mb-2 text-4xl">🥬</div>
+          <div className="ec-corner-cut border border-dashed border-ec-rule bg-ec-surface px-6 py-12 text-center">
             <p className="font-display text-lg text-ec-ink">
               Rien pour ce filtre
             </p>

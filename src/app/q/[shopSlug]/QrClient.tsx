@@ -6,6 +6,7 @@ import { OfferCard } from "@/components/OfferCard";
 import { Logo } from "@/components/Logo";
 import type { Offer, Shop } from "@/lib/types";
 import { CATEGORY_LABELS } from "@/lib/labels";
+import { VisualMark } from "@/components/VisualMark";
 
 export function QrClient({
   shop,
@@ -41,7 +42,7 @@ export function QrClient({
       <header className="bg-ec-ink px-4 pb-8 pt-6 text-white">
         <Logo inverted size="sm" />
         <div className="mt-6 flex items-center gap-3">
-          <div className="text-5xl">{shop.emoji}</div>
+          <VisualMark label={shop.name} stored={shop.emoji} size="xl" />
           <div>
             <h1 className="font-display text-2xl">{shop.name}</h1>
             <p className="text-sm font-semibold text-white/70">
@@ -61,9 +62,8 @@ export function QrClient({
 
       <main className="space-y-4 px-4 py-5">
         {offers.length === 0 ? (
-          <div className="rounded-[20px] border border-dashed border-ec-rule bg-ec-surface p-8 text-center">
-            <div className="text-4xl">📭</div>
-            <p className="mt-2 font-extrabold text-ec-ink">
+          <div className="ec-corner-cut border border-dashed border-ec-rule bg-ec-surface p-8 text-center">
+            <p className="font-extrabold text-ec-ink">
               Pas d&apos;offre publiée pour l&apos;instant
             </p>
             <p className="mt-1 text-sm font-semibold text-ec-muted">

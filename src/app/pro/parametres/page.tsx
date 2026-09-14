@@ -2,6 +2,7 @@ import { ResetDemoButton } from "@/components/ResetDemoButton";
 import { Card } from "@/components/ui/Card";
 import { CATEGORY_LABELS, PRICING_NOTE } from "@/lib/labels";
 import { getShop } from "@/lib/store";
+import { VisualMark } from "@/components/VisualMark";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ export default async function ProParametresPage() {
       <div className="space-y-4">
         <Card>
           <div className="flex items-center gap-3">
-            <span className="text-4xl">{shop.emoji}</span>
+            <VisualMark label={shop.name} stored={shop.emoji} size="xl" />
             <div>
               <div className="text-lg font-bold">{shop.name}</div>
               <div className="text-sm text-ec-muted">

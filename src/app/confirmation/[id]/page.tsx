@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { CancelReservationButton } from "@/components/client/CancelReservationButton";
 import { getOffer, getReservation, getShop } from "@/lib/store";
 import { formatCHF, formatTime } from "@/lib/utils";
+import { VisualMark } from "@/components/VisualMark";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export default async function ConfirmationPage({
     <div className="mx-auto min-h-dvh max-w-lg bg-ec-paper">
       <LiveRefresh types={["reservations", "offers"]} />
       <main className="safe-pb px-4 pt-10">
-        <div className="rounded-[24px] border border-ec-rule bg-ec-surface p-6 text-center">
+        <div className="ec-corner-cut-lg ec-corner-cut border border-ec-rule bg-ec-surface p-6 text-center">
           <div
             className={`mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full ${
               pending
@@ -79,9 +80,9 @@ export default async function ConfirmationPage({
           </div>
         </div>
 
-        <div className="mt-4 space-y-3 rounded-[20px] border border-ec-rule bg-ec-surface p-4">
+        <div className="ec-corner-cut mt-4 space-y-3 border border-ec-rule bg-ec-surface p-4">
           <div className="flex items-start gap-3">
-            <span className="text-3xl">{offer.emoji}</span>
+            <VisualMark label={offer.title} stored={offer.emoji} size="md" />
             <div className="flex-1 text-left">
               <div className="font-extrabold text-ec-ink">{offer.title}</div>
               <div className="text-sm font-semibold text-ec-muted">

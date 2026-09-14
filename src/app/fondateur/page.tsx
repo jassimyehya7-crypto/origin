@@ -5,6 +5,7 @@ import { CATEGORY_LABELS } from "@/lib/labels";
 import { getFounderStats } from "@/lib/store";
 import { formatDateTime, formatCHF } from "@/lib/utils";
 import { LiveCounter } from "./LiveCounter";
+import { VisualMark } from "@/components/VisualMark";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export default async function FondateurPage() {
         <div className="col-span-2">
           <LiveCounter initial={stats.liveClients} />
         </div>
-        <div className="rounded-[20px] border border-ec-rule bg-ec-surface p-4">
+        <div className="ec-corner-cut border border-ec-rule bg-ec-surface p-4">
           <div className="text-[10px] font-extrabold uppercase text-ec-muted">
             Commerces
           </div>
@@ -43,7 +44,7 @@ export default async function FondateurPage() {
             publiés / total
           </div>
         </div>
-        <div className="rounded-[20px] border border-ec-rule bg-ec-surface p-4">
+        <div className="ec-corner-cut border border-ec-rule bg-ec-surface p-4">
           <div className="text-[10px] font-extrabold uppercase text-ec-muted">
             Offres / résas J
           </div>
@@ -70,7 +71,7 @@ export default async function FondateurPage() {
           ].map((s, i) => (
             <div
               key={s.label}
-              className="rounded-[16px] border border-ec-rule bg-ec-surface p-3"
+              className="ec-corner-cut ec-corner-cut-sm border border-ec-rule bg-ec-surface p-3"
             >
               <div className="text-[10px] font-extrabold uppercase text-ec-muted">
                 {i + 1}. {s.label}
@@ -93,12 +94,12 @@ export default async function FondateurPage() {
           {stats.perShop.map((row) => (
             <div
               key={row.shop.id}
-              className="rounded-[20px] border border-ec-rule bg-ec-surface p-4"
+              className="ec-corner-cut border border-ec-rule bg-ec-surface p-4"
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <p className="font-extrabold text-ec-ink">
-                    {row.shop.emoji} {row.shop.name}
+                    {row.shop.name}
                   </p>
                   <p className="text-[11px] font-semibold text-ec-muted">
                     {CATEGORY_LABELS[row.shop.category]} · {row.shop.devicePlan}
@@ -173,9 +174,9 @@ export default async function FondateurPage() {
             <Link
               key={o.id}
               href={`/offre/${o.id}`}
-              className="flex gap-3 rounded-[20px] border border-ec-rule bg-ec-surface p-3"
+              className="flex gap-3 ec-corner-cut border border-ec-rule bg-ec-surface p-3"
             >
-              <div className="text-3xl">{o.emoji}</div>
+              <VisualMark label={o.title} stored={o.emoji} size="md" />
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-1.5">
                   <span className="truncate font-extrabold text-ec-ink">
