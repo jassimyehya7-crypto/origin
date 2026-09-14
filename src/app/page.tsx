@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LocateFixed } from "lucide-react";
 import { BottomNav } from "@/components/client/BottomNav";
 import { RiskBanner } from "@/components/client/RiskBanner";
+import { ScrollHideOnDown } from "@/components/client/ScrollHideOnDown";
 import { LiveRefresh } from "@/hooks/useLiveRefresh";
 import { Logo } from "@/components/Logo";
 import { OfferCard } from "@/components/OfferCard";
@@ -48,20 +49,22 @@ export default async function HomePage({
   return (
     <div className="mx-auto min-h-dvh max-w-lg bg-ec-paper">
       <LiveRefresh />
-      <header className="sticky top-0 z-30 border-b border-ec-rule bg-ec-paper/95 px-4 pb-3 pt-4 backdrop-blur">
-        <div className="mb-3 flex items-center justify-between gap-3">
-          <Logo size="sm" />
-          <div className="flex items-center gap-1.5 rounded-[12px] px-2.5 py-1.5 text-xs font-bold text-ec-ink">
-            <LocateFixed className="h-4 w-4 text-ec-blue" />
-            <span className="leading-tight">
-              Villeneuve
-              <span className="block text-[10px] font-semibold text-ec-muted">
-                VD
+      <ScrollHideOnDown className="sticky top-0 z-30">
+        <header className="border-b border-ec-rule bg-ec-paper/95 px-4 pb-3 pt-4 backdrop-blur">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <Logo size="sm" />
+            <div className="flex items-center gap-1.5 rounded-[12px] px-2.5 py-1.5 text-xs font-bold text-ec-ink">
+              <LocateFixed className="h-4 w-4 text-ec-blue" />
+              <span className="leading-tight">
+                Villeneuve
+                <span className="block text-[10px] font-semibold text-ec-muted">
+                  VD
+                </span>
               </span>
-            </span>
+            </div>
           </div>
-        </div>
-      </header>
+        </header>
+      </ScrollHideOnDown>
 
       <main className="safe-pb px-4 pt-4">
         <RiskBanner />
@@ -71,8 +74,11 @@ export default async function HomePage({
           {offers.length !== 1 ? "s" : ""}
         </p>
 
-        {/* Chips secondaires sticky légères */}
-        <div className="sticky top-[3.75rem] z-20 -mx-4 mb-4 border-b border-ec-rule/60 bg-ec-paper/95 px-4 py-2 backdrop-blur">
+        {/* Chips secondaires qui se masquent à la descente */}
+        <ScrollHideOnDown
+          className="sticky top-[3.75rem] z-20 -mx-4 mb-4 border-b border-ec-rule/60 bg-ec-paper/95 px-4 py-2 backdrop-blur"
+          hiddenClassName="-translate-y-[calc(100%+3.75rem)]"
+        >
           <div className="scrollbar-hide flex gap-2 overflow-x-auto pb-0.5">
             {CATEGORIES.map((c) => {
               const active = cat === c;
@@ -105,7 +111,7 @@ export default async function HomePage({
               );
             })}
           </div>
-        </div>
+        </ScrollHideOnDown>
 
         {offers.length === 0 ? (
           <div className="ec-corner-cut border border-dashed border-ec-rule bg-ec-surface px-6 py-12 text-center">
