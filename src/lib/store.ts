@@ -170,6 +170,14 @@ export async function expireConfirmedRemaining(shopId?: string): Promise<number>
     : local.expireConfirmedRemaining(shopId);
 }
 
+export async function ensureShopDayClosed(
+  shopId: string
+): Promise<{ expiredReservations: number; expiredOffers: number }> {
+  return preferSupabase()
+    ? remote.ensureShopDayClosed(shopId)
+    : local.ensureShopDayClosed(shopId);
+}
+
 export async function getFavorites() {
   return preferSupabase()
     ? remote.getFavorites()

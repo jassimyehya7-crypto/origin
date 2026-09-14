@@ -1,20 +1,22 @@
 import { ResetDemoButton } from "@/components/ResetDemoButton";
+import { OpenUntilEditor } from "@/components/pro/OpenUntilEditor";
 import { Card } from "@/components/ui/Card";
+import { VisualMark } from "@/components/VisualMark";
 import { CATEGORY_LABELS, PRICING_NOTE } from "@/lib/labels";
 import { PRO_SHOP_ID, PRO_SHOP_NAME } from "@/lib/pro-shop";
-import { getShop } from "@/lib/store";
-import { VisualMark } from "@/components/VisualMark";
+import { ensureShopDayClosed, getShop } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProParametresPage() {
+  await ensureShopDayClosed(PRO_SHOP_ID);
   const shop = (await getShop(PRO_SHOP_ID))!;
 
   return (
     <div className="mx-auto max-w-lg px-4 py-4">
-      <h1 className="mb-1 text-2xl font-extrabold">Paramètres boutique</h1>
-      <p className="mb-6 text-sm text-ec-muted">
-        Configuration magasin ({PRO_SHOP_NAME})
+      <h1 className="mb-1 font-display text-[1.75rem] text-ec-ink">Magasin</h1>
+      <p className="mb-6 text-sm font-semibold text-ec-muted">
+        {PRO_SHOP_NAME}
       </p>
 
       <div className="space-y-4">
@@ -30,24 +32,10 @@ export default async function ProParametresPage() {
               <div className="text-sm text-ec-muted">{shop.phone}</div>
             </div>
           </div>
-          <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
-            <div>
-              <dt className="text-ec-muted">Fermeture</dt>
-              <dd className="font-semibold">{shop.openUntil}</dd>
-            </div>
-            <div>
-              <dt className="text-ec-muted">Publié</dt>
-              <dd className="font-semibold">{shop.published ? "Oui" : "Non"}</dd>
-            </div>
-            <div>
-              <dt className="text-ec-muted">Support</dt>
-              <dd className="font-semibold capitalize">{shop.devicePlan}</dd>
-            </div>
-            <div>
-              <dt className="text-ec-muted">Slug QR</dt>
-              <dd className="font-mono text-xs">/q/{shop.slug}</dd>
-            </div>
-          </dl>
+        </Card>
+
+        <Card>
+          <OpenUntilEditor shopId={PRO_SHOP_ID} initial={shop.openUntil} />
         </Card>
 
         <Card>

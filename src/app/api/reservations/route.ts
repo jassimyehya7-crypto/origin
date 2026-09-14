@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   createReservation,
+  ensureShopDayClosed,
   getOffer,
   getReservations,
   getShop,
@@ -65,6 +66,7 @@ export async function GET(req: NextRequest) {
     if (!gate.ok) {
       return NextResponse.json({ error: gate.error }, { status: gate.status });
     }
+    await ensureShopDayClosed(shopId);
     const list = await getReservations({ shopId, status });
     const enriched = await Promise.all(
       list.map(async (r) => ({

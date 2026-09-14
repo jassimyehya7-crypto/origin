@@ -10,7 +10,7 @@ import type {
   ReservationStatus,
   Shop,
 } from "./types";
-import { generateCode, generateId, percent } from "./utils";
+import { generateCode, generateId, isPastShopClosing, percent } from "./utils";
 import {
   decrementStrike,
   linkReservationSoftId,
@@ -433,9 +433,13 @@ export async function cancelExpiredConfirmed(): Promise<number> {
   let count = 0;
   for (const resa of state.reservations) {
     if (resa.status !== "CONFIRMEE") continue;
+    const shop = state.shops.find((s) => s.id === resa.shopId);
     const offer = state.offers.find((o) => o.id === resa.offerId);
-    if (!offer) continue;
-    if (new Date(offer.validUntil).getTime() < now) {
+    const pastClose = shop ? isPastShopClosing(shop.openUntil) : false;
+    const pastValid = offer
+      ? new Date(offer.validUntil).getTime() < now
+      : false;
+    if (pastClose || pastValid) {
       await updateReservationStatus(resa.id, "EXPIREE");
       count++;
     }
@@ -443,7 +447,7 @@ export async function cancelExpiredConfirmed(): Promise<number> {
   return count;
 }
 
-/** Clôturer le reste: CONFIRMEE → EXPIREE (no strike). */
+/** Force-expire remaining CONFIRMEE → EXPIREE (no strike). Used by ensure + legacy API. */
 export async function expireConfirmedRemaining(shopId?: string): Promise<number> {
   const state = getState();
   let count = 0;
@@ -462,6 +466,51 @@ export async function expireConfirmedRemaining(shopId?: string): Promise<number>
     }
   }
   return count;
+}
+
+/**
+ * Idempotent end-of-day for a shop (Europe/Zurich openUntil).
+ * CONFIRMEE past closing / validUntil → EXPIREE (stock restored, 0 strike).
+ * PUBLIEE past validUntil or past closing → EXPIREE.
+ */
+export async function ensureShopDayClosed(
+  shopId: string
+): Promise<{ expiredReservations: number; expiredOffers: number }> {
+  const state = getState();
+  const shop = state.shops.find((s) => s.id === shopId);
+  if (!shop) return { expiredReservations: 0, expiredOffers: 0 };
+
+  const now = Date.now();
+  const pastClose = isPastShopClosing(shop.openUntil);
+  let expiredOffers = 0;
+  let expiredReservations = 0;
+
+  for (const offer of state.offers.filter((o) => o.shopId === shopId)) {
+    if (offer.status !== "PUBLIEE") continue;
+    const pastValid = new Date(offer.validUntil).getTime() < now;
+    if (pastValid || pastClose) {
+      updateOffer(offer.id, { status: "EXPIREE" });
+      expiredOffers++;
+    }
+  }
+
+  const ids = state.reservations
+    .filter((r) => r.shopId === shopId && r.status === "CONFIRMEE")
+    .map((r) => r.id);
+  for (const id of ids) {
+    const resa = getReservation(id);
+    if (!resa || resa.status !== "CONFIRMEE") continue;
+    const offer = getOffer(resa.offerId);
+    const pastValid = offer
+      ? new Date(offer.validUntil).getTime() < now
+      : false;
+    if (pastClose || pastValid) {
+      await updateReservationStatus(id, "EXPIREE");
+      expiredReservations++;
+    }
+  }
+
+  return { expiredReservations, expiredOffers };
 }
 
 export function getFavorites() {

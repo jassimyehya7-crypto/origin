@@ -50,3 +50,19 @@ export const RESERVATION_STATUS_LABELS: Record<ReservationStatus, string> = {
 
 export const PRICING_NOTE =
   "1er mois offert, puis CHF 49.90/mois. Téléphone gratuit · Tablette installée en option payante.";
+
+/** Pro merchant copy (no jargon). */
+export const PRO_COPY = {
+  tabToday: "Aujourd'hui",
+  tabOffers: "Offres",
+  tabShop: "Magasin",
+  sectionPending: "À confirmer",
+  sectionPickup: "À retirer",
+  emptyAll: "Rien à traiter",
+  emptyPending: "Rien à confirmer",
+  emptyPickup: "Rien à retirer",
+  dayEnded: "Journée terminée · reprise demain",
+  endsAt: (hm: string) => `Se termine à ${hm}`,
+  autoClose: (hm: string) =>
+    `Fin de journée automatique à ${hm}. À cette heure, les réservations non retirées passent en terminées et le stock revient.`,
+} as const;

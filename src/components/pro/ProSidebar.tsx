@@ -2,34 +2,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  ClipboardList,
-  LayoutDashboard,
-  Moon,
-  PlusCircle,
-  Settings,
-  Store,
-  Tag,
-} from "lucide-react";
+import { Settings, Store, Sun, Tag } from "lucide-react";
 import { Logo } from "../Logo";
 import { cn } from "@/lib/utils";
 import { PRICING_NOTE } from "@/lib/labels";
 import { PRO_SHOP_CITY, PRO_SHOP_NAME } from "@/lib/pro-shop";
 
 const items = [
-  { href: "/pro", label: "Tableau de bord", icon: LayoutDashboard },
-  { href: "/pro/reservations", label: "Réservations", icon: ClipboardList },
-  { href: "/pro/cloture", label: "Clôture", icon: Moon },
-  { href: "/pro/offres", label: "Mes offres", icon: Tag },
-  { href: "/pro/offres/nouvelle", label: "Créer une offre", icon: PlusCircle },
-  { href: "/pro/parametres", label: "Paramètres", icon: Settings },
+  { href: "/pro", label: "Aujourd'hui", icon: Sun },
+  { href: "/pro/offres", label: "Offres", icon: Tag },
+  { href: "/pro/parametres", label: "Magasin", icon: Settings },
 ];
 
 const mobileItems = [
-  { href: "/pro", label: "Accueil", icon: LayoutDashboard },
-  { href: "/pro/reservations", label: "Résas", icon: ClipboardList },
+  { href: "/pro", label: "Aujourd'hui", icon: Sun },
   { href: "/pro/offres", label: "Offres", icon: Tag },
-  { href: "/pro/cloture", label: "Clôture", icon: Moon },
+  { href: "/pro/parametres", label: "Magasin", icon: Settings },
 ];
 
 export function ProSidebar() {

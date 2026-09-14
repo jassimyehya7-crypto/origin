@@ -24,11 +24,62 @@ export function formatDateTime(iso: string): string {
   });
 }
 
+
+const SHOP_TZ = "Europe/Zurich";
+
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+/** Calendar date + clock in Europe/Zurich. */
+export function zurichParts(now = new Date()): {
+  dateKey: string;
+  h: number;
+  m: number;
+} {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: SHOP_TZ,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(now);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value || "0";
+  return {
+    dateKey: `${get("year")}-${get("month")}-${get("day")}`,
+    h: Number(get("hour")),
+    m: Number(get("minute")),
+  };
+}
+
+/** True when Zurich local time is at/after shop openUntil (HH:mm). */
+export function isPastShopClosing(openUntil: string, now = new Date()): boolean {
+  const [ch, cm] = openUntil.split(":").map(Number);
+  if (!Number.isFinite(ch) || !Number.isFinite(cm)) return false;
+  const { h, m } = zurichParts(now);
+  return h * 60 + m >= ch * 60 + cm;
+}
+
+/** End of shop day as ISO, anchored to Europe/Zurich calendar date. */
 export function todayEndOfDayISO(openUntil = "19:00"): string {
   const [h, m] = openUntil.split(":").map(Number);
-  const d = new Date();
-  d.setHours(h, m, 0, 0);
-  return d.toISOString();
+  const { dateKey } = zurichParts();
+  // Start from a UTC guess, then nudge until Zurich local matches HH:mm on dateKey.
+  let utc = Date.parse(
+    `${dateKey}T${pad2(h)}:${pad2(m)}:00.000Z`
+  );
+  for (let i = 0; i < 5; i++) {
+    const z = zurichParts(new Date(utc));
+    const dayDelta =
+      dateKey === z.dateKey ? 0 : dateKey > z.dateKey ? 1 : -1;
+    const deltaMin =
+      dayDelta * 24 * 60 + (h * 60 + m) - (z.h * 60 + z.m);
+    if (deltaMin === 0) break;
+    utc += deltaMin * 60_000;
+  }
+  return new Date(utc).toISOString();
 }
 
 export function generateCode(): string {

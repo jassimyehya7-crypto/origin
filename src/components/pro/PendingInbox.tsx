@@ -174,7 +174,7 @@ export function PendingInbox({ items }: { items: InboxRow[] }) {
     return (
       <div>
         <p className="ec-corner-cut border border-dashed border-ec-rule bg-ec-surface px-4 py-8 text-center text-sm font-semibold text-ec-muted">
-          Aucune demande en attente
+          Rien à confirmer
         </p>
         {error && (
           <p className="mt-3 text-center text-sm font-bold text-ec-red">{error}</p>

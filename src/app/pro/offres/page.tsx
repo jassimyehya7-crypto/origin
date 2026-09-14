@@ -3,7 +3,7 @@ import { Plus } from "lucide-react";
 import { OfferStatusBadge, OfferTypeBadge } from "@/components/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { PRO_SHOP_ID } from "@/lib/pro-shop";
-import { getOffers } from "@/lib/store";
+import { ensureShopDayClosed, getOffers } from "@/lib/store";
 import { formatCHF } from "@/lib/utils";
 import { PublishButton } from "./PublishButton";
 import { VisualMark } from "@/components/VisualMark";
@@ -11,6 +11,7 @@ import { VisualMark } from "@/components/VisualMark";
 export const dynamic = "force-dynamic";
 
 export default async function ProOffresPage() {
+  await ensureShopDayClosed(PRO_SHOP_ID);
   const offers = (await getOffers()).filter((o) => o.shopId === PRO_SHOP_ID);
 
   return (
