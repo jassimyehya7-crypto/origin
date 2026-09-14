@@ -53,6 +53,7 @@ export function CancelReservationButton({
         return;
       }
       router.refresh();
+      router.push("/reservations");
     } catch {
       setError("Erreur réseau");
     } finally {

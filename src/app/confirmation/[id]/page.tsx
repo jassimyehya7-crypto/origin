@@ -29,6 +29,7 @@ export default async function ConfirmationPage({
 
   const confirmed = ["CONFIRMEE", "RECUPEREE"].includes(reservation.status);
   const pending = reservation.status === "EN_ATTENTE";
+  const cancelled = reservation.status === "ANNULEE";
   const photo = offerPhoto(offer.title);
   const phoneDisplay = reservation.clientPhone
     ? formatSwissPhoneDisplay(reservation.clientPhone)
@@ -65,14 +66,18 @@ export default async function ConfirmationPage({
                 ? "Demande envoyée"
                 : confirmed
                   ? "Réservation confirmée"
-                  : "Statut mis à jour"}
+                  : cancelled
+                    ? "Réservation annulée"
+                    : "Statut mis à jour"}
             </h1>
             <p className="mt-2 text-sm font-semibold text-ec-muted">
               {pending
                 ? "En attente du commerce. Garde ton code pour le retrait."
                 : confirmed
                   ? "Présente ton code en magasin pour récupérer ta commande."
-                  : "Consulte le détail ci-dessous."}
+                  : cancelled
+                    ? "Le stock a été remis à disposition."
+                    : "Consulte le détail ci-dessous."}
             </p>
 
             {/* Big EC code — Encre mono XL, Papier, bordure tiretée Règle */}

@@ -7,7 +7,7 @@ import {
 } from "@/lib/store";
 import { getStrikeStatus } from "@/lib/phone-risk";
 import { sendReservationSms } from "@/lib/sms";
-import { toE164CH } from "@/lib/phone";
+import { normalizePhoneKey, toE164CH } from "@/lib/phone";
 import { requireStaff } from "@/lib/staff-auth";
 import type { ReservationStatus } from "@/lib/types";
 
@@ -77,6 +77,15 @@ export async function PATCH(
   if (status === "ANNULEE") {
     const staff = requireStaff(req, "pro");
     if (!staff.ok) {
+      // Idempotent: déjà annulée → OK (évite faux "ne peut plus" après refresh raté)
+      if (before.status === "ANNULEE") {
+        return NextResponse.json({
+          reservation: before,
+          offer: await getOffer(before.offerId),
+          shop: await getShop(before.shopId),
+          alreadyCancelled: true,
+        });
+      }
       if (!["EN_ATTENTE", "CONFIRMEE"].includes(before.status)) {
         return NextResponse.json(
           { error: "Cette réservation ne peut plus être annulée" },
@@ -88,11 +97,14 @@ export async function PATCH(
       const clientPhone =
         typeof body.clientPhone === "string" ? body.clientPhone.trim() : "";
       const softOk =
-        softUserId && before.softUserId && softUserId === before.softUserId;
+        Boolean(softUserId) &&
+        Boolean(before.softUserId) &&
+        softUserId === before.softUserId;
       const phoneOk =
-        clientPhone &&
-        before.clientPhone &&
-        clientPhone === before.clientPhone;
+        Boolean(clientPhone) &&
+        Boolean(before.clientPhone) &&
+        normalizePhoneKey(clientPhone) ===
+          normalizePhoneKey(before.clientPhone);
       if (!softOk && !phoneOk) {
         return NextResponse.json(
           { error: "Non autorisé à annuler cette réservation" },
