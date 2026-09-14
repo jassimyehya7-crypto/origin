@@ -151,6 +151,7 @@ export function createOffer(input: {
   quantityTotal: number;
   unit: string;
   emoji?: string;
+  imageUrl?: string;
   publish?: boolean;
 }): Offer {
   const state = getState();
@@ -169,6 +170,7 @@ export function createOffer(input: {
     quantityLeft: input.quantityTotal,
     unit: input.unit || "lot",
     emoji: input.emoji || "",
+    imageUrl: input.imageUrl,
     validUntil: (() => {
       const d = new Date();
       const [h, m] = (shop?.openUntil || "19:00").split(":").map(Number);

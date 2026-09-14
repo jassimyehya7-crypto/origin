@@ -30,7 +30,7 @@ export function OfferCard({
   offer: Offer;
   shop?: Shop | null;
 }) {
-  const photo = offerPhoto(offer.title);
+  const photo = offerPhoto(offer);
   const price = priceMeta(offer);
   const available = offer.status === "PUBLIEE" && offer.quantityLeft > 0;
   const href = `/offre/${offer.id}`;

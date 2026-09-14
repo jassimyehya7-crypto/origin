@@ -47,8 +47,16 @@ function PhoneLine({ phone }: { phone: string }) {
   );
 }
 
-function OfferThumb({ title, emoji }: { title?: string; emoji?: string }) {
-  const photo = title ? offerPhoto(title) : undefined;
+function OfferThumb({
+  title,
+  emoji,
+  imageUrl,
+}: {
+  title?: string;
+  emoji?: string;
+  imageUrl?: string;
+}) {
+  const photo = title ? offerPhoto(title, imageUrl) : imageUrl;
   if (photo) {
     return (
       <div className="relative h-12 w-12 shrink-0 overflow-hidden bg-ec-soft">
@@ -145,7 +153,7 @@ export function PendingInbox({ items }: { items: InboxRow[] }) {
         >
           <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 gap-3">
-              <OfferThumb title={r.offer?.title} emoji={r.offer?.emoji} />
+              <OfferThumb title={r.offer?.title} emoji={r.offer?.emoji} imageUrl={r.offer?.imageUrl} />
               <div className="min-w-0">
                 <p className="font-extrabold text-ec-ink">{r.clientName}</p>
                 <div className="mt-0.5">

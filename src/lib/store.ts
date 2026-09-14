@@ -83,6 +83,7 @@ export async function createOffer(input: {
   quantityTotal: number;
   unit: string;
   emoji?: string;
+  imageUrl?: string;
   publish?: boolean;
 }): Promise<Offer> {
   return preferSupabase()

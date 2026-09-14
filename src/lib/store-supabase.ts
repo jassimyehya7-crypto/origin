@@ -43,6 +43,16 @@ function sb() {
   return client;
 }
 
+let _imageUrlColumn: boolean | null = null;
+
+/** Probe once: does ec_offers.image_url exist? */
+export async function supportsOfferImageUrl(): Promise<boolean> {
+  if (_imageUrlColumn != null) return _imageUrlColumn;
+  const { error } = await sb().from("ec_offers").select("image_url").limit(1);
+  _imageUrlColumn = !error;
+  return _imageUrlColumn;
+}
+
 function sortOffers(offers: Offer[]): Offer[] {
   return [...offers].sort(
     (a, b) =>
@@ -134,6 +144,7 @@ export async function createOffer(input: {
   quantityTotal: number;
   unit: string;
   emoji?: string;
+  imageUrl?: string;
   publish?: boolean;
 }): Promise<Offer> {
   const shop = await getShop(input.shopId);
@@ -157,14 +168,16 @@ export async function createOffer(input: {
     quantityLeft: input.quantityTotal,
     unit: input.unit || "lot",
     emoji: input.emoji || "",
+    imageUrl: input.imageUrl,
     validUntil,
     createdAt: now,
     publishedAt: input.publish ? now : undefined,
     views: 0,
   };
+  const hasCol = await supportsOfferImageUrl();
   const { data, error } = await sb()
     .from("ec_offers")
-    .insert({ ...offerToRow(offer), created_at: now })
+    .insert({ ...offerToRow(offer, { imageUrlColumn: hasCol }), created_at: now })
     .select("*")
     .single();
   if (error) throw error;
@@ -178,9 +191,10 @@ export async function updateOffer(
   const current = await getOffer(id);
   if (!current) return undefined;
   const next = { ...current, ...patch };
+  const hasCol = await supportsOfferImageUrl();
   const { data, error } = await sb()
     .from("ec_offers")
-    .update(offerToRow(next))
+    .update(offerToRow(next, { imageUrlColumn: hasCol }))
     .eq("id", id)
     .select("*")
     .single();

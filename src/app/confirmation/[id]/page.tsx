@@ -30,7 +30,7 @@ export default async function ConfirmationPage({
   const confirmed = ["CONFIRMEE", "RECUPEREE"].includes(reservation.status);
   const pending = reservation.status === "EN_ATTENTE";
   const cancelled = reservation.status === "ANNULEE";
-  const photo = offerPhoto(offer.title);
+  const photo = offerPhoto(offer);
   const phoneDisplay = reservation.clientPhone
     ? formatSwissPhoneDisplay(reservation.clientPhone)
     : "";

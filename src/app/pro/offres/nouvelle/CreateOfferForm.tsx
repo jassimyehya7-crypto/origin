@@ -1,21 +1,97 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import type { OfferType } from "@/lib/types";
 import { OFFER_TYPE_LABELS } from "@/lib/labels";
 
 export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
   const router = useRouter();
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [polishing, setPolishing] = useState(false);
   const [error, setError] = useState("");
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [form, setForm] = useState({
     title: "",
+    description: "",
     type: "PROMO" as OfferType,
     price: "",
     quantityTotal: "5",
   });
+
+  async function uploadFile(file: File) {
+    setUploading(true);
+    setError("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("shopId", defaultShopId);
+      const res = await fetch("/api/pro/offer-photo", {
+        method: "POST",
+        credentials: "include",
+        body: fd,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Échec de l'upload photo");
+        return;
+      }
+      setImageUrl(data.url as string);
+    } catch {
+      setError("Impossible d'envoyer la photo");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (file) void uploadFile(file);
+  }
+
+  async function polishText() {
+    if (!form.title.trim()) {
+      setError("Saisis un titre avant d'améliorer le texte");
+      return;
+    }
+    setPolishing(true);
+    setError("");
+    try {
+      const res = await fetch("/api/pro/polish-offer", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: form.title,
+          description: form.description,
+          type: form.type,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Amélioration impossible");
+        return;
+      }
+      setForm((f) => ({
+        ...f,
+        title: data.title || f.title,
+        description:
+          typeof data.description === "string"
+            ? data.description
+            : f.description,
+      }));
+    } catch {
+      setError("Amélioration impossible");
+    } finally {
+      setPolishing(false);
+    }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -24,14 +100,17 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
     try {
       const res = await fetch("/api/offers", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           shopId: defaultShopId,
           title: form.title,
+          description: form.description,
           type: form.type,
           price: Number(form.price),
           quantityTotal: Number(form.quantityTotal),
           unit: "lot",
+          imageUrl: imageUrl || undefined,
           publish: true,
         }),
       });
@@ -53,14 +132,104 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
     <form onSubmit={submit} className="space-y-5">
       <div>
         <label className="mb-1.5 block text-sm font-extrabold text-ec-ink">
-          Titre
+          Photo produit
         </label>
+        <div className="relative mb-3 flex aspect-square w-full max-w-[220px] items-center justify-center overflow-hidden border border-ec-rule bg-ec-soft">
+          {imageUrl ? (
+            <Image
+              src={imageUrl}
+              alt=""
+              fill
+              className="object-cover"
+              sizes="220px"
+              unoptimized
+            />
+          ) : (
+            <span className="px-4 text-center text-sm font-semibold text-ec-muted">
+              {uploading ? "Envoi…" : "Aucune photo"}
+            </span>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => cameraRef.current?.click()}
+            className="h-12 flex-1 rounded-[12px] border border-ec-rule bg-ec-surface px-4 text-sm font-extrabold text-ec-ink disabled:opacity-50"
+          >
+            Photo
+          </button>
+          <button
+            type="button"
+            disabled={uploading}
+            onClick={() => galleryRef.current?.click()}
+            className="h-12 flex-1 rounded-[12px] border border-ec-rule bg-ec-surface px-4 text-sm font-extrabold text-ec-ink disabled:opacity-50"
+          >
+            Galerie
+          </button>
+          {imageUrl && (
+            <button
+              type="button"
+              disabled={uploading}
+              onClick={() => setImageUrl(null)}
+              className="h-12 rounded-[12px] border border-ec-rule bg-ec-soft px-4 text-sm font-bold text-ec-muted"
+            >
+              Retirer
+            </button>
+          )}
+        </div>
+        <input
+          ref={cameraRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          className="hidden"
+          onChange={onFileChange}
+        />
+        <input
+          ref={galleryRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={onFileChange}
+        />
+      </div>
+
+      <div>
+        <div className="mb-1.5 flex items-end justify-between gap-2">
+          <label className="block text-sm font-extrabold text-ec-ink">
+            Titre
+          </label>
+          <button
+            type="button"
+            onClick={() => void polishText()}
+            disabled={polishing || !form.title.trim()}
+            className="text-xs font-extrabold text-ec-blue disabled:text-ec-muted"
+          >
+            {polishing ? "Amélioration…" : "Améliorer le texte"}
+          </button>
+        </div>
         <input
           required
           className="h-14 w-full rounded-[12px] border border-ec-rule bg-ec-surface px-4 text-base outline-none focus:ring-2 focus:ring-ec-blue"
           value={form.title}
           onChange={(e) => setForm({ ...form, title: e.target.value })}
           placeholder="Ex. Mangues mûres à point"
+        />
+      </div>
+
+      <div>
+        <label className="mb-1.5 block text-sm font-extrabold text-ec-ink">
+          Description{" "}
+          <span className="font-semibold text-ec-muted">(optionnel)</span>
+        </label>
+        <textarea
+          rows={3}
+          className="w-full rounded-[12px] border border-ec-rule bg-ec-surface px-4 py-3 text-base outline-none focus:ring-2 focus:ring-ec-blue"
+          value={form.description}
+          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          placeholder="Ex. Lot de 4, à récupérer avant 19h"
+          maxLength={200}
         />
       </div>
 
@@ -126,7 +295,12 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
 
       {error && <p className="text-sm font-bold text-ec-red">{error}</p>}
 
-      <Button type="submit" full className="h-14 text-base font-extrabold" disabled={loading}>
+      <Button
+        type="submit"
+        full
+        className="h-14 text-base font-extrabold"
+        disabled={loading || uploading}
+      >
         {loading ? "Publication…" : "Publier"}
       </Button>
     </form>

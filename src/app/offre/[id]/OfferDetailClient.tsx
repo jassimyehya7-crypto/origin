@@ -91,7 +91,7 @@ export function OfferDetailClient({
   const [favorite, setFavorite] = useState(initialFavorite);
   const [photoOpen, setPhotoOpen] = useState(false);
   const reserveRef = useRef<HTMLDivElement>(null);
-  const photo = offerPhoto(offer.title);
+  const photo = offerPhoto(offer);
   const disc = discountPercent(offer.price, offer.originalPrice);
   const available = offer.status === "PUBLIEE" && offer.quantityLeft > 0;
   const distance = formatWalkDistance(shop.lat, shop.lng);

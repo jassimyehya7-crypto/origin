@@ -11,6 +11,10 @@ import type {
   Shop,
   ShopCategory,
 } from "@/lib/types";
+import {
+  encodeImageUrlInEmoji,
+  parseImageUrlFromEmoji,
+} from "@/lib/offer-photos";
 
 export type EcShopRow = {
   id: string;
@@ -47,6 +51,7 @@ export type EcOfferRow = {
   published_at: string | null;
   views: number;
   image_emoji: string | null;
+  image_url?: string | null;
   unit: string | null;
   created_at: string;
 };
@@ -143,6 +148,10 @@ export function shopToRow(s: Shop): Record<string, unknown> {
 }
 
 export function rowToOffer(r: EcOfferRow): Offer {
+  const fromCol = r.image_url || undefined;
+  const fromEmoji = parseImageUrlFromEmoji(r.image_emoji);
+  const imageUrl = fromCol || fromEmoji;
+  const emoji = fromEmoji ? "" : r.image_emoji || "";
   return {
     id: r.id,
     shopId: r.shop_id,
@@ -156,7 +165,8 @@ export function rowToOffer(r: EcOfferRow): Offer {
     quantityTotal: r.quantity_total,
     quantityLeft: r.quantity_left,
     unit: r.unit || "lot",
-    emoji: r.image_emoji || "",
+    emoji,
+    imageUrl,
     validUntil: r.ends_at,
     createdAt: r.created_at,
     publishedAt: r.published_at || undefined,
@@ -164,8 +174,18 @@ export function rowToOffer(r: EcOfferRow): Offer {
   };
 }
 
-export function offerToRow(o: Offer): Record<string, unknown> {
-  return {
+export function offerToRow(
+  o: Offer,
+  opts?: { imageUrlColumn?: boolean }
+): Record<string, unknown> {
+  const hasCol = opts?.imageUrlColumn === true;
+  let image_emoji: string | null = o.emoji || null;
+  if (o.imageUrl && !hasCol) {
+    image_emoji = encodeImageUrlInEmoji(o.imageUrl);
+  } else if (o.imageUrl && hasCol && parseImageUrlFromEmoji(o.emoji)) {
+    image_emoji = null;
+  }
+  const row: Record<string, unknown> = {
     id: o.id,
     shop_id: o.shopId,
     title: o.title,
@@ -179,10 +199,14 @@ export function offerToRow(o: Offer): Record<string, unknown> {
     ends_at: o.validUntil,
     published_at: o.publishedAt ?? null,
     views: o.views,
-    image_emoji: o.emoji,
+    image_emoji,
     unit: o.unit,
     updated_at: new Date().toISOString(),
   };
+  if (hasCol) {
+    row.image_url = o.imageUrl ?? null;
+  }
+  return row;
 }
 
 export function rowToReservation(r: EcReservationRow): Reservation {

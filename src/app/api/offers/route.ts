@@ -38,6 +38,7 @@ export async function POST(req: NextRequest) {
     quantityTotal: Number(body.quantityTotal),
     unit: body.unit || "lot",
     emoji: body.emoji,
+    imageUrl: body.imageUrl || undefined,
     publish: body.publish !== false,
   });
   return NextResponse.json({ offer }, { status: 201 });

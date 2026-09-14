@@ -58,6 +58,8 @@ export interface Offer {
   quantityLeft: number;
   unit: string;
   emoji: string;
+  /** Public product photo URL (Storage). */
+  imageUrl?: string;
   validUntil: string; // ISO date end of business day
   createdAt: string;
   publishedAt?: string;
