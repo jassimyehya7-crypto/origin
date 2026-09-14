@@ -366,9 +366,17 @@ export function OfferDetailClient({
 
           {/* Meta muted sous le wow */}
           <div className="space-y-1.5 pt-0.5">
-            <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-ec-muted">
-              <MapPin className="h-4 w-4 text-ec-blue" />
-              <span className="font-bold text-ec-blue">{distance}</span>
+            <p className="inline-flex flex-wrap items-center gap-1.5 text-sm font-semibold text-ec-muted">
+              <MapPin className="h-4 w-4 shrink-0 text-ec-blue" />
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${shop.lat}%2C${shop.lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-ec-blue underline-offset-2 hover:underline"
+                aria-label={`Ouvrir ${shop.name} dans Plans / Maps`}
+              >
+                {distance}
+              </a>
               <span>· {shop.address}, Villeneuve</span>
             </p>
             <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-ec-muted">
@@ -412,10 +420,7 @@ export function OfferDetailClient({
             id="reserver"
             className="ec-corner-cut space-y-4 border border-ec-rule p-4 transition"
           >
-            <p className="text-sm font-extrabold text-ec-ink">
-              1 promo par personne
-            </p>
-            <p className="text-xs font-semibold text-ec-muted">
+            <p className="text-[13px] font-medium tracking-wide text-ec-muted/80">
               1 lot · 1 réservation par personne
             </p>
 
