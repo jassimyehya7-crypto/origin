@@ -2,7 +2,10 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { PresenceBeacon } from "@/components/client/PresenceBeacon";
 
+const siteUrl = "https://epicerie-club.vercel.app";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
     default: "Épicerie Club",
     template: "%s · Épicerie Club",
@@ -25,6 +28,30 @@ export const metadata: Metadata = {
       { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  openGraph: {
+    type: "website",
+    locale: "fr_CH",
+    url: siteUrl,
+    siteName: "Épicerie Club",
+    title: "Épicerie Club",
+    description:
+      "Les bons plans de ton quartier, tous les jours. Réserve gratuitement, retire en commerce.",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Épicerie Club",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Épicerie Club",
+    description:
+      "Les bons plans de ton quartier, tous les jours. Réserve gratuitement, retire en commerce.",
+    images: ["/og-image.png"],
   },
 };
 

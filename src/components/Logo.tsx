@@ -24,7 +24,7 @@ export function Logo({
       {/* Jaune Club mark — rare yellow, brand signature only */}
       <div
         className={cn(
-          "flex shrink-0 -rotate-[3deg] items-center justify-center rounded-[11px] border-2 border-ec-ink bg-ec-yellow font-bold leading-none text-ec-ink",
+          "flex shrink-0 items-center justify-center rounded-[11px] border-2 border-ec-ink bg-ec-yellow font-bold leading-none text-ec-ink",
           mark,
           inverted && "border-white"
         )}
