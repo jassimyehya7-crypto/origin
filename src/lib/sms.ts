@@ -85,7 +85,7 @@ export async function sendReservationSms(
     });
 
     const data = (await res.json().catch(() => ({}))) as {
-      success?: string | boolean;
+      success?: string | boolean | number;
       messages?: Array<{ id?: string; success?: boolean; error?: string; recipient?: string }>;
       total_price?: number;
       error?: string;
@@ -94,13 +94,15 @@ export async function sendReservationSms(
 
     // seven returns success: "100" or numeric codes; also HTTP 200 with error payload
     const successFlag = data.success;
+    const successCode = String(successFlag ?? "");
     const ok =
       res.ok &&
       (successFlag === true ||
-        successFlag === "100" ||
-        successFlag === 100 ||
+        successCode === "100" ||
         (Array.isArray(data.messages) &&
-          data.messages.some((m) => m.success === true || m.success === undefined && !m.error)));
+          data.messages.some(
+            (m) => m.success === true || (m.success === undefined && !m.error)
+          )));
 
     if (!ok) {
       const err =
