@@ -10,7 +10,6 @@ import type { Offer, Shop } from "@/lib/types";
 import {
   EC_PHONE_KEY,
   EC_PHONE_RISK_KEY,
-  EC_PRENOM_KEY,
   EC_STRIKE_NOTE_KEY,
   ensureSoftUserId,
   resolveClientName,
@@ -115,9 +114,8 @@ export function OfferDetailClient({
   useEffect(() => {
     if (typeof window === "undefined") return;
     ensureSoftUserId();
-    const savedPrenom = localStorage.getItem(EC_PRENOM_KEY) || "";
+    // Prénom : jamais prérempli (placeholder seulement)
     const savedPhone = localStorage.getItem(EC_PHONE_KEY) || "";
-    if (savedPrenom) setPrenom(savedPrenom);
     if (savedPhone) setPhone(savedPhone);
     if (localStorage.getItem(EC_PHONE_RISK_KEY) === "1") {
       setPhoneRisk(true);
@@ -436,8 +434,8 @@ export function OfferDetailClient({
                 autoComplete="given-name"
                 value={prenom}
                 onChange={(e) => setPrenom(e.target.value)}
-                placeholder="Marie"
-                className="w-full rounded-[12px] border border-ec-rule px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ec-blue"
+                placeholder="Ex. Marie"
+                className="w-full rounded-[12px] border border-ec-rule px-3 py-2.5 text-sm text-ec-ink placeholder:font-normal placeholder:text-ec-muted/55 outline-none focus:ring-2 focus:ring-ec-blue"
               />
             </div>
 
