@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LocateFixed, Search } from "lucide-react";
+import { LocateFixed } from "lucide-react";
 import { BottomNav } from "@/components/client/BottomNav";
 import { RiskBanner } from "@/components/client/RiskBanner";
 import { LiveRefresh } from "@/hooks/useLiveRefresh";
@@ -61,16 +61,6 @@ export default async function HomePage({
             </span>
           </div>
         </div>
-        <form className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ec-muted" />
-          <input
-            name="q"
-            defaultValue={searchParams.q || ""}
-            placeholder="Produit ou commerce"
-            className="h-11 w-full rounded-[12px] border border-ec-rule bg-ec-surface pl-10 pr-4 text-sm outline-none ring-ec-blue focus:ring-2"
-          />
-          {cat !== "all" && <input type="hidden" name="cat" value={cat} />}
-        </form>
       </header>
 
       <main className="safe-pb px-4 pt-4">
@@ -82,7 +72,7 @@ export default async function HomePage({
         </p>
 
         {/* Chips secondaires sticky légères */}
-        <div className="sticky top-[7.25rem] z-20 -mx-4 mb-4 border-b border-ec-rule/60 bg-ec-paper/95 px-4 py-2 backdrop-blur">
+        <div className="sticky top-[3.75rem] z-20 -mx-4 mb-4 border-b border-ec-rule/60 bg-ec-paper/95 px-4 py-2 backdrop-blur">
           <div className="scrollbar-hide flex gap-2 overflow-x-auto pb-0.5">
             {CATEGORIES.map((c) => {
               const active = cat === c;
