@@ -6,6 +6,12 @@ import {
   getShop,
 } from "@/lib/store";
 import { getStrikeStatus, isPaused } from "@/lib/phone-risk";
+import {
+  formatSwissPhoneDisplay,
+  isValidSwissPhone,
+  toE164CH,
+} from "@/lib/phone";
+import { sendReservationSms } from "@/lib/sms";
 import { normalizeRiskPayload } from "@/lib/risk-status";
 import { requireStaff } from "@/lib/staff-auth";
 
@@ -111,15 +117,36 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const clientPhone =
-    typeof body.clientPhone === "string" ? body.clientPhone : undefined;
   const softUserId =
     typeof body.softUserId === "string" ? body.softUserId : undefined;
-  const clientName =
-    typeof body.clientName === "string" ? body.clientName : undefined;
+  const clientNameRaw =
+    typeof body.clientName === "string" ? body.clientName.trim() : "";
+  const clientPhoneRaw =
+    typeof body.clientPhone === "string" ? body.clientPhone.trim() : "";
+
+  if (!clientNameRaw || clientNameRaw.length < 3) {
+    return NextResponse.json(
+      { error: "Le prénom doit contenir au moins 3 caractères." },
+      { status: 400 }
+    );
+  }
+  if (!clientPhoneRaw || !isValidSwissPhone(clientPhoneRaw)) {
+    return NextResponse.json(
+      {
+        error:
+          "Indique un numéro suisse valide (ex. 079 000 00 00).",
+      },
+      { status: 400 }
+    );
+  }
+
+  const clientPhone = formatSwissPhoneDisplay(clientPhoneRaw);
+  const clientName = clientNameRaw;
+
+  // Client: always 1 lot / 1 réservation — ignore client-supplied qty
   const result = await createReservation({
     offerId: body.offerId,
-    quantity: Number(body.quantity) || 1,
+    quantity: 1,
     clientName,
     clientPhone,
     softUserId,
@@ -134,6 +161,16 @@ export async function POST(req: NextRequest) {
         : 400;
     return NextResponse.json({ error: result.error }, { status });
   }
+
+  const offer = await getOffer(result.reservation.offerId);
+  const e164 = toE164CH(clientPhone) || clientPhone;
+  const sms = await sendReservationSms({
+    to: e164,
+    code: result.reservation.code,
+    reservationId: result.reservation.id,
+    offerTitle: offer?.title,
+  });
+
   const strike = await getStrikeStatus({
     phone: result.reservation.clientPhone,
     softUserId: result.reservation.softUserId || softUserId,
@@ -141,13 +178,20 @@ export async function POST(req: NextRequest) {
   return NextResponse.json(
     {
       reservation: result.reservation,
-      offer: await getOffer(result.reservation.offerId),
+      offer,
       shop: await getShop(result.reservation.shopId),
       phoneRisk: strike.risk,
       strikeNote: strike.note,
+      sms: {
+        sent: true,
+        stub: sms.stub,
+        to: formatSwissPhoneDisplay(clientPhone),
+        body: sms.body,
+      },
       notifications: {
         push: "[placeholder] Push: demande envoyée",
         email: "[placeholder] Email: confirmation de demande",
+        sms: sms.body,
       },
     },
     { status: 201 }

@@ -111,7 +111,7 @@ export function SoftProfileCard() {
       <div className="space-y-3">
         <div>
           <label className="mb-1 block text-sm font-extrabold text-ec-ink">
-            Prénom / pseudo
+            Prénom
           </label>
           <input
             type="text"

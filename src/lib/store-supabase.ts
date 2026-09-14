@@ -271,8 +271,9 @@ export async function createReservation(input: {
   if (!offer) return { ok: false, error: "Offre introuvable" };
   if (offer.status !== "PUBLIEE")
     return { ok: false, error: "Cette offre n'est plus disponible" };
-  if (input.quantity < 1) return { ok: false, error: "Quantité invalide" };
-  if (offer.quantityLeft < input.quantity)
+  // Client rule: always 1 lot / 1 réservation
+  const quantity = 1;
+  if (offer.quantityLeft < quantity)
     return { ok: false, error: "Stock insuffisant" };
 
   const clientPhone =
@@ -284,7 +285,7 @@ export async function createReservation(input: {
     return { ok: false, error: pause.message || "Réservation en pause" };
   }
 
-  const ok = await decrementStock(offer.id, input.quantity);
+  const ok = await decrementStock(offer.id, quantity);
   if (!ok) return { ok: false, error: "Stock insuffisant" };
 
   const now = new Date().toISOString();
@@ -295,7 +296,7 @@ export async function createReservation(input: {
     clientName: resolveClientName(input.clientName),
     clientPhone,
     softUserId: softUserId || undefined,
-    quantity: input.quantity,
+    quantity,
     status: "EN_ATTENTE",
     code: generateCode(),
     message: input.message,
@@ -310,7 +311,7 @@ export async function createReservation(input: {
     .select("*")
     .single();
   if (error) {
-    await restoreStock(offer.id, input.quantity);
+    await restoreStock(offer.id, quantity);
     throw error;
   }
 
