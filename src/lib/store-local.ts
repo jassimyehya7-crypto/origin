@@ -79,10 +79,10 @@ function setState(next: AppState, opts?: { persist?: boolean }) {
   if (opts?.persist !== false) persist(next);
 }
 
-export function resetDemo(): AppState {
+export async function resetDemo(): Promise<AppState> {
   const state = createInitialState();
   setState(state);
-  resetStrikesDemo();
+  await resetStrikesDemo();
   emitStore("offers");
   emitStore("reservations");
   emitStore("shops");
@@ -242,12 +242,17 @@ export function getReservations(opts?: {
   shopId?: string;
   offerId?: string;
   clientPhone?: string;
+  softUserId?: string;
+  status?: string;
 }): Reservation[] {
   let list = getState().reservations;
   if (opts?.shopId) list = list.filter((r) => r.shopId === opts.shopId);
   if (opts?.offerId) list = list.filter((r) => r.offerId === opts.offerId);
   if (opts?.clientPhone)
     list = list.filter((r) => r.clientPhone === opts.clientPhone);
+  if (opts?.softUserId)
+    list = list.filter((r) => r.softUserId === opts.softUserId);
+  if (opts?.status) list = list.filter((r) => r.status === opts.status);
   return [...list].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
@@ -286,7 +291,7 @@ function decrementStock(offerId: string, qty: number): boolean {
   return true;
 }
 
-export function createReservation(input: {
+export async function createReservation(input: {
   offerId: string;
   quantity: number;
   clientName?: string;
@@ -294,7 +299,7 @@ export function createReservation(input: {
   softUserId?: string;
   message?: string;
   scanSessionId?: string;
-}): { ok: true; reservation: Reservation } | { ok: false; error: string } {
+}): Promise<{ ok: true; reservation: Reservation } | { ok: false; error: string }> {
   const state = getState();
   const offer = state.offers.find((o) => o.id === input.offerId);
   if (!offer) return { ok: false, error: "Offre introuvable" };
@@ -309,7 +314,7 @@ export function createReservation(input: {
     typeof input.clientPhone === "string" ? input.clientPhone.trim() : "";
   const softUserId =
     typeof input.softUserId === "string" ? input.softUserId.trim() : "";
-  const pause = isPaused({ phone: clientPhone, softUserId });
+  const pause = await isPaused({ phone: clientPhone, softUserId });
   if (pause.paused) {
     return { ok: false, error: pause.message || "Réservation en pause" };
   }
@@ -351,10 +356,10 @@ export function createReservation(input: {
   return { ok: true, reservation };
 }
 
-export function updateReservationStatus(
+export async function updateReservationStatus(
   id: string,
   status: ReservationStatus
-): { ok: true; reservation: Reservation } | { ok: false; error: string } {
+): Promise<{ ok: true; reservation: Reservation } | { ok: false; error: string }> {
   const state = getState();
   const idx = state.reservations.findIndex((r) => r.id === id);
   if (idx < 0) return { ok: false, error: "Réservation introuvable" };
@@ -396,7 +401,7 @@ export function updateReservationStatus(
     if (scan) scan.pickedUp = true;
     // Pro correction: NON_RECUPEREE → RECUPEREE removes strike
     if (current.status === "NON_RECUPEREE") {
-      decrementStrike({
+      await decrementStrike({
         phone: updated.clientPhone,
         softUserId: updated.softUserId,
         reservationId: updated.id,
@@ -406,7 +411,7 @@ export function updateReservationStatus(
 
   // NON_RECUPEREE only via Pro « Pas venue » — never auto
   if (status === "NON_RECUPEREE" && current.status !== "NON_RECUPEREE") {
-    recordNoShow({
+    await recordNoShow({
       phone: updated.clientPhone,
       softUserId: updated.softUserId,
       reservationId: updated.id,
@@ -419,7 +424,7 @@ export function updateReservationStatus(
   return { ok: true, reservation: updated };
 }
 
-export function cancelExpiredConfirmed(): number {
+export async function cancelExpiredConfirmed(): Promise<number> {
   // Default without Pro gesture = EXPIREE (0 strike, restore stock). NEVER auto-NON_RECUPEREE.
   const state = getState();
   const now = Date.now();
@@ -429,7 +434,7 @@ export function cancelExpiredConfirmed(): number {
     const offer = state.offers.find((o) => o.id === resa.offerId);
     if (!offer) continue;
     if (new Date(offer.validUntil).getTime() < now) {
-      updateReservationStatus(resa.id, "EXPIREE");
+      await updateReservationStatus(resa.id, "EXPIREE");
       count++;
     }
   }
@@ -437,7 +442,7 @@ export function cancelExpiredConfirmed(): number {
 }
 
 /** Clôturer le reste: CONFIRMEE → EXPIREE (no strike). */
-export function expireConfirmedRemaining(shopId?: string): number {
+export async function expireConfirmedRemaining(shopId?: string): Promise<number> {
   const state = getState();
   let count = 0;
   const ids = state.reservations
@@ -450,7 +455,7 @@ export function expireConfirmedRemaining(shopId?: string): number {
   for (const id of ids) {
     const r = getReservation(id);
     if (r?.status === "CONFIRMEE") {
-      updateReservationStatus(id, "EXPIREE");
+      await updateReservationStatus(id, "EXPIREE");
       count++;
     }
   }

@@ -4,7 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ReservationStatusBadge } from "@/components/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { EC_PHONE_KEY, EC_PRENOM_KEY } from "@/lib/soft-profile";
+import { CancelReservationButton } from "@/components/client/CancelReservationButton";
+import {
+  EC_PHONE_KEY,
+  EC_PRENOM_KEY,
+  EC_SOFT_ID_KEY,
+  ensureSoftUserId,
+} from "@/lib/soft-profile";
 import { formatCHF, formatDateTime } from "@/lib/utils";
 import type { Offer, Reservation, Shop } from "@/lib/types";
 
@@ -18,14 +24,28 @@ export function MyReservations({ tab }: { tab: "avenir" | "historique" }) {
   useEffect(() => {
     const p = (localStorage.getItem(EC_PRENOM_KEY) || "").trim();
     const phone = (localStorage.getItem(EC_PHONE_KEY) || "").trim();
+    const softUserId =
+      localStorage.getItem(EC_SOFT_ID_KEY) || ensureSoftUserId();
     setPrenom(p);
     (async () => {
       try {
-        const res = await fetch("/api/reservations");
+        const params = new URLSearchParams();
+        if (softUserId) params.set("softUserId", softUserId);
+        if (phone) params.set("clientPhone", phone);
+        if (!softUserId && !phone) {
+          setRows([]);
+          return;
+        }
+        const res = await fetch(`/api/reservations?${params.toString()}`);
+        if (!res.ok) {
+          setRows([]);
+          return;
+        }
         const data = await res.json();
         const all: Row[] = data.reservations || [];
+        // Server already filtered; keep softUserId / phone match as safety net
         const mine = all.filter((r) => {
-          if (p && r.clientName === p) return true;
+          if (softUserId && r.softUserId === softUserId) return true;
           if (phone && r.clientPhone === phone) return true;
           return false;
         });
@@ -98,33 +118,42 @@ export function MyReservations({ tab }: { tab: "avenir" | "historique" }) {
           />
         ) : (
           list.map((r) => (
-            <Link
+            <div
               key={r.id}
-              href={`/confirmation/${r.id}`}
-              className="flex gap-3 rounded-[20px] border border-ec-rule bg-ec-surface p-3"
+              className="rounded-[20px] border border-ec-rule bg-ec-surface p-3"
             >
-              <div className="flex h-16 w-16 items-center justify-center rounded-[13px] bg-ec-soft text-3xl">
-                {r.offer?.emoji || "🛍️"}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="truncate font-extrabold text-ec-ink">
-                    {r.offer?.title}
-                  </h3>
-                  <ReservationStatusBadge status={r.status} />
+              <Link
+                href={`/confirmation/${r.id}`}
+                className="flex gap-3"
+              >
+                <div className="flex h-16 w-16 items-center justify-center rounded-[13px] bg-ec-soft text-3xl">
+                  {r.offer?.emoji || "🛍️"}
                 </div>
-                <p className="text-xs font-semibold text-ec-muted">
-                  {r.shop?.name} · {r.quantity}× ·{" "}
-                  {r.offer ? formatCHF(r.offer.price * r.quantity) : ""}
-                </p>
-                <p className="mt-1 font-mono text-sm font-black text-ec-ink">
-                  {r.code}
-                </p>
-                <p className="text-[11px] font-semibold text-ec-muted">
-                  {formatDateTime(r.createdAt)}
-                </p>
-              </div>
-            </Link>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="truncate font-extrabold text-ec-ink">
+                      {r.offer?.title}
+                    </h3>
+                    <ReservationStatusBadge status={r.status} />
+                  </div>
+                  <p className="text-xs font-semibold text-ec-muted">
+                    {r.shop?.name} · {r.quantity}× ·{" "}
+                    {r.offer ? formatCHF(r.offer.price * r.quantity) : ""}
+                  </p>
+                  <p className="mt-1 font-mono text-sm font-black text-ec-ink">
+                    {r.code}
+                  </p>
+                  <p className="text-[11px] font-semibold text-ec-muted">
+                    {formatDateTime(r.createdAt)}
+                  </p>
+                </div>
+              </Link>
+              <CancelReservationButton
+                reservationId={r.id}
+                status={r.status}
+                compact
+              />
+            </div>
           ))
         )}
         {list.length === 0 && (

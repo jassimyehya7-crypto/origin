@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createOffer, getOffers, getShop } from "@/lib/store";
+import { requireStaff } from "@/lib/staff-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const gate = requireStaff(req, "pro");
+  if (!gate.ok) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
   const body = await req.json();
   if (!body.shopId || !body.title || !body.price || !body.quantityTotal) {
     return NextResponse.json({ error: "Champs requis manquants" }, { status: 400 });

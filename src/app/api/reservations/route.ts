@@ -7,6 +7,7 @@ import {
 } from "@/lib/store";
 import { getStrikeStatus, isPaused } from "@/lib/phone-risk";
 import { normalizeRiskPayload } from "@/lib/risk-status";
+import { requireStaff } from "@/lib/staff-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -14,25 +15,27 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const shopId = searchParams.get("shopId") || undefined;
   const clientPhone = searchParams.get("clientPhone") || undefined;
-  const riskPhone = searchParams.get("riskPhone");
   const softUserId = searchParams.get("softUserId") || undefined;
+  const status = searchParams.get("status") || undefined;
+  const riskPhone = searchParams.get("riskPhone");
+
   if (riskPhone !== null && searchParams.has("riskPhone")) {
-    const status = getStrikeStatus({
+    const statusRisk = await getStrikeStatus({
       phone: riskPhone || "",
       softUserId,
     });
-    const pause = isPaused({ phone: riskPhone || "", softUserId });
+    const pause = await isPaused({ phone: riskPhone || "", softUserId });
     const normalized = normalizeRiskPayload({
-      strikes: status.strikes,
-      strikeCount: status.strikes,
-      noShows: status.noShows,
+      strikes: statusRisk.strikes,
+      strikeCount: statusRisk.strikes,
+      noShows: statusRisk.noShows,
       paused: pause.paused,
       banned: pause.paused,
-      pausedUntil: pause.until ?? status.pausedUntil,
-      bannedUntil: pause.until ?? status.pausedUntil,
-      note: status.note,
-      message: pause.message || status.note,
-      risk: status.risk,
+      pausedUntil: pause.until ?? statusRisk.pausedUntil,
+      bannedUntil: pause.until ?? statusRisk.pausedUntil,
+      note: statusRisk.note,
+      message: pause.message || statusRisk.note,
+      risk: statusRisk.risk,
     });
     return NextResponse.json({
       phoneRisk: {
@@ -49,7 +52,53 @@ export async function GET(req: NextRequest) {
       },
     });
   }
-  const list = await getReservations({ shopId, clientPhone });
+
+  // Pro shop inbox: require shopId + staff session
+  if (shopId) {
+    const gate = requireStaff(req, "pro");
+    if (!gate.ok) {
+      return NextResponse.json({ error: gate.error }, { status: gate.status });
+    }
+    const list = await getReservations({ shopId, status });
+    const enriched = await Promise.all(
+      list.map(async (r) => ({
+        ...r,
+        offer: await getOffer(r.offerId),
+        shop: await getShop(r.shopId),
+      }))
+    );
+    return NextResponse.json({ reservations: enriched });
+  }
+
+  // Client self-lookup: must filter by softUserId and/or phone (never dump all)
+  if (!softUserId && !clientPhone) {
+    return NextResponse.json(
+      {
+        error:
+          "Filtre requis: softUserId, clientPhone ou shopId (Pro authentifié)",
+      },
+      { status: 400 }
+    );
+  }
+
+  // Prefer softUserId; if both given, OR-merge carefully via two queries
+  const list = await getReservations({
+    softUserId,
+    clientPhone: softUserId ? undefined : clientPhone,
+    status,
+  });
+  if (softUserId && clientPhone) {
+    const byPhone = await getReservations({ clientPhone, status });
+    const seen = new Set(list.map((r) => r.id));
+    for (const r of byPhone) {
+      if (!seen.has(r.id)) list.push(r);
+    }
+    list.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+  }
+
   const enriched = await Promise.all(
     list.map(async (r) => ({
       ...r,
@@ -78,13 +127,14 @@ export async function POST(req: NextRequest) {
     scanSessionId: body.scanSessionId,
   });
   if (!result.ok) {
-    const status = result.error?.includes("Pause") ||
+    const status =
+      result.error?.includes("Pause") ||
       result.error?.toLowerCase().includes("pause")
-      ? 403
-      : 400;
+        ? 403
+        : 400;
     return NextResponse.json({ error: result.error }, { status });
   }
-  const strike = getStrikeStatus({
+  const strike = await getStrikeStatus({
     phone: result.reservation.clientPhone,
     softUserId: result.reservation.softUserId || softUserId,
   });

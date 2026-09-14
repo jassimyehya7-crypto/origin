@@ -6,6 +6,7 @@ import {
   updateReservationStatus,
 } from "@/lib/store";
 import { getStrikeStatus } from "@/lib/phone-risk";
+import { requireStaff } from "@/lib/staff-auth";
 import type { ReservationStatus } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +17,18 @@ const ALLOWED: ReservationStatus[] = [
   "RECUPEREE",
   "REFUSEE",
   "ANNULEE",
+  "NON_RECUPEREE",
+  "EXPIREE",
+];
+
+/** Statuses a client may set without staff session. */
+const CLIENT_ALLOWED: ReservationStatus[] = ["ANNULEE"];
+
+/** Statuses that require Pro staff. */
+const PRO_REQUIRED: ReservationStatus[] = [
+  "CONFIRMEE",
+  "RECUPEREE",
+  "REFUSEE",
   "NON_RECUPEREE",
   "EXPIREE",
 ];
@@ -43,7 +56,50 @@ export async function PATCH(
   if (!ALLOWED.includes(status)) {
     return NextResponse.json({ error: "Statut invalide" }, { status: 400 });
   }
+
+  if (PRO_REQUIRED.includes(status)) {
+    const gate = requireStaff(req, "pro");
+    if (!gate.ok) {
+      return NextResponse.json({ error: gate.error }, { status: gate.status });
+    }
+  } else if (!CLIENT_ALLOWED.includes(status)) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
+  }
+
   const before = await getReservation(params.id);
+  if (!before) {
+    return NextResponse.json({ error: "Introuvable" }, { status: 404 });
+  }
+
+  // Client cancel only from EN_ATTENTE / CONFIRMEE + identity match
+  if (status === "ANNULEE") {
+    const staff = requireStaff(req, "pro");
+    if (!staff.ok) {
+      if (!["EN_ATTENTE", "CONFIRMEE"].includes(before.status)) {
+        return NextResponse.json(
+          { error: "Cette réservation ne peut plus être annulée" },
+          { status: 400 }
+        );
+      }
+      const softUserId =
+        typeof body.softUserId === "string" ? body.softUserId.trim() : "";
+      const clientPhone =
+        typeof body.clientPhone === "string" ? body.clientPhone.trim() : "";
+      const softOk =
+        softUserId && before.softUserId && softUserId === before.softUserId;
+      const phoneOk =
+        clientPhone &&
+        before.clientPhone &&
+        clientPhone === before.clientPhone;
+      if (!softOk && !phoneOk) {
+        return NextResponse.json(
+          { error: "Non autorisé à annuler cette réservation" },
+          { status: 403 }
+        );
+      }
+    }
+  }
+
   const result = await updateReservationStatus(params.id, status);
   if (!result.ok) {
     return NextResponse.json({ error: result.error }, { status: 400 });
@@ -59,11 +115,16 @@ export async function PATCH(
             push: "[placeholder] Push: réservation refusée",
             email: "[placeholder] Email: réservation refusée",
           }
-        : undefined;
+        : status === "ANNULEE"
+          ? {
+              push: "[placeholder] Push: réservation annulée",
+              email: "[placeholder] Email: réservation annulée",
+            }
+          : undefined;
 
   const strike =
     status === "NON_RECUPEREE" || before?.status === "NON_RECUPEREE"
-      ? getStrikeStatus({
+      ? await getStrikeStatus({
           phone: result.reservation.clientPhone,
           softUserId: result.reservation.softUserId,
         })

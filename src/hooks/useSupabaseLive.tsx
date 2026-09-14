@@ -13,7 +13,7 @@ const TABLE_TOAST: Record<string, string> = {
   ec_scans: "Funnel QR mis à jour",
 };
 
-const DEFAULT_TABLES = ["ec_offers", "ec_reservations"] as const;
+const DEFAULT_TABLES = ["ec_offers", "ec_shops"] as const;
 
 /**
  * Supabase Realtime → router.refresh().

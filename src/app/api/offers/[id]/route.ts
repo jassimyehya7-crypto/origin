@@ -6,6 +6,7 @@ import {
   publishOffer,
   updateOffer,
 } from "@/lib/store";
+import { requireStaff } from "@/lib/staff-auth";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,10 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const gate = requireStaff(req, "pro");
+  if (!gate.ok) {
+    return NextResponse.json({ error: gate.error }, { status: gate.status });
+  }
   const body = await req.json();
   if (body.action === "publish") {
     const offer = await publishOffer(params.id);

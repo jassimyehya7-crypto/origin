@@ -1,6 +1,6 @@
 /**
  * Pattern C / no-show strikes — Zero SMS for MVP.
- * Persists to data/ec_strikes.json.
+ * Prefers Supabase `ec_strikes` when configured; falls back to data/ec_strikes.json.
  * Keys: normalized phone and/or soft user id.
  * SMS channel deferred (Twilio later); in-app messages only.
  */
@@ -9,6 +9,8 @@ import path from "path";
 
 import { normalizePhoneKey, hasClientPhone } from "./phone";
 import { riskMessage } from "./risk-status";
+import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { createServerClient } from "@/lib/supabase/server";
 
 export { normalizePhoneKey, hasClientPhone };
 
@@ -47,6 +49,14 @@ type StoreFile = {
   outbox: SmsOutboxRow[];
 };
 
+type EcStrikeRow = {
+  key: string;
+  strikes: number;
+  paused_until: string | null;
+  last_strike_at: string | null;
+  last_strike_day: string | null;
+};
+
 const DATA_DIR = path.join(process.cwd(), "data");
 const FILE = path.join(DATA_DIR, "ec_strikes.json");
 
@@ -59,7 +69,7 @@ function emptyStore(): StoreFile {
   return { strikes: [], softByResa: {}, outbox: [] };
 }
 
-function load(): StoreFile {
+function loadLocal(): StoreFile {
   if (global.__ecStrikesStore) return global.__ecStrikesStore;
   try {
     if (fs.existsSync(FILE)) {
@@ -78,7 +88,7 @@ function load(): StoreFile {
   return global.__ecStrikesStore;
 }
 
-function persist(store: StoreFile) {
+function persistLocal(store: StoreFile) {
   global.__ecStrikesStore = store;
   try {
     fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -108,7 +118,7 @@ export function strikeKeys(opts: {
   return keys;
 }
 
-function getOrCreate(store: StoreFile, key: string): StrikeRecord {
+function getOrCreateLocal(store: StoreFile, key: string): StrikeRecord {
   let row = store.strikes.find((r) => r.key === key);
   if (!row) {
     row = { key, strikes: 0 };
@@ -125,34 +135,112 @@ function inAppNote(strikes: number, pausedUntil?: string): string | undefined {
   return riskMessage(strikes, pausedUntil) || undefined;
 }
 
+function rowToRecord(r: EcStrikeRow): StrikeRecord {
+  return {
+    key: r.key,
+    strikes: r.strikes || 0,
+    pausedUntil: r.paused_until || undefined,
+    lastStrikeAt: r.last_strike_at || undefined,
+    lastStrikeDay: r.last_strike_day || undefined,
+  };
+}
+
+function recordToUpsert(row: StrikeRecord) {
+  return {
+    key: row.key,
+    strikes: row.strikes,
+    paused_until: row.pausedUntil ?? null,
+    last_strike_at: row.lastStrikeAt ?? null,
+    last_strike_day: row.lastStrikeDay ?? null,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+async function fetchRemoteRows(keys: string[]): Promise<StrikeRecord[]> {
+  const sb = createServerClient();
+  if (!sb || keys.length === 0) return [];
+  const { data, error } = await sb
+    .from("ec_strikes")
+    .select("*")
+    .in("key", keys);
+  if (error) {
+    console.error("[strikes] supabase read failed", error.message);
+    return [];
+  }
+  return ((data as EcStrikeRow[]) || []).map(rowToRecord);
+}
+
+async function upsertRemote(rows: StrikeRecord[]): Promise<boolean> {
+  const sb = createServerClient();
+  if (!sb || rows.length === 0) return false;
+  const { error } = await sb.from("ec_strikes").upsert(rows.map(recordToUpsert));
+  if (error) {
+    console.error("[strikes] supabase upsert failed", error.message);
+    return false;
+  }
+  return true;
+}
+
+function prefersRemote(): boolean {
+  return isSupabaseConfigured();
+}
+
 export function linkReservationSoftId(
   reservationId: string,
   softUserId?: string | null
 ): void {
   const id = (softUserId || "").trim();
   if (!reservationId || !id) return;
-  const store = load();
+  const store = loadLocal();
   store.softByResa[reservationId] = id;
-  persist(store);
+  persistLocal(store);
 }
 
 export function softIdForReservation(reservationId: string): string | undefined {
-  return load().softByResa[reservationId];
+  return loadLocal().softByResa[reservationId];
 }
 
-export function recordNoShow(opts: {
+function statusFromRows(rows: StrikeRecord[]): StrikeStatus {
+  let strikes = 0;
+  let pausedUntil: string | undefined;
+  for (const row of rows) {
+    strikes = Math.max(strikes, row.strikes || 0);
+    if (row.pausedUntil) {
+      if (
+        !pausedUntil ||
+        new Date(row.pausedUntil).getTime() > new Date(pausedUntil).getTime()
+      ) {
+        pausedUntil = row.pausedUntil;
+      }
+    }
+  }
+  const paused = Boolean(
+    pausedUntil && new Date(pausedUntil).getTime() > Date.now()
+  );
+  return {
+    risk: strikes >= 1,
+    noShows: strikes,
+    strikes,
+    paused,
+    pausedUntil: paused ? pausedUntil : undefined,
+    note:
+      strikes >= 1
+        ? inAppNote(strikes, paused ? pausedUntil : undefined)
+        : undefined,
+  };
+}
+
+export async function recordNoShow(opts: {
   phone?: string | null;
   softUserId?: string | null;
   reservationId?: string;
-}): StrikeStatus {
-  const store = load();
+}): Promise<StrikeStatus> {
   let soft = (opts.softUserId || "").trim();
   if (!soft && opts.reservationId) {
-    soft = store.softByResa[opts.reservationId] || "";
+    soft = softIdForReservation(opts.reservationId) || "";
   }
   const keys = strikeKeys({ phone: opts.phone, softUserId: soft });
   if (keys.length === 0) {
-    // Still allow anonymous soft-less no-show tracking by reservation
     if (opts.reservationId) {
       keys.push(`resa:${opts.reservationId}`);
     } else {
@@ -161,12 +249,25 @@ export function recordNoShow(opts: {
   }
 
   const today = civilDay();
+  let rows: StrikeRecord[] = [];
+
+  if (prefersRemote()) {
+    rows = await fetchRemoteRows(keys);
+  }
+
+  // Merge with local so offline keys aren't lost
+  const local = loadLocal();
+  for (const key of keys) {
+    if (!rows.find((r) => r.key === key)) {
+      const loc = local.strikes.find((r) => r.key === key);
+      rows.push(loc ? { ...loc } : { key, strikes: 0 });
+    }
+  }
+
   let maxStrikes = 0;
   let pausedUntil: string | undefined;
 
-  for (const key of keys) {
-    const row = getOrCreate(store, key);
-    // Max 1 strike / civil day
+  for (const row of rows) {
     if (row.lastStrikeDay === today) {
       maxStrikes = Math.max(maxStrikes, row.strikes);
       if (row.pausedUntil) pausedUntil = row.pausedUntil;
@@ -184,10 +285,16 @@ export function recordNoShow(opts: {
     maxStrikes = Math.max(maxStrikes, row.strikes);
   }
 
-  // SMS deferred for MVP — do not enqueue outbox / pretend-send.
-  // Strikes + ban remain recorded above; clients see in-app copy via riskMessage.
+  // Always mirror to local file
+  for (const row of rows) {
+    const loc = getOrCreateLocal(local, row.key);
+    Object.assign(loc, row);
+  }
+  persistLocal(local);
 
-  persist(store);
+  if (prefersRemote()) {
+    await upsertRemote(rows);
+  }
 
   return {
     risk: maxStrikes >= 1,
@@ -200,46 +307,70 @@ export function recordNoShow(opts: {
 }
 
 /** Legacy helper — phone-only. */
-export function recordNoShowPhone(phone: string | undefined | null): void {
-  recordNoShow({ phone });
+export async function recordNoShowPhone(
+  phone: string | undefined | null
+): Promise<void> {
+  await recordNoShow({ phone });
 }
 
-export function decrementStrike(opts: {
+export async function decrementStrike(opts: {
   phone?: string | null;
   softUserId?: string | null;
   reservationId?: string;
-}): void {
-  const store = load();
+}): Promise<void> {
   let soft = (opts.softUserId || "").trim();
   if (!soft && opts.reservationId) {
-    soft = store.softByResa[opts.reservationId] || "";
+    soft = softIdForReservation(opts.reservationId) || "";
   }
   const keys = strikeKeys({ phone: opts.phone, softUserId: soft });
+  if (keys.length === 0) return;
+
+  const local = loadLocal();
+  const rows: StrikeRecord[] = prefersRemote() ? await fetchRemoteRows(keys) : [];
   for (const key of keys) {
-    const row = store.strikes.find((r) => r.key === key);
-    if (!row) continue;
+    if (!rows.find((r) => r.key === key)) {
+      const loc = local.strikes.find((r) => r.key === key);
+      if (loc) rows.push({ ...loc });
+    }
+  }
+
+  const touched: StrikeRecord[] = [];
+  for (const row of rows) {
     row.strikes = Math.max(0, (row.strikes || 0) - 1);
     if (row.strikes < 3) row.pausedUntil = undefined;
     row.lastStrikeDay = undefined;
+    touched.push(row);
+    const loc = getOrCreateLocal(local, row.key);
+    Object.assign(loc, row);
   }
-  persist(store);
+  persistLocal(local);
+  if (prefersRemote() && touched.length) await upsertRemote(touched);
 }
 
-export function getStrikeStatus(opts: {
+export async function getStrikeStatus(opts: {
   phone?: string | null;
   softUserId?: string | null;
-}): StrikeStatus {
-  const store = load();
+}): Promise<StrikeStatus> {
   const keys = strikeKeys(opts);
   if (keys.length === 0) {
     return { risk: false, noShows: 0, strikes: 0, paused: false };
   }
-  let strikes = 0;
-  let pausedUntil: string | undefined;
+
+  let rows: StrikeRecord[] = [];
+  if (prefersRemote()) {
+    rows = await fetchRemoteRows(keys);
+  }
+  const local = loadLocal();
   for (const key of keys) {
-    const row = store.strikes.find((r) => r.key === key);
-    if (!row) continue;
-    strikes = Math.max(strikes, row.strikes || 0);
+    if (!rows.find((r) => r.key === key)) {
+      const loc = local.strikes.find((r) => r.key === key);
+      if (loc) rows.push({ ...loc });
+    }
+  }
+
+  // Auto-lift pause
+  let pausedUntil: string | undefined;
+  for (const row of rows) {
     if (row.pausedUntil) {
       if (
         !pausedUntil ||
@@ -249,49 +380,39 @@ export function getStrikeStatus(opts: {
       }
     }
   }
-  // Auto-lift pause
+
   if (pausedUntil && new Date(pausedUntil).getTime() <= Date.now()) {
-    for (const key of keys) {
-      const row = store.strikes.find((r) => r.key === key);
-      if (row?.pausedUntil === pausedUntil) {
+    const touched: StrikeRecord[] = [];
+    for (const row of rows) {
+      if (row.pausedUntil === pausedUntil) {
         row.pausedUntil = undefined;
-        // After ban: counter back to 1 (under watch), not 0
         if (row.strikes >= 3) row.strikes = 1;
+        touched.push(row);
+        const loc = getOrCreateLocal(local, row.key);
+        Object.assign(loc, row);
       }
     }
-    persist(store);
+    persistLocal(local);
+    if (prefersRemote() && touched.length) await upsertRemote(touched);
     pausedUntil = undefined;
-    strikes = Math.min(strikes, 1);
   }
-  const paused = Boolean(
-    pausedUntil && new Date(pausedUntil).getTime() > Date.now()
-  );
-  return {
-    risk: strikes >= 1,
-    noShows: strikes,
-    strikes,
-    paused,
-    pausedUntil,
-    note:
-      strikes >= 1
-        ? inAppNote(strikes, paused ? pausedUntil : undefined)
-        : undefined,
-  };
+
+  return statusFromRows(rows);
 }
 
-export function getPhoneRisk(phone: string | undefined | null): {
+export async function getPhoneRisk(phone: string | undefined | null): Promise<{
   risk: boolean;
   noShows: number;
-} {
-  const s = getStrikeStatus({ phone });
+}> {
+  const s = await getStrikeStatus({ phone });
   return { risk: s.risk, noShows: s.noShows };
 }
 
-export function isPaused(opts: {
+export async function isPaused(opts: {
   phone?: string | null;
   softUserId?: string | null;
-}): { paused: boolean; until?: string; message?: string } {
-  const s = getStrikeStatus(opts);
+}): Promise<{ paused: boolean; until?: string; message?: string }> {
+  const s = await getStrikeStatus(opts);
   if (!s.paused || !s.pausedUntil) return { paused: false };
   return {
     paused: true,
@@ -302,9 +423,16 @@ export function isPaused(opts: {
 
 /** @deprecated SMS deferred — returns legacy outbox rows if any remain on disk. */
 export function getSmsOutbox(): SmsOutboxRow[] {
-  return [...load().outbox];
+  return [...loadLocal().outbox];
 }
 
-export function resetStrikesDemo(): void {
-  persist(emptyStore());
+export async function resetStrikesDemo(): Promise<void> {
+  persistLocal(emptyStore());
+  if (prefersRemote()) {
+    const sb = createServerClient();
+    if (sb) {
+      const { error } = await sb.from("ec_strikes").delete().neq("key", "");
+      if (error) console.error("[strikes] reset remote failed", error.message);
+    }
+  }
 }

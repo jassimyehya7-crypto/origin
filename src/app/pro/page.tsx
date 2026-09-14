@@ -14,7 +14,7 @@ const DEMO_SHOP = "shop_dasilva";
 
 export default async function ProDashboard() {
   const kpis = await getMerchantKPIs(DEMO_SHOP);
-  const allResas = await getReservations();
+  const allResas = await getReservations({ shopId: DEMO_SHOP });
   const pending = await Promise.all(
     allResas
       .filter((r) => r.status === "EN_ATTENTE")

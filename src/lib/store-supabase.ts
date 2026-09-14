@@ -207,11 +207,15 @@ export async function getReservations(opts?: {
   shopId?: string;
   offerId?: string;
   clientPhone?: string;
+  softUserId?: string;
+  status?: string;
 }): Promise<Reservation[]> {
   let q = sb().from("ec_reservations").select("*");
   if (opts?.shopId) q = q.eq("shop_id", opts.shopId);
   if (opts?.offerId) q = q.eq("offer_id", opts.offerId);
   if (opts?.clientPhone) q = q.eq("client_phone", opts.clientPhone);
+  if (opts?.softUserId) q = q.eq("soft_user_id", opts.softUserId);
+  if (opts?.status) q = q.eq("status", opts.status);
   const { data, error } = await q;
   if (error) throw error;
   return sortReservations((data as EcReservationRow[]).map(rowToReservation));
@@ -275,7 +279,7 @@ export async function createReservation(input: {
     typeof input.clientPhone === "string" ? input.clientPhone.trim() : "";
   const softUserId =
     typeof input.softUserId === "string" ? input.softUserId.trim() : "";
-  const pause = isPaused({ phone: clientPhone, softUserId });
+  const pause = await isPaused({ phone: clientPhone, softUserId });
   if (pause.paused) {
     return { ok: false, error: pause.message || "Réservation en pause" };
   }
@@ -389,7 +393,7 @@ export async function updateReservationStatus(
         .eq("id", scan.id);
     }
     if (current.status === "NON_RECUPEREE") {
-      decrementStrike({
+      await decrementStrike({
         phone: updated.clientPhone,
         softUserId: updated.softUserId,
         reservationId: updated.id,
@@ -398,7 +402,7 @@ export async function updateReservationStatus(
   }
 
   if (status === "NON_RECUPEREE" && current.status !== "NON_RECUPEREE") {
-    recordNoShow({
+    await recordNoShow({
       phone: updated.clientPhone,
       softUserId: updated.softUserId,
       reservationId: updated.id,
@@ -678,7 +682,7 @@ export async function getStore(): Promise<AppState> {
 
 /** Wipe + re-upsert seed data into ec_* tables. */
 export async function resetDemo(): Promise<AppState> {
-  resetStrikesDemo();
+  await resetStrikesDemo();
   const state = createInitialState();
   const client = sb();
 

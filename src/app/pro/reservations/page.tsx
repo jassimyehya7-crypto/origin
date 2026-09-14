@@ -3,8 +3,10 @@ import { ReservationsInbox } from "./ReservationsInbox";
 
 export const dynamic = "force-dynamic";
 
+const DEMO_SHOP = "shop_dasilva";
+
 export default async function ProReservationsPage() {
-  const all = await getReservations();
+  const all = await getReservations({ shopId: DEMO_SHOP });
   const enriched = await Promise.all(
     all.map(async (r) => ({ ...r, offer: await getOffer(r.offerId) }))
   );

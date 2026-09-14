@@ -22,8 +22,8 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const status = getStrikeStatus({ phone, softUserId });
-  const pause = isPaused({ phone, softUserId });
+  const status = await getStrikeStatus({ phone, softUserId });
+  const pause = await isPaused({ phone, softUserId });
 
   return NextResponse.json(
     normalizeRiskPayload({

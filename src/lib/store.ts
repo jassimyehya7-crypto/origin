@@ -25,7 +25,7 @@ export function usingSupabase(): boolean {
 }
 
 export async function resetDemo(): Promise<AppState> {
-  return preferSupabase() ? remote.resetDemo() : Promise.resolve(local.resetDemo());
+  return preferSupabase() ? remote.resetDemo() : local.resetDemo();
 }
 
 export async function getStore(): Promise<AppState> {
@@ -114,6 +114,8 @@ export async function getReservations(opts?: {
   shopId?: string;
   offerId?: string;
   clientPhone?: string;
+  softUserId?: string;
+  status?: string;
 }): Promise<Reservation[]> {
   return preferSupabase()
     ? remote.getReservations(opts)
@@ -141,7 +143,7 @@ export async function createReservation(input: {
 > {
   return preferSupabase()
     ? remote.createReservation(input)
-    : Promise.resolve(local.createReservation(input));
+    : local.createReservation(input);
 }
 
 export async function updateReservationStatus(
@@ -152,19 +154,19 @@ export async function updateReservationStatus(
 > {
   return preferSupabase()
     ? remote.updateReservationStatus(id, status)
-    : Promise.resolve(local.updateReservationStatus(id, status));
+    : local.updateReservationStatus(id, status);
 }
 
 export async function cancelExpiredConfirmed(): Promise<number> {
   return preferSupabase()
     ? remote.cancelExpiredConfirmed()
-    : Promise.resolve(local.cancelExpiredConfirmed());
+    : local.cancelExpiredConfirmed();
 }
 
 export async function expireConfirmedRemaining(shopId?: string): Promise<number> {
   return preferSupabase()
     ? remote.expireConfirmedRemaining(shopId)
-    : Promise.resolve(local.expireConfirmedRemaining(shopId));
+    : local.expireConfirmedRemaining(shopId);
 }
 
 export async function getFavorites() {

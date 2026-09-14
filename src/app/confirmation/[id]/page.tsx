@@ -5,6 +5,7 @@ import { BottomNav } from "@/components/client/BottomNav";
 import { LiveRefresh } from "@/hooks/useLiveRefresh";
 import { ReservationStatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/Button";
+import { CancelReservationButton } from "@/components/client/CancelReservationButton";
 import { getOffer, getReservation, getShop } from "@/lib/store";
 import { formatCHF, formatTime } from "@/lib/utils";
 
@@ -101,6 +102,10 @@ export default async function ConfirmationPage({
 
 
         <div className="mt-6 space-y-3">
+          <CancelReservationButton
+            reservationId={reservation.id}
+            status={reservation.status}
+          />
           <Link href="/reservations">
             <Button full size="lg" variant="confirm">
               Voir mes réservations

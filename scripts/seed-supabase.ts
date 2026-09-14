@@ -32,10 +32,19 @@ import { DEMO_CLIENT_ID } from "../src/lib/supabase/env";
 
 async function main() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) {
-    console.error("Missing NEXT_PUBLIC_SUPABASE_URL / ANON_KEY");
+    console.error(
+      "Missing NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or ANON_KEY)"
+    );
     process.exit(1);
+  }
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.warn(
+      "[seed] SUPABASE_SERVICE_ROLE_KEY unset — anon may fail after RLS lockdown"
+    );
   }
 
   const sb = createClient(url, key, {

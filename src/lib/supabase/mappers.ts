@@ -60,6 +60,7 @@ export type EcReservationRow = {
   pickup_code: string;
   client_name: string | null;
   client_phone: string | null;
+  soft_user_id: string | null;
   client_message: string | null;
   created_at: string;
   updated_at: string;
@@ -191,6 +192,7 @@ export function rowToReservation(r: EcReservationRow): Reservation {
     shopId: r.shop_id,
     clientName: r.client_name || "Client",
     clientPhone: r.client_phone || "",
+    softUserId: r.soft_user_id || undefined,
     quantity: r.quantity,
     status: r.status as ReservationStatus,
     code: r.pickup_code,
@@ -212,6 +214,7 @@ export function reservationToRow(r: Reservation): Record<string, unknown> {
     pickup_code: r.code,
     client_name: r.clientName,
     client_phone: r.clientPhone,
+    soft_user_id: r.softUserId ?? null,
     client_message: r.message ?? null,
     created_at: r.createdAt,
     updated_at: r.updatedAt,

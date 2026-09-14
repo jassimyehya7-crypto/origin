@@ -37,8 +37,12 @@ export function useLiveRefresh(opts?: {
   const showToast = opts?.toast !== false;
   const supabaseOn = isSupabaseConfigured();
 
+  // Browser anon may only SELECT shops/offers after RLS lockdown
+  const publicTypes = types.filter((t) => t === "offers" || t === "shops");
   const sb = useSupabaseLive({
-    tables: types.map((t) => CHANNEL_TO_TABLE[t]),
+    tables: (publicTypes.length ? publicTypes : (["offers", "shops"] as StoreChannel[])).map(
+      (t) => CHANNEL_TO_TABLE[t]
+    ),
     toast: showToast && supabaseOn,
   });
 
