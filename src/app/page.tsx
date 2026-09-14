@@ -3,6 +3,7 @@ import { LocateFixed } from "lucide-react";
 import { BottomNav } from "@/components/client/BottomNav";
 import { RiskBanner } from "@/components/client/RiskBanner";
 import { ScrollHideOnDown } from "@/components/client/ScrollHideOnDown";
+import { TodayInCity } from "@/components/client/TodayInCity";
 import { LiveRefresh } from "@/hooks/useLiveRefresh";
 import { Logo } from "@/components/Logo";
 import { OfferCard } from "@/components/OfferCard";
@@ -66,10 +67,7 @@ export default async function HomePage({
 
       <main className="safe-pb px-4 pt-4">
         <RiskBanner />
-        {/* Hero compressé — une ligne */}
-        <p className="mb-3 text-center text-sm font-extrabold text-ec-ink">
-          · {offers.length} offre{offers.length !== 1 ? "s" : ""} · aujourd&apos;hui à Villeneuve
-        </p>
+        <TodayInCity />
 
         {/* Chips : visibles seulement en haut de page */}
         <ScrollHideOnDown className="-mx-4 mb-4 overflow-hidden border-b border-ec-rule/60 bg-ec-paper px-4 py-2">
