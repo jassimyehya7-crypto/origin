@@ -1,0 +1,140 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { ReservationStatusBadge } from "@/components/StatusBadge";
+import { EmptyState } from "@/components/ui/EmptyState";
+import { EC_PHONE_KEY, EC_PRENOM_KEY } from "@/lib/soft-profile";
+import { formatCHF, formatDateTime } from "@/lib/utils";
+import type { Offer, Reservation, Shop } from "@/lib/types";
+
+type Row = Reservation & { offer?: Offer | null; shop?: Shop | null };
+
+export function MyReservations({ tab }: { tab: "avenir" | "historique" }) {
+  const [rows, setRows] = useState<Row[]>([]);
+  const [ready, setReady] = useState(false);
+  const [prenom, setPrenom] = useState("");
+
+  useEffect(() => {
+    const p = (localStorage.getItem(EC_PRENOM_KEY) || "").trim();
+    const phone = (localStorage.getItem(EC_PHONE_KEY) || "").trim();
+    setPrenom(p);
+    (async () => {
+      try {
+        const res = await fetch("/api/reservations");
+        const data = await res.json();
+        const all: Row[] = data.reservations || [];
+        const mine = all.filter((r) => {
+          if (p && r.clientName === p) return true;
+          if (phone && r.clientPhone === phone) return true;
+          return false;
+        });
+        setRows(mine);
+      } catch {
+        setRows([]);
+      } finally {
+        setReady(true);
+      }
+    })();
+  }, []);
+
+  if (!ready) {
+    return (
+      <p className="px-4 py-8 text-center text-sm font-semibold text-ec-muted">
+        Chargement…
+      </p>
+    );
+  }
+
+  const upcoming = rows.filter((r) =>
+    ["EN_ATTENTE", "CONFIRMEE"].includes(r.status)
+  );
+  const history = rows.filter(
+    (r) => !["EN_ATTENTE", "CONFIRMEE"].includes(r.status)
+  );
+  const list = tab === "avenir" ? upcoming : history;
+
+  return (
+    <>
+      <div className="mb-3 flex gap-2 px-4">
+        <Link
+          href="/reservations"
+          className={`flex-1 rounded-[12px] py-2.5 text-center text-sm font-extrabold ${
+            tab === "avenir"
+              ? "bg-ec-ink text-white"
+              : "border border-ec-rule bg-ec-surface text-ec-ink"
+          }`}
+        >
+          À venir ({upcoming.length})
+        </Link>
+        <Link
+          href="/reservations?tab=historique"
+          className={`flex-1 rounded-[12px] py-2.5 text-center text-sm font-extrabold ${
+            tab === "historique"
+              ? "bg-ec-ink text-white"
+              : "border border-ec-rule bg-ec-surface text-ec-ink"
+          }`}
+        >
+          Historique ({history.length})
+        </Link>
+      </div>
+
+      <div className="safe-pb space-y-3 px-4">
+        {!prenom && list.length === 0 ? (
+          <EmptyState
+            emoji="🧾"
+            title="Aucune réservation"
+            description="Réserve une offre — ton prénom restera sur cet appareil."
+          />
+        ) : list.length === 0 ? (
+          <EmptyState
+            emoji="🧾"
+            title={
+              tab === "avenir"
+                ? "Aucune réservation en cours"
+                : "Pas encore d'historique"
+            }
+            description="Réservez une offre à Villeneuve."
+          />
+        ) : (
+          list.map((r) => (
+            <Link
+              key={r.id}
+              href={`/confirmation/${r.id}`}
+              className="flex gap-3 rounded-[20px] border border-ec-rule bg-ec-surface p-3"
+            >
+              <div className="flex h-16 w-16 items-center justify-center rounded-[13px] bg-ec-soft text-3xl">
+                {r.offer?.emoji || "🛍️"}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="truncate font-extrabold text-ec-ink">
+                    {r.offer?.title}
+                  </h3>
+                  <ReservationStatusBadge status={r.status} />
+                </div>
+                <p className="text-xs font-semibold text-ec-muted">
+                  {r.shop?.name} · {r.quantity}× ·{" "}
+                  {r.offer ? formatCHF(r.offer.price * r.quantity) : ""}
+                </p>
+                <p className="mt-1 font-mono text-sm font-black text-ec-ink">
+                  {r.code}
+                </p>
+                <p className="text-[11px] font-semibold text-ec-muted">
+                  {formatDateTime(r.createdAt)}
+                </p>
+              </div>
+            </Link>
+          ))
+        )}
+        {list.length === 0 && (
+          <div className="text-center">
+            <Link href="/" className="text-sm font-extrabold text-ec-blue">
+              Voir les offres
+            </Link>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}

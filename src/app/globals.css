@@ -1,0 +1,87 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Official Épicerie Club brand tokens */
+  --ec-ink: #171b15;
+  --ec-yellow: #eaff4f;
+  --ec-blue: #255cff;
+  --ec-green: #0caf68;
+  --ec-red: #eb4a3f;
+  --ec-paper: #f5f6f2;
+  --ec-surface: #ffffff;
+  --ec-rule: #dde1d8;
+  --ec-muted: #71776d;
+  --ec-soft: #ecefe8;
+
+  /* Legacy aliases */
+  --ec-green-bright: #0caf68;
+  --ec-green-dark: #171b15;
+  --ec-green-soft: #ecefe8;
+  --ec-bg: #f5f6f2;
+  --ec-ink-legacy: #171b15;
+}
+
+html,
+body {
+  max-width: 100vw;
+  background: var(--ec-paper);
+  color: var(--ec-ink);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+::selection {
+  background: var(--ec-yellow);
+  color: var(--ec-ink);
+}
+
+:focus-visible {
+  outline: 3px solid var(--ec-blue);
+  outline-offset: 3px;
+}
+
+@layer utilities {
+  .safe-pb {
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .font-display {
+    font-family: "Arial Black", Arial, Helvetica, sans-serif;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 0.96;
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.85);
+  }
+}
+
+.live-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot {
+    animation: none;
+  }
+}
