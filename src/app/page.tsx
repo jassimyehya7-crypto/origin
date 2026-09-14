@@ -49,22 +49,20 @@ export default async function HomePage({
   return (
     <div className="mx-auto min-h-dvh max-w-lg bg-ec-paper">
       <LiveRefresh />
-      <ScrollHideOnDown className="sticky top-0 z-30">
-        <header className="border-b border-ec-rule bg-ec-paper/95 px-4 pb-3 pt-4 backdrop-blur">
-          <div className="mb-3 flex items-center justify-between gap-3">
-            <Logo size="sm" />
-            <div className="flex items-center gap-1.5 rounded-[12px] px-2.5 py-1.5 text-xs font-bold text-ec-ink">
-              <LocateFixed className="h-4 w-4 text-ec-blue" />
-              <span className="leading-tight">
-                Villeneuve
-                <span className="block text-[10px] font-semibold text-ec-muted">
-                  VD
-                </span>
+      <header className="sticky top-0 z-30 border-b border-ec-rule bg-ec-paper/95 px-4 pb-3 pt-4 backdrop-blur">
+        <div className="flex items-center justify-between gap-3">
+          <Logo size="sm" />
+          <div className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold text-ec-ink">
+            <LocateFixed className="h-4 w-4 text-ec-blue" />
+            <span className="leading-tight">
+              Villeneuve
+              <span className="block text-[10px] font-semibold text-ec-muted">
+                VD
               </span>
-            </div>
+            </span>
           </div>
-        </header>
-      </ScrollHideOnDown>
+        </div>
+      </header>
 
       <main className="safe-pb px-4 pt-4">
         <RiskBanner />
@@ -74,11 +72,8 @@ export default async function HomePage({
           {offers.length !== 1 ? "s" : ""}
         </p>
 
-        {/* Chips secondaires qui se masquent à la descente */}
-        <ScrollHideOnDown
-          className="sticky top-[3.75rem] z-20 -mx-4 mb-4 border-b border-ec-rule/60 bg-ec-paper/95 px-4 py-2 backdrop-blur"
-          hiddenClassName="-translate-y-[calc(100%+3.75rem)]"
-        >
+        {/* Chips : visibles seulement en haut de page */}
+        <ScrollHideOnDown className="-mx-4 mb-4 overflow-hidden border-b border-ec-rule/60 bg-ec-paper px-4 py-2">
           <div className="scrollbar-hide flex gap-2 overflow-x-auto pb-0.5">
             {CATEGORIES.map((c) => {
               const active = cat === c;

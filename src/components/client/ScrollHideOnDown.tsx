@@ -4,47 +4,39 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 
 type ScrollHideOnDownProps = {
   children: ReactNode;
-  className: string;
-  hiddenClassName?: string;
+  className?: string;
 };
 
-/** Cache au scroll down ; ne réapparaît qu’en haut de page (pas au scroll up). */
-export function ScrollHideOnDown({
-  children,
-  className,
-  hiddenClassName = "-translate-y-full",
-}: ScrollHideOnDownProps) {
+/** Visible uniquement en haut de page ; disparaît au scroll bas et reste cachée. */
+export function ScrollHideOnDown({ children, className = "" }: ScrollHideOnDownProps) {
   const [hidden, setHidden] = useState(false);
   const lastScrollY = useRef(0);
 
   useEffect(() => {
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-
-      if (currentScrollY <= 8) {
+      const y = window.scrollY;
+      if (y <= 8) {
         setHidden(false);
-      } else if (currentScrollY > lastScrollY.current + 2) {
+      } else if (y > lastScrollY.current + 2) {
         setHidden(true);
       }
-      // scroll up au milieu : ne rien faire — reste cachée jusqu’en haut
-
-      lastScrollY.current = currentScrollY;
+      lastScrollY.current = y;
     };
 
     lastScrollY.current = window.scrollY;
     if (window.scrollY > 8) setHidden(true);
     window.addEventListener("scroll", handleScroll, { passive: true });
-
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   return (
     <div
-      className={`${className} transition-[transform,opacity] duration-200 ease-out ${
+      aria-hidden={hidden}
+      className={
         hidden
-          ? `${hiddenClassName} pointer-events-none opacity-0`
-          : "translate-y-0 opacity-100"
-      }`}
+          ? "pointer-events-none max-h-0 overflow-hidden border-0 opacity-0"
+          : `${className} max-h-24 overflow-hidden opacity-100 transition-[max-height,opacity] duration-200 ease-out`
+      }
     >
       {children}
     </div>
