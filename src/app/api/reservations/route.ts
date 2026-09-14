@@ -183,10 +183,12 @@ export async function POST(req: NextRequest) {
       phoneRisk: strike.risk,
       strikeNote: strike.note,
       sms: {
-        sent: true,
-        stub: sms.stub,
+        sent: sms.ok,
+        stub: "stub" in sms ? sms.stub : false,
+        provider: sms.provider,
         to: formatSwissPhoneDisplay(clientPhone),
         body: sms.body,
+        error: sms.ok ? undefined : ("error" in sms ? sms.error : undefined),
       },
       notifications: {
         push: "[placeholder] Push: demande envoyée",
