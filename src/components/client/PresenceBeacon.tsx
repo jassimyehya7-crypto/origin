@@ -28,7 +28,7 @@ export function PresenceBeacon() {
       }).catch(() => {});
     };
     ping();
-    const t = setInterval(ping, 20000);
+    const t = setInterval(ping, 60000);
     return () => clearInterval(t);
   }, [pathname]);
 

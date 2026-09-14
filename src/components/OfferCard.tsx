@@ -33,13 +33,18 @@ export function OfferCard({
   const photo = offerPhoto(offer.title);
   const price = priceMeta(offer);
   const available = offer.status === "PUBLIEE" && offer.quantityLeft > 0;
-  const detailHref = `/offre/${offer.id}`;
-  const reserveHref = `/offre/${offer.id}?reserver=1`;
+  const href = `/offre/${offer.id}`;
   const distance = shop ? formatWalkDistance(shop.lat, shop.lng) : null;
 
   return (
-    <article className="ec-corner-cut overflow-hidden border border-ec-rule bg-ec-surface transition duration-300 hover:-translate-y-0.5 hover:shadow-card">
-      <Link href={detailHref} className="group block">
+    <article className="ec-corner-cut overflow-hidden border border-ec-rule bg-ec-surface">
+      {/* Un seul lien = un seul hit-target (évite ratés / mauvaise offre) */}
+      <Link
+        href={href}
+        prefetch
+        scroll
+        className="block touch-manipulation active:opacity-95"
+      >
         <div className="relative flex h-44 items-center justify-center overflow-hidden bg-ec-soft">
           {photo ? (
             <Image
@@ -48,6 +53,7 @@ export function OfferCard({
               fill
               className="object-cover"
               sizes="(max-width: 512px) 100vw, 512px"
+              priority={false}
             />
           ) : (
             <VisualMark label={offer.title} stored={offer.emoji} size="hero" />
@@ -63,7 +69,6 @@ export function OfferCard({
         </div>
 
         <div className="space-y-2.5 px-4 pt-4">
-          {/* 1. Titre + prix secondaire */}
           <div>
             <p className="font-display text-[1.65rem] leading-[1.05] text-ec-ink">
               {offer.title}
@@ -85,7 +90,6 @@ export function OfferCard({
             )}
           </div>
 
-          {/* 2. Distance utile */}
           {distance && (
             <p className="inline-flex items-center gap-1.5 text-xs font-bold text-ec-blue">
               <MapPin className="h-3.5 w-3.5" />
@@ -98,13 +102,11 @@ export function OfferCard({
             </p>
           )}
 
-          {/* 3. Heure seule */}
           <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-ec-muted">
             <Clock className="h-3.5 w-3.5 text-ec-green" />
             Jusqu&apos;à {formatTime(offer.validUntil)}
           </p>
 
-          {/* 4. Stock discret (seul signal stock) */}
           {available && (
             <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-ec-muted">
               <PackageCheck className="h-3.5 w-3.5 text-ec-green" />
@@ -112,23 +114,19 @@ export function OfferCard({
             </p>
           )}
         </div>
-      </Link>
 
-      {/* 5. CTA Réserver — centré, large, couleur logo */}
-      <div className="flex items-center justify-center px-4 pb-4 pt-3">
-        {available ? (
-          <Link
-            href={reserveHref}
-            className="inline-flex w-full max-w-sm items-center justify-center bg-ec-yellow px-6 py-3 text-sm font-extrabold text-ec-ink transition hover:brightness-95 active:scale-[0.99]"
-          >
-            Réserver
-          </Link>
-        ) : (
-          <span className="inline-flex w-full max-w-sm items-center justify-center bg-ec-rule px-6 py-3 text-sm font-extrabold text-ec-muted">
-            Indisponible
-          </span>
-        )}
-      </div>
+        <div className="flex items-center justify-center px-4 pb-4 pt-3">
+          {available ? (
+            <span className="inline-flex w-full max-w-sm items-center justify-center bg-ec-yellow px-6 py-3 text-sm font-extrabold text-ec-ink">
+              Réserver
+            </span>
+          ) : (
+            <span className="inline-flex w-full max-w-sm items-center justify-center bg-ec-rule px-6 py-3 text-sm font-extrabold text-ec-muted">
+              Indisponible
+            </span>
+          )}
+        </div>
+      </Link>
     </article>
   );
 }

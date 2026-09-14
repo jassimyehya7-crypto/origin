@@ -57,9 +57,9 @@ export default async function HomePage({
 
   return (
     <div className="mx-auto min-h-dvh max-w-lg bg-ec-paper">
-      <LiveRefresh />
+      <LiveRefresh types={["offers", "shops"]} toast={false} />
       <ClientLocationProvider shops={shopGeo}>
-        <header className="sticky top-0 z-30 border-b border-ec-rule bg-ec-paper/95 px-4 pb-3 pt-4 backdrop-blur">
+        <header className="sticky top-0 z-30 border-b border-ec-rule bg-ec-paper px-4 pb-3 pt-4">
           <div className="flex items-center justify-between gap-3">
             <Logo size="sm" />
             <HeaderLocation />

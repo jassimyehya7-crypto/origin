@@ -33,6 +33,8 @@ body {
 
 body {
   min-height: 100dvh;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 ::selection {

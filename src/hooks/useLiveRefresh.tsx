@@ -73,16 +73,14 @@ function useSseLive(opts: {
 
     const onEvt = (type: StoreChannel) => {
       const now = Date.now();
-      if (now - last.current < 350) {
-        last.current = now;
-      } else {
+      if (now - last.current >= 4000) {
         last.current = now;
         router.refresh();
       }
       if (opts.toast) {
         setMessage(TOAST[type] || "Mise à jour live");
         if (hide) clearTimeout(hide);
-        hide = setTimeout(() => setMessage(null), 2200);
+        hide = setTimeout(() => setMessage(null), 1800);
       }
     };
 
