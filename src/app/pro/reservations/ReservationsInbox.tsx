@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ReservationStatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/Badge";
@@ -10,6 +11,7 @@ import {
   patchReservation,
   type InboxRow,
 } from "@/components/pro/PendingInbox";
+import { offerPhoto } from "@/lib/offer-photos";
 import { hasClientPhone } from "@/lib/phone";
 import { formatDateTime } from "@/lib/utils";
 import { VisualMark } from "@/components/VisualMark";
@@ -28,6 +30,20 @@ function PhoneLine({ phone }: { phone: string }) {
   );
 }
 
+function OfferThumb({ title, emoji }: { title?: string; emoji?: string }) {
+  const photo = title ? offerPhoto(title) : undefined;
+  if (photo) {
+    return (
+      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-ec-rule bg-ec-soft">
+        <Image src={photo} alt="" fill className="object-cover" sizes="48px" />
+      </div>
+    );
+  }
+  return (
+    <VisualMark label={title || "Offre"} stored={emoji} size="md" />
+  );
+}
+
 export function ReservationsInbox({
   initial,
 }: {
@@ -36,9 +52,20 @@ export function ReservationsInbox({
   const router = useRouter();
   const [rows, setRows] = useState(initial);
   const [busy, setBusy] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "EN_ATTENTE" | "CONFIRMEE" | "done">(
     "EN_ATTENTE"
   );
+
+  useEffect(() => {
+    setRows(initial);
+  }, [initial]);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 2500);
+    return () => clearTimeout(t);
+  }, [toast]);
 
   async function act(id: string, status: InboxRow["status"]) {
     setBusy(id);
@@ -47,6 +74,9 @@ export function ReservationsInbox({
       setRows((prev) =>
         prev.map((r) => (r.id === id ? { ...r, ...data.reservation } : r))
       );
+      if (status === "CONFIRMEE" && data.sms?.ok) {
+        setToast("SMS envoyé");
+      }
       router.refresh();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Erreur");
@@ -104,11 +134,7 @@ export function ReservationsInbox({
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex min-w-0 gap-3">
-                  <VisualMark
-                    label={r.offer?.title || "Offre"}
-                    stored={r.offer?.emoji}
-                    size="md"
-                  />
+                  <OfferThumb title={r.offer?.title} emoji={r.offer?.emoji} />
                   <div className="min-w-0">
                     <p className="font-extrabold text-ec-ink">{r.clientName}</p>
                     <div className="mt-0.5">
@@ -179,6 +205,11 @@ export function ReservationsInbox({
               )}
             </div>
           ))}
+        </div>
+      )}
+      {toast && (
+        <div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-ec-ink px-4 py-2 text-sm font-extrabold text-white shadow-lg">
+          {toast}
         </div>
       )}
     </div>

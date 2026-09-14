@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { OfferStatusBadge, OfferTypeBadge } from "@/components/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { PRO_SHOP_ID } from "@/lib/pro-shop";
 import { getOffers } from "@/lib/store";
 import { formatCHF } from "@/lib/utils";
 import { PublishButton } from "./PublishButton";
@@ -10,10 +11,10 @@ import { VisualMark } from "@/components/VisualMark";
 export const dynamic = "force-dynamic";
 
 export default async function ProOffresPage() {
-  const offers = await getOffers();
+  const offers = (await getOffers()).filter((o) => o.shopId === PRO_SHOP_ID);
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-5 lg:max-w-3xl">
+    <div className="mx-auto max-w-lg px-4 py-4">
       <div className="mb-5 flex items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-[1.75rem] text-ec-ink">Offres</h1>

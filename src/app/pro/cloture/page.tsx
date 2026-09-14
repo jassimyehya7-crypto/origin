@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { ClotureClient } from "./ClotureClient";
 import { getOffer, getReservations } from "@/lib/store";
+import {
+  PRO_SHOP_ID,
+  PRO_SHOP_NAME,
+} from "@/lib/pro-shop";
 
 export const dynamic = "force-dynamic";
 
-const DEMO_SHOP = "shop_dasilva";
-
 export default async function ProCloturePage() {
-  const all = await getReservations({ shopId: DEMO_SHOP });
+  const all = await getReservations({ shopId: PRO_SHOP_ID });
   const confirmed = await Promise.all(
     all
       .filter((r) => r.status === "CONFIRMEE")
@@ -15,10 +17,10 @@ export default async function ProCloturePage() {
   );
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-5 lg:max-w-3xl">
+    <div className="mx-auto max-w-lg px-4 py-4">
       <div className="mb-5">
         <p className="text-xs font-extrabold uppercase tracking-wide text-ec-muted">
-          Da Silva · Fin de journée
+          {PRO_SHOP_NAME} · Fin de journée
         </p>
         <h1 className="font-display text-[1.75rem] text-ec-ink">Clôture</h1>
         <p className="text-sm font-semibold text-ec-muted">
@@ -27,7 +29,7 @@ export default async function ProCloturePage() {
         </p>
       </div>
 
-      <ClotureClient initial={confirmed} shopId={DEMO_SHOP} />
+      <ClotureClient initial={confirmed} shopId={PRO_SHOP_ID} />
 
       <Link
         href="/pro"

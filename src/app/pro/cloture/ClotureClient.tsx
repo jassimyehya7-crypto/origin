@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ReservationStatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/Badge";
@@ -25,12 +25,15 @@ export function ClotureClient({
   const [busy, setBusy] = useState<string | null>(null);
   const [closing, setClosing] = useState(false);
 
+  useEffect(() => {
+    setRows(initial);
+  }, [initial]);
+
   async function act(id: string, status: InboxRow["status"]) {
     setBusy(id);
     try {
-      const data = await patchReservation(id, status);
+      await patchReservation(id, status);
       setRows((prev) => prev.filter((r) => r.id !== id));
-      void data;
       router.refresh();
     } catch (e) {
       alert(e instanceof Error ? e.message : "Erreur");
@@ -52,6 +55,7 @@ export function ClotureClient({
       const res = await fetch("/api/pro/cloture", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ shopId, action: "expire_rest" }),
       });
       const data = await res.json();

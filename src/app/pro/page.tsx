@@ -7,14 +7,17 @@ import {
   getOffer,
   getReservations,
 } from "@/lib/store";
+import {
+  PRO_SHOP_CITY,
+  PRO_SHOP_ID,
+  PRO_SHOP_NAME,
+} from "@/lib/pro-shop";
 
 export const dynamic = "force-dynamic";
 
-const DEMO_SHOP = "shop_dasilva";
-
 export default async function ProDashboard() {
-  const kpis = await getMerchantKPIs(DEMO_SHOP);
-  const allResas = await getReservations({ shopId: DEMO_SHOP });
+  const kpis = await getMerchantKPIs(PRO_SHOP_ID);
+  const allResas = await getReservations({ shopId: PRO_SHOP_ID });
   const pending = await Promise.all(
     allResas
       .filter((r) => r.status === "EN_ATTENTE")
@@ -22,20 +25,15 @@ export default async function ProDashboard() {
   );
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-5 lg:max-w-3xl">
-      <div className="mb-5 flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-extrabold uppercase tracking-wide text-ec-muted">
-            Da Silva · Villeneuve
-          </p>
-          <h1 className="font-display text-[1.75rem] text-ec-ink">
-            À traiter
-          </h1>
-          <p className="text-sm font-semibold text-ec-muted">
-            {pending.length} demande{pending.length !== 1 ? "s" : ""} en attente
-          </p>
-        </div>
-        <ResetDemoButton />
+    <div className="mx-auto max-w-lg px-4 py-4">
+      <div className="mb-5">
+        <p className="text-xs font-extrabold uppercase tracking-wide text-ec-muted">
+          {PRO_SHOP_NAME} · {PRO_SHOP_CITY}
+        </p>
+        <h1 className="font-display text-[1.75rem] text-ec-ink">À traiter</h1>
+        <p className="text-sm font-semibold text-ec-muted">
+          {pending.length} demande{pending.length !== 1 ? "s" : ""} en attente
+        </p>
       </div>
 
       <div className="mb-4 grid grid-cols-3 gap-2">
@@ -82,6 +80,10 @@ export default async function ProDashboard() {
         >
           Toutes les réservations →
         </Link>
+      </div>
+
+      <div className="mt-8 flex justify-center opacity-40">
+        <ResetDemoButton />
       </div>
     </div>
   );

@@ -1,19 +1,20 @@
 import { ResetDemoButton } from "@/components/ResetDemoButton";
 import { Card } from "@/components/ui/Card";
 import { CATEGORY_LABELS, PRICING_NOTE } from "@/lib/labels";
+import { PRO_SHOP_ID, PRO_SHOP_NAME } from "@/lib/pro-shop";
 import { getShop } from "@/lib/store";
 import { VisualMark } from "@/components/VisualMark";
 
 export const dynamic = "force-dynamic";
 
 export default async function ProParametresPage() {
-  const shop = (await getShop("shop_dasilva"))!;
+  const shop = (await getShop(PRO_SHOP_ID))!;
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6 lg:px-8">
+    <div className="mx-auto max-w-lg px-4 py-4">
       <h1 className="mb-1 text-2xl font-extrabold">Paramètres boutique</h1>
       <p className="mb-6 text-sm text-ec-muted">
-        Configuration magasin (démo Da Silva)
+        Configuration magasin ({PRO_SHOP_NAME})
       </p>
 
       <div className="space-y-4">
@@ -64,7 +65,7 @@ export default async function ProParametresPage() {
           </ul>
         </Card>
 
-        <div className="flex justify-center pt-2">
+        <div className="flex justify-center pt-2 opacity-40">
           <ResetDemoButton />
         </div>
       </div>
