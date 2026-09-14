@@ -8,6 +8,7 @@ type ScrollHideOnDownProps = {
   hiddenClassName?: string;
 };
 
+/** Cache au scroll down ; ne réapparaît qu’en haut de page (pas au scroll up). */
 export function ScrollHideOnDown({
   children,
   className,
@@ -20,18 +21,18 @@ export function ScrollHideOnDown({
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
 
-      if (currentScrollY <= 16) {
+      if (currentScrollY <= 8) {
         setHidden(false);
-      } else if (currentScrollY > lastScrollY.current + 4) {
+      } else if (currentScrollY > lastScrollY.current + 2) {
         setHidden(true);
-      } else if (currentScrollY < lastScrollY.current - 4) {
-        setHidden(false);
       }
+      // scroll up au milieu : ne rien faire — reste cachée jusqu’en haut
 
       lastScrollY.current = currentScrollY;
     };
 
     lastScrollY.current = window.scrollY;
+    if (window.scrollY > 8) setHidden(true);
     window.addEventListener("scroll", handleScroll, { passive: true });
 
     return () => window.removeEventListener("scroll", handleScroll);
