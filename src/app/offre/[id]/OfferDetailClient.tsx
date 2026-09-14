@@ -22,7 +22,9 @@ import {
   fetchClientRisk,
   type ClientRiskStatus,
 } from "@/lib/risk-status";
+import Image from "next/image";
 import { VisualMark } from "@/components/VisualMark";
+import { offerPhoto } from "@/lib/offer-photos";
 import {
   discountPercent,
   formatCHF,
@@ -53,7 +55,9 @@ export function OfferDetailClient({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [favorite, setFavorite] = useState(initialFavorite);
+  const [photoOpen, setPhotoOpen] = useState(false);
   const reserveRef = useRef<HTMLDivElement>(null);
+  const photo = offerPhoto(offer.title);
   const disc = discountPercent(offer.price, offer.originalPrice);
   const max = Math.max(1, offer.quantityLeft);
   const available = offer.status === "PUBLIEE" && offer.quantityLeft > 0;
@@ -111,19 +115,11 @@ export function OfferDetailClient({
     };
   }, [phone, skipPhone]);
 
+  // Toujours arriver en haut (photo visible) — ne pas scroller vers le formulaire
   useEffect(() => {
-    if (!openReserve || !available) return;
-    const el = reserveRef.current;
-    if (!el) return;
-    const t = window.setTimeout(() => {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-      el.classList.add("ring-2", "ring-ec-blue", "ring-offset-2");
-      window.setTimeout(() => {
-        el.classList.remove("ring-2", "ring-ec-blue", "ring-offset-2");
-      }, 1200);
-    }, 80);
-    return () => window.clearTimeout(t);
-  }, [openReserve, available]);
+    if (typeof window === "undefined") return;
+    window.scrollTo(0, 0);
+  }, [offer.id, openReserve]);
 
   async function toggleFav() {
     const res = await fetch("/api/favorites", {
@@ -204,28 +200,73 @@ export function OfferDetailClient({
   return (
     <div className="mx-auto min-h-dvh max-w-lg bg-ec-surface pb-28">
       <LiveRefresh types={["offers", "reservations"]} />
-      <div className="relative flex h-56 items-center justify-center bg-ec-soft">
+      <div className="relative flex h-64 items-center justify-center overflow-hidden bg-ec-soft">
         <Link
           href="/"
-          className="absolute left-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-ec-rule bg-white"
+          className="absolute left-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-ec-rule bg-white"
         >
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <button
           type="button"
           onClick={toggleFav}
-          className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full border border-ec-rule bg-white"
+          className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-ec-rule bg-white"
           aria-label="Favori"
         >
           <Heart
             className={`h-5 w-5 ${favorite ? "fill-ec-red text-ec-red" : "text-ec-muted"}`}
           />
         </button>
-        <VisualMark label={offer.title} stored={offer.emoji} size="hero" />
-        <div className="absolute bottom-4 left-4">
+        {photo ? (
+          <button
+            type="button"
+            onClick={() => setPhotoOpen(true)}
+            className="absolute inset-0 block"
+            aria-label="Voir la photo en grand"
+          >
+            <Image
+              src={photo}
+              alt={offer.title}
+              fill
+              priority
+              className="object-cover"
+              sizes="(max-width: 512px) 100vw, 512px"
+            />
+          </button>
+        ) : (
+          <VisualMark label={offer.title} stored={offer.emoji} size="hero" />
+        )}
+        <div className="pointer-events-none absolute bottom-4 left-4 z-10">
           <OfferTypeBadge type={offer.type} />
         </div>
       </div>
+
+      {photoOpen && photo && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ec-ink/90 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Photo de l'offre"
+          onClick={() => setPhotoOpen(false)}
+        >
+          <button
+            type="button"
+            className="absolute right-4 top-4 rounded-full bg-white px-3 py-1.5 text-sm font-extrabold text-ec-ink"
+            onClick={() => setPhotoOpen(false)}
+          >
+            Fermer
+          </button>
+          <div className="relative h-[70vh] w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
+            <Image
+              src={photo}
+              alt={offer.title}
+              fill
+              className="object-contain"
+              sizes="100vw"
+            />
+          </div>
+        </div>
+      )}
 
       <div className="space-y-4 px-4 pt-5">
         <div className="space-y-2.5">

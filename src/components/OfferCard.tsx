@@ -10,12 +10,7 @@ import {
   formatTime,
   formatWalkDistance,
 } from "@/lib/utils";
-
-/** Optional brand photography for a few seed offers */
-const OFFER_PHOTOS: Record<string, string> = {
-  "Croissants du soir": "/offers/croissants-phone.png",
-  "Snacks + boisson": "/offers/combo-phone.png",
-};
+import { offerPhoto } from "@/lib/offer-photos";
 
 function priceMeta(offer: Offer) {
   const disc = discountPercent(offer.price, offer.originalPrice);
@@ -35,7 +30,7 @@ export function OfferCard({
   offer: Offer;
   shop?: Shop | null;
 }) {
-  const photo = OFFER_PHOTOS[offer.title];
+  const photo = offerPhoto(offer.title);
   const price = priceMeta(offer);
   const available = offer.status === "PUBLIEE" && offer.quantityLeft > 0;
   const detailHref = `/offre/${offer.id}`;
