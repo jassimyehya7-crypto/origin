@@ -369,7 +369,7 @@ export function OfferDetailClient({
             <p className="inline-flex flex-wrap items-center gap-1.5 text-sm font-semibold text-ec-muted">
               <MapPin className="h-4 w-4 shrink-0 text-ec-blue" />
               <a
-                href={`https://www.google.com/maps/search/?api=1&query=${shop.lat}%2C${shop.lng}`}
+                href={`https://maps.apple.com/?ll=${shop.lat},${shop.lng}&q=${encodeURIComponent(shop.name)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-bold text-ec-blue underline-offset-2 hover:underline"
