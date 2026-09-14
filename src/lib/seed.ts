@@ -473,10 +473,10 @@ export function createSeedReservations(): Reservation[] {
       clientName: "Léa",
       clientPhone: "078 111 22 33",
       quantity: 2,
-      status: "EN_ATTENTE",
+      status: "REFUSEE",
       code: "EC-7782",
       createdAt: minutesAgo(8),
-      updatedAt: minutesAgo(8),
+      updatedAt: minutesAgo(5),
     },
     {
       id: "resa_6",

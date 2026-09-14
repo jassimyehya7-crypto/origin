@@ -1,4 +1,4 @@
-import { createServerClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/server";
 import { DEMO_CLIENT, DEMO_CLIENT_ID } from "@/lib/supabase/env";
 import {
   offerToRow,
@@ -37,9 +37,14 @@ import {
 } from "@/lib/phone-risk";
 import { resolveClientName } from "@/lib/soft-profile";
 
+/** Service-role only — fail closed (never silent anon for writes/reads). */
 function sb() {
-  const client = createServerClient();
-  if (!client) throw new Error("Supabase non configuré");
+  const client = createServiceClient();
+  if (!client) {
+    throw new Error(
+      "SUPABASE_SERVICE_ROLE_KEY manquante — opérations serveur impossibles"
+    );
+  }
   return client;
 }
 
@@ -392,6 +397,14 @@ export async function updateReservationStatus(
     .single();
   if (error) throw error;
 
+  const saved = rowToReservation(data as EcReservationRow);
+  if (saved.status !== status) {
+    return {
+      ok: false as const,
+      error: `Écriture non confirmée : statut attendu ${status}, reçu ${saved.status}.`,
+    };
+  }
+
   if (status === "RECUPEREE") {
     const { data: scans } = await sb()
       .from("ec_scans")
@@ -424,7 +437,7 @@ export async function updateReservationStatus(
     });
   }
 
-  return { ok: true, reservation: rowToReservation(data as EcReservationRow) };
+  return { ok: true, reservation: saved };
 }
 
 export async function getFavorites() {

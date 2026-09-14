@@ -19,6 +19,22 @@ const nextConfig = {
       },
     ],
   },
+  async headers() {
+    return [
+      {
+        source: "/pro",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
+      },
+      {
+        source: "/pro/reservations",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
+      },
+      {
+        source: "/api/reservations",
+        headers: [{ key: "Cache-Control", value: "no-store" }],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

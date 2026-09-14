@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 import { PendingInbox } from "@/components/pro/PendingInbox";
-import { ResetDemoButton } from "@/components/ResetDemoButton";
 import {
   getMerchantKPIs,
   getOffer,
@@ -14,6 +13,8 @@ import {
 } from "@/lib/pro-shop";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export default async function ProDashboard() {
   const kpis = await getMerchantKPIs(PRO_SHOP_ID);
@@ -82,9 +83,6 @@ export default async function ProDashboard() {
         </Link>
       </div>
 
-      <div className="mt-8 flex justify-center opacity-40">
-        <ResetDemoButton />
-      </div>
     </div>
   );
 }

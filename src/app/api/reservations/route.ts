@@ -73,7 +73,10 @@ export async function GET(req: NextRequest) {
         shop: await getShop(r.shopId),
       }))
     );
-    return NextResponse.json({ reservations: enriched });
+    return NextResponse.json(
+      { reservations: enriched },
+      { headers: { "Cache-Control": "no-store" } }
+    );
   }
 
   // Client self-lookup: must filter by softUserId and/or phone (never dump all)

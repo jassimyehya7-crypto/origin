@@ -16,10 +16,28 @@ import {
   undismissPendingId,
 } from "@/lib/pro-dismissed";
 import type { Offer, Reservation } from "@/lib/types";
+import { PRO_SHOP_ID } from "@/lib/pro-shop";
 import { formatDateTime } from "@/lib/utils";
 import { VisualMark } from "@/components/VisualMark";
 
 export type InboxRow = Reservation & { offer?: Offer };
+
+export async function fetchShopReservations(
+  shopId: string
+): Promise<InboxRow[]> {
+  const res = await fetch(
+    `/api/reservations?shopId=${encodeURIComponent(shopId)}`,
+    { credentials: "include", cache: "no-store" }
+  );
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(
+      (data as { error?: string }).error || `Erreur ${res.status}`
+    );
+  }
+  return ((data as { reservations?: InboxRow[] }).reservations ||
+    []) as InboxRow[];
+}
 
 export async function patchReservation(
   id: string,
@@ -29,10 +47,19 @@ export async function patchReservation(
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
+    cache: "no-store",
     body: JSON.stringify({ status }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `Erreur ${res.status}`);
+  const reservation = (data as { reservation?: Reservation }).reservation;
+  if (!reservation || reservation.status !== status) {
+    throw new Error(
+      `Échec de la mise à jour : statut attendu ${status}, reçu ${
+        reservation?.status ?? "inconnu"
+      }. Réessayez.`
+    );
+  }
   return data as {
     reservation: Reservation;
     sms?: { ok?: boolean; stub?: boolean };
@@ -109,12 +136,16 @@ export function PendingInbox({ items }: { items: InboxRow[] }) {
   async function act(id: string, status: Reservation["status"]) {
     setBusy(id);
     setError(null);
-    // Optimistic: persist dismiss so remount after refresh cannot flash the card back
+    const snapshot = rows;
+    // Optimistic hide — only keep dismissed after verified write + refetch
     dismissPendingId(id);
     setDismissTick((n) => n + 1);
     setRows((prev) => prev.filter((r) => r.id !== id));
     try {
       const data = await patchReservation(id, status);
+      // Bulletproof: replace from live shop list (not SSR alone)
+      const fresh = await fetchShopReservations(PRO_SHOP_ID);
+      setRows(pendingOnly(fresh));
       if (status === "CONFIRMEE") {
         setToast(
           data.sms?.ok && !data.sms?.stub
@@ -128,7 +159,7 @@ export function PendingInbox({ items }: { items: InboxRow[] }) {
     } catch (e) {
       undismissPendingId(id);
       setDismissTick((n) => n + 1);
-      setRows(pendingOnly(items));
+      setRows(snapshot.length ? snapshot : pendingOnly(items));
       setError(
         e instanceof Error
           ? e.message

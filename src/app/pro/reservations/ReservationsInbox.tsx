@@ -8,9 +8,11 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import {
+  fetchShopReservations,
   patchReservation,
   type InboxRow,
 } from "@/components/pro/PendingInbox";
+import { PRO_SHOP_ID } from "@/lib/pro-shop";
 import { offerPhoto } from "@/lib/offer-photos";
 import { hasClientPhone } from "@/lib/phone";
 import {
@@ -112,6 +114,7 @@ export function ReservationsInbox({
     setBusy(id);
     setError(null);
     const prevOverride = overrides[id];
+    const snapshotRows = rows;
     const leavingPending =
       status === "CONFIRMEE" || status === "REFUSEE";
     if (leavingPending) dismissPendingId(id);
@@ -122,11 +125,10 @@ export function ReservationsInbox({
     });
     try {
       const data = await patchReservation(id, status);
-      setOverrides((o) => {
-        const next = { ...o, [id]: data.reservation.status };
-        setRows(mergeRows(initial, next));
-        return next;
-      });
+      // Bulletproof: replace local rows from live shop GET (no-store)
+      const fresh = await fetchShopReservations(PRO_SHOP_ID);
+      setOverrides({});
+      setRows(mergeRows(fresh, {}));
       if (status === "CONFIRMEE") {
         setToast(
           data.sms?.ok && !data.sms?.stub
@@ -143,7 +145,7 @@ export function ReservationsInbox({
         const n = { ...o };
         if (prevOverride) n[id] = prevOverride;
         else delete n[id];
-        setRows(mergeRows(initial, n));
+        setRows(snapshotRows.length ? snapshotRows : mergeRows(initial, n));
         return n;
       });
       setError(
