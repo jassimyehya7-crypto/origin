@@ -67,9 +67,8 @@ export default async function HomePage({
       <main className="safe-pb px-4 pt-4">
         <RiskBanner />
         {/* Hero compressé — une ligne */}
-        <p className="mb-3 text-sm font-extrabold text-ec-ink">
-          Aujourd&apos;hui à Villeneuve · {offers.length} offre
-          {offers.length !== 1 ? "s" : ""}
+        <p className="mb-3 text-center text-sm font-extrabold text-ec-ink">
+          · {offers.length} offre{offers.length !== 1 ? "s" : ""} · aujourd&apos;hui à Villeneuve
         </p>
 
         {/* Chips : visibles seulement en haut de page */}
