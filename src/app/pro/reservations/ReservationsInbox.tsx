@@ -69,16 +69,28 @@ export function ReservationsInbox({
 
   async function act(id: string, status: InboxRow["status"]) {
     setBusy(id);
+    const prevRows = rows;
+    // Optimistic
+    setRows((prev) =>
+      prev.map((r) => (r.id === id ? { ...r, status } : r))
+    );
     try {
       const data = await patchReservation(id, status);
       setRows((prev) =>
         prev.map((r) => (r.id === id ? { ...r, ...data.reservation } : r))
       );
-      if (status === "CONFIRMEE" && data.sms?.ok) {
-        setToast("SMS envoyé");
+      if (status === "CONFIRMEE") {
+        setToast(
+          data.sms?.ok && !data.sms?.stub
+            ? "Confirmée · SMS envoyé"
+            : "Confirmée"
+        );
+      } else if (status === "REFUSEE") {
+        setToast("Refusée");
       }
       router.refresh();
     } catch (e) {
+      setRows(prevRows);
       alert(e instanceof Error ? e.message : "Erreur");
     } finally {
       setBusy(null);

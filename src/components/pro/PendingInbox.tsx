@@ -24,11 +24,11 @@ export async function patchReservation(
     credentials: "include",
     body: JSON.stringify({ status }),
   });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || "Erreur");
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Erreur ${res.status}`);
   return data as {
     reservation: Reservation;
-    sms?: { ok?: boolean };
+    sms?: { ok?: boolean; stub?: boolean };
   };
 }
 
@@ -40,6 +40,7 @@ function PhoneLine({ phone }: { phone: string }) {
     <a
       href={`tel:${phone.replace(/\s/g, "")}`}
       className="text-sm font-bold text-ec-blue"
+      onClick={(e) => e.stopPropagation()}
     >
       {phone}
     </a>
@@ -50,47 +51,63 @@ function OfferThumb({ title, emoji }: { title?: string; emoji?: string }) {
   const photo = title ? offerPhoto(title) : undefined;
   if (photo) {
     return (
-      <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-lg border border-ec-rule bg-ec-soft">
+      <div className="relative h-12 w-12 shrink-0 overflow-hidden bg-ec-soft">
         <Image src={photo} alt="" fill className="object-cover" sizes="48px" />
       </div>
     );
   }
-  return (
-    <VisualMark label={title || "Offre"} stored={emoji} size="md" />
-  );
+  return <VisualMark label={title || "Offre"} stored={emoji} size="md" />;
 }
 
 export function PendingInbox({ items }: { items: InboxRow[] }) {
   const router = useRouter();
-  const [rows, setRows] = useState(items);
+  const [rows, setRows] = useState(() =>
+    items.filter((r) => r.status === "EN_ATTENTE")
+  );
+  const [gone, setGone] = useState<Record<string, true>>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setRows(items);
-  }, [items]);
+    setRows(
+      items.filter((r) => r.status === "EN_ATTENTE" && !gone[r.id])
+    );
+  }, [items, gone]);
 
   useEffect(() => {
     if (!toast) return;
-    const t = setTimeout(() => setToast(null), 2500);
+    const t = setTimeout(() => setToast(null), 2200);
     return () => clearTimeout(t);
   }, [toast]);
 
   async function act(id: string, status: Reservation["status"]) {
     setBusy(id);
+    setError(null);
+    // Optimistic: retire tout de suite (évite carte qui reste / revient)
+    setGone((g) => ({ ...g, [id]: true }));
+    setRows((prev) => prev.filter((r) => r.id !== id));
     try {
       const data = await patchReservation(id, status);
-      setRows((prev) =>
-        prev
-          .map((r) => (r.id === id ? { ...r, ...data.reservation } : r))
-          .filter((r) => r.status === "EN_ATTENTE")
-      );
-      if (status === "CONFIRMEE" && data.sms?.ok) {
-        setToast("SMS envoyé");
+      if (status === "CONFIRMEE") {
+        setToast(
+          data.sms?.ok && !data.sms?.stub
+            ? "Confirmée · SMS envoyé"
+            : "Confirmée"
+        );
+      } else if (status === "REFUSEE") {
+        setToast("Refusée");
       }
       router.refresh();
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Erreur");
+      // rollback
+      setGone((g) => {
+        const n = { ...g };
+        delete n[id];
+        return n;
+      });
+      setRows(items.filter((r) => r.status === "EN_ATTENTE"));
+      setError(e instanceof Error ? e.message : "Erreur");
     } finally {
       setBusy(null);
     }
@@ -98,21 +115,29 @@ export function PendingInbox({ items }: { items: InboxRow[] }) {
 
   if (rows.length === 0) {
     return (
-      <>
+      <div>
         <p className="ec-corner-cut border border-dashed border-ec-rule bg-ec-surface px-4 py-8 text-center text-sm font-semibold text-ec-muted">
           Aucune demande en attente
         </p>
+        {error && (
+          <p className="mt-3 text-center text-sm font-bold text-ec-red">{error}</p>
+        )}
         {toast && (
-          <div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-ec-ink px-4 py-2 text-sm font-extrabold text-white shadow-lg">
+          <div className="pointer-events-none fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-ec-ink px-4 py-2 text-sm font-extrabold text-white shadow-soft">
             {toast}
           </div>
         )}
-      </>
+      </div>
     );
   }
 
   return (
     <div className="space-y-3">
+      {error && (
+        <p className="rounded-[12px] border border-ec-red/30 bg-ec-paper px-3 py-2 text-sm font-bold text-ec-red">
+          {error}
+        </p>
+      )}
       {rows.map((r) => (
         <div
           key={r.id}
@@ -139,26 +164,28 @@ export function PendingInbox({ items }: { items: InboxRow[] }) {
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3">
             <Button
+              type="button"
               variant="confirm"
-              className="h-14 text-base font-extrabold"
+              className="h-14 touch-manipulation text-base font-extrabold"
               disabled={busy === r.id}
-              onClick={() => act(r.id, "CONFIRMEE")}
+              onClick={() => void act(r.id, "CONFIRMEE")}
             >
-              Confirmer
+              {busy === r.id ? "…" : "Confirmer"}
             </Button>
             <Button
+              type="button"
               variant="danger"
-              className="h-14 text-base font-extrabold"
+              className="h-14 touch-manipulation text-base font-extrabold"
               disabled={busy === r.id}
-              onClick={() => act(r.id, "REFUSEE")}
+              onClick={() => void act(r.id, "REFUSEE")}
             >
-              Refuser
+              {busy === r.id ? "…" : "Refuser"}
             </Button>
           </div>
         </div>
       ))}
       {toast && (
-        <div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-ec-ink px-4 py-2 text-sm font-extrabold text-white shadow-lg">
+        <div className="pointer-events-none fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-ec-ink px-4 py-2 text-sm font-extrabold text-white shadow-soft">
           {toast}
         </div>
       )}
