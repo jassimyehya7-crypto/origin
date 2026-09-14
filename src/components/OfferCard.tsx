@@ -119,17 +119,17 @@ export function OfferCard({
         </div>
       </Link>
 
-      {/* 5. CTA Réserver — vrai lien vers le flux résa */}
-      <div className="flex items-center justify-end px-4 pb-4 pt-3">
+      {/* 5. CTA Réserver — centré, large, couleur logo */}
+      <div className="flex items-center justify-center px-4 pb-4 pt-3">
         {available ? (
           <Link
             href={reserveHref}
-            className="rounded-[12px] bg-ec-ink px-3.5 py-2 text-xs font-extrabold text-white transition hover:bg-ec-ink/90 active:scale-[0.98]"
+            className="inline-flex w-full max-w-sm items-center justify-center bg-ec-yellow px-6 py-3 text-sm font-extrabold text-ec-ink transition hover:brightness-95 active:scale-[0.99]"
           >
             Réserver
           </Link>
         ) : (
-          <span className="rounded-[12px] bg-ec-rule px-3.5 py-2 text-xs font-extrabold text-ec-muted">
+          <span className="inline-flex w-full max-w-sm items-center justify-center bg-ec-rule px-6 py-3 text-sm font-extrabold text-ec-muted">
             Indisponible
           </span>
         )}
