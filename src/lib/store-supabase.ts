@@ -381,6 +381,11 @@ export async function updateReservationStatus(
     await restoreStock(current.offerId, current.quantity);
   }
 
+  // Undo « Pas venu » → CONFIRMEE: re-hold stock
+  if (current.status === "NON_RECUPEREE" && status === "CONFIRMEE") {
+    await decrementStock(current.offerId, current.quantity);
+  }
+
   const updated: Reservation = {
     ...current,
     status,
@@ -427,6 +432,15 @@ export async function updateReservationStatus(
         reservationId: updated.id,
       });
     }
+  }
+
+  // Undo « Pas venu » → CONFIRMEE removes strike
+  if (current.status === "NON_RECUPEREE" && status === "CONFIRMEE") {
+    await decrementStrike({
+      phone: updated.clientPhone,
+      softUserId: updated.softUserId,
+      reservationId: updated.id,
+    });
   }
 
   if (status === "NON_RECUPEREE" && current.status !== "NON_RECUPEREE") {

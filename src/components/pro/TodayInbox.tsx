@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,6 +8,7 @@ import { ReservationStatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { VisualMark } from "@/components/VisualMark";
+import { PRO_COPY } from "@/lib/labels";
 import { offerPhoto } from "@/lib/offer-photos";
 import { hasClientPhone } from "@/lib/phone";
 import {
@@ -108,6 +109,11 @@ function CardShell({
   );
 }
 
+type UndoToast = {
+  id: string;
+  label: string;
+};
+
 export function TodayInbox({
   items,
   dayClosed,
@@ -120,8 +126,10 @@ export function TodayInbox({
   const [pickup, setPickup] = useState(() => confirmedOnly(items));
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [undoToast, setUndoToast] = useState<UndoToast | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [dismissTick, setDismissTick] = useState(0);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const serverPendingIds = useMemo(
     () => items.filter((r) => r.status === "EN_ATTENTE").map((r) => r.id),
@@ -140,9 +148,53 @@ export function TodayInbox({
     return () => clearTimeout(t);
   }, [toast]);
 
+  useEffect(() => {
+    return () => {
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    };
+  }, []);
+
+  function clearUndoToast() {
+    if (undoTimerRef.current) {
+      clearTimeout(undoTimerRef.current);
+      undoTimerRef.current = null;
+    }
+    setUndoToast(null);
+  }
+
+  function showUndoToast(id: string) {
+    clearUndoToast();
+    setUndoToast({ id, label: "Marqué pas venu" });
+    undoTimerRef.current = setTimeout(() => {
+      setUndoToast(null);
+      undoTimerRef.current = null;
+    }, 30_000);
+  }
+
   async function applyFresh(fresh: InboxRow[]) {
     setPending(pendingOnly(fresh));
     setPickup(confirmedOnly(fresh));
+  }
+
+  async function undoPasVenu(id: string) {
+    setBusy(id);
+    setError(null);
+    clearUndoToast();
+    try {
+      await patchReservation(id, "CONFIRMEE");
+      const fresh = await fetchShopReservations(PRO_SHOP_ID);
+      await applyFresh(fresh);
+      setToast("Annulé · de retour à retirer");
+      router.refresh();
+    } catch (e) {
+      setError(
+        e instanceof Error
+          ? e.message
+          : "Impossible d’annuler. Réessayez."
+      );
+    } finally {
+      setBusy(null);
+    }
   }
 
   async function act(id: string, status: Reservation["status"]) {
@@ -175,7 +227,7 @@ export function TodayInbox({
       } else if (status === "RECUPEREE") {
         setToast("Récupérée");
       } else if (status === "NON_RECUPEREE") {
-        setToast("Pas venue");
+        showUndoToast(id);
       }
       router.refresh();
     } catch (e) {
@@ -198,11 +250,29 @@ export function TodayInbox({
 
   const total = pending.length + pickup.length;
 
+  const toastNode = undoToast ? (
+    <div className="fixed bottom-24 left-1/2 z-50 flex -translate-x-1/2 items-center gap-3 rounded-full bg-ec-ink px-4 py-2 text-sm font-extrabold text-white shadow-soft">
+      <span>{undoToast.label}</span>
+      <button
+        type="button"
+        className="rounded-full bg-ec-yellow px-3 py-1 text-xs font-extrabold text-ec-ink touch-manipulation"
+        disabled={busy === undoToast.id}
+        onClick={() => void undoPasVenu(undoToast.id)}
+      >
+        Annuler
+      </button>
+    </div>
+  ) : toast ? (
+    <div className="pointer-events-none fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-ec-ink px-4 py-2 text-sm font-extrabold text-white shadow-soft">
+      {toast}
+    </div>
+  ) : null;
+
   if (total === 0) {
     return (
       <div>
         <p className="ec-corner-cut border border-dashed border-ec-rule bg-ec-surface px-4 py-8 text-center text-sm font-semibold text-ec-muted">
-          {dayClosed ? "Journée terminée · reprise demain" : "Rien à traiter"}
+          {dayClosed ? PRO_COPY.dayEnded : PRO_COPY.emptyAll}
         </p>
         {!dayClosed && (
           <p className="mt-3 text-center text-sm font-semibold">
@@ -214,17 +284,18 @@ export function TodayInbox({
         {error && (
           <p className="mt-3 text-center text-sm font-bold text-ec-red">{error}</p>
         )}
-        {toast && (
-          <div className="pointer-events-none fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-ec-ink px-4 py-2 text-sm font-extrabold text-white shadow-soft">
-            {toast}
-          </div>
-        )}
+        {toastNode}
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {dayClosed && (
+        <p className="rounded-[12px] border border-ec-rule bg-ec-soft px-3 py-2 text-center text-sm font-bold text-ec-muted">
+          {PRO_COPY.dayEnded}
+        </p>
+      )}
       {error && (
         <p className="rounded-[12px] border border-ec-red/30 bg-ec-paper px-3 py-2 text-sm font-bold text-ec-red">
           {error}
@@ -232,10 +303,12 @@ export function TodayInbox({
       )}
 
       <section>
-        <h2 className="mb-3 text-sm font-extrabold text-ec-ink">À confirmer</h2>
+        <h2 className="mb-3 text-sm font-extrabold text-ec-ink">
+          À confirmer ({pending.length})
+        </h2>
         {pending.length === 0 ? (
           <p className="ec-corner-cut border border-dashed border-ec-rule bg-ec-surface px-4 py-6 text-center text-sm font-semibold text-ec-muted">
-            Rien à confirmer
+            {PRO_COPY.emptyPending}
           </p>
         ) : (
           <div className="space-y-3">
@@ -245,20 +318,20 @@ export function TodayInbox({
                   <Button
                     type="button"
                     variant="confirm"
-                    className="h-14 touch-manipulation text-base font-extrabold"
+                    className="h-14 touch-manipulation px-2 text-sm font-extrabold leading-tight sm:text-base"
                     disabled={busy === r.id}
                     onClick={() => void act(r.id, "CONFIRMEE")}
                   >
-                    {busy === r.id ? "…" : "Confirmer"}
+                    {busy === r.id ? "…" : "Oui, c’est réservé"}
                   </Button>
                   <Button
                     type="button"
-                    variant="danger"
-                    className="h-14 touch-manipulation text-base font-extrabold"
+                    variant="outline"
+                    className="h-14 touch-manipulation px-2 text-sm font-extrabold leading-tight sm:text-base"
                     disabled={busy === r.id}
                     onClick={() => void act(r.id, "REFUSEE")}
                   >
-                    {busy === r.id ? "…" : "Refuser"}
+                    {busy === r.id ? "…" : "Non, plus dispo"}
                   </Button>
                 </div>
               </CardShell>
@@ -268,10 +341,12 @@ export function TodayInbox({
       </section>
 
       <section>
-        <h2 className="mb-3 text-sm font-extrabold text-ec-ink">À retirer</h2>
+        <h2 className="mb-3 text-sm font-extrabold text-ec-ink">
+          {PRO_COPY.sectionPickup}
+        </h2>
         {pickup.length === 0 ? (
           <p className="ec-corner-cut border border-dashed border-ec-rule bg-ec-surface px-4 py-6 text-center text-sm font-semibold text-ec-muted">
-            Rien à retirer
+            {PRO_COPY.emptyPickup}
           </p>
         ) : (
           <div className="space-y-3">
@@ -281,7 +356,7 @@ export function TodayInbox({
                   <Button
                     type="button"
                     variant="confirm"
-                    className="h-14 touch-manipulation text-base font-extrabold"
+                    className="h-14 touch-manipulation px-2 text-sm font-extrabold leading-tight sm:text-base"
                     disabled={busy === r.id}
                     onClick={() => void act(r.id, "RECUPEREE")}
                   >
@@ -289,12 +364,12 @@ export function TodayInbox({
                   </Button>
                   <Button
                     type="button"
-                    variant="danger"
-                    className="h-14 touch-manipulation text-base font-extrabold"
+                    variant="outline"
+                    className="h-14 touch-manipulation px-2 text-sm font-extrabold leading-tight sm:text-base"
                     disabled={busy === r.id}
                     onClick={() => void act(r.id, "NON_RECUPEREE")}
                   >
-                    {busy === r.id ? "…" : "Pas venue"}
+                    {busy === r.id ? "…" : "Pas venu"}
                   </Button>
                 </div>
               </CardShell>
@@ -303,12 +378,7 @@ export function TodayInbox({
         )}
       </section>
 
-      {toast && (
-        <div className="pointer-events-none fixed bottom-24 left-1/2 z-50 -translate-x-1/2 rounded-full bg-ec-ink px-4 py-2 text-sm font-extrabold text-white shadow-soft">
-          {toast}
-        </div>
-      )}
+      {toastNode}
     </div>
   );
 }
-

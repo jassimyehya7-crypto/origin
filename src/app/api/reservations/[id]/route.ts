@@ -122,7 +122,12 @@ export async function PATCH(
   let sms:
     | Awaited<ReturnType<typeof sendReservationSms>>
     | undefined;
-  if (status === "CONFIRMEE" && result.reservation.clientPhone) {
+  // Skip SMS on undo « Pas venu » → CONFIRMEE (already notified earlier)
+  if (
+    status === "CONFIRMEE" &&
+    before?.status !== "NON_RECUPEREE" &&
+    result.reservation.clientPhone
+  ) {
     const e164 =
       toE164CH(result.reservation.clientPhone) ||
       result.reservation.clientPhone;

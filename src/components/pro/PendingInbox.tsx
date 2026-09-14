@@ -223,20 +223,20 @@ export function PendingInbox({ items }: { items: InboxRow[] }) {
             <Button
               type="button"
               variant="confirm"
-              className="h-14 touch-manipulation text-base font-extrabold"
+              className="h-14 touch-manipulation px-2 text-sm font-extrabold leading-tight sm:text-base"
               disabled={busy === r.id}
               onClick={() => void act(r.id, "CONFIRMEE")}
             >
-              {busy === r.id ? "…" : "Confirmer"}
+              {busy === r.id ? "…" : "Oui, c’est réservé"}
             </Button>
             <Button
               type="button"
-              variant="danger"
-              className="h-14 touch-manipulation text-base font-extrabold"
+              variant="outline"
+              className="h-14 touch-manipulation px-2 text-sm font-extrabold leading-tight sm:text-base"
               disabled={busy === r.id}
               onClick={() => void act(r.id, "REFUSEE")}
             >
-              {busy === r.id ? "…" : "Refuser"}
+              {busy === r.id ? "…" : "Non, plus dispo"}
             </Button>
           </div>
         </div>

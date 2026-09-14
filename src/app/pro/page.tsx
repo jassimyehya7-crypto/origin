@@ -1,7 +1,9 @@
 import { TodayInbox } from "@/components/pro/TodayInbox";
+import { PRO_COPY } from "@/lib/labels";
 import {
   ensureShopDayClosed,
   getOffer,
+  getOffers,
   getReservations,
   getShop,
 } from "@/lib/store";
@@ -30,6 +32,18 @@ export default async function ProDashboard() {
   );
   const toTreat = actionable.length;
 
+  const published = (await getOffers({ shopId: PRO_SHOP_ID })).filter(
+    (o) => o.status === "PUBLIEE"
+  );
+  const stockLive = published.reduce((sum, o) => sum + o.quantityLeft, 0);
+
+  const todayKey = new Date().toDateString();
+  const pickupsToday = allResas.filter(
+    (r) =>
+      (r.status === "CONFIRMEE" || r.status === "RECUPEREE") &&
+      new Date(r.createdAt).toDateString() === todayKey
+  ).length;
+
   return (
     <div className="mx-auto max-w-lg px-4 py-4">
       <div className="mb-5">
@@ -41,8 +55,16 @@ export default async function ProDashboard() {
           {toTreat} à traiter
         </p>
         <p className="mt-1 text-xs font-semibold text-ec-muted">
-          Se termine à {openUntil}
+          {dayClosed ? PRO_COPY.dayEnded : PRO_COPY.endsAt(openUntil)}
         </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <span className="inline-flex items-center rounded-full border border-ec-rule bg-ec-soft px-2.5 py-1 text-[11px] font-bold text-ec-muted">
+            Stock live · {stockLive}
+          </span>
+          <span className="inline-flex items-center rounded-full border border-ec-rule bg-ec-soft px-2.5 py-1 text-[11px] font-bold text-ec-muted">
+            Retraits du jour · {pickupsToday}
+          </span>
+        </div>
       </div>
 
       <TodayInbox items={actionable} dayClosed={dayClosed} />

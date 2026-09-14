@@ -44,8 +44,8 @@ export const RESERVATION_STATUS_LABELS: Record<ReservationStatus, string> = {
   RECUPEREE: "Récupérée",
   REFUSEE: "Refusée",
   ANNULEE: "Annulée",
-  NON_RECUPEREE: "Non récupérée",
-  EXPIREE: "Expirée",
+  NON_RECUPEREE: "Pas venu",
+  EXPIREE: "Non retirée",
 };
 
 export const PRICING_NOTE =
