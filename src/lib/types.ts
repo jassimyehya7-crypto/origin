@@ -3,9 +3,18 @@ export type ShopCategory =
   | "boulangerie"
   | "kiosque"
   | "cremiere"
+  | "boucherie"
+  | "coiffure"
+  | "laverie"
+  | "rotisserie"
   | "autre";
 
-export type OfferType = "FLASH" | "PROMO" | "ARRIVAGE" | "DERNIERE_MINUTE";
+export type OfferType =
+  | "FLASH"
+  | "PROMO"
+  | "ARRIVAGE"
+  | "EXCLUSIVITE"
+  | "DERNIERE_MINUTE";
 
 export type OfferStatus =
   | "BROUILLON"

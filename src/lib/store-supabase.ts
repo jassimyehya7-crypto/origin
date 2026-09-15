@@ -20,7 +20,7 @@ import {
   type EcScanRow,
   type EcShopRow,
 } from "@/lib/supabase/mappers";
-import { createInitialState } from "@/lib/seed";
+import { createA1InitialState as createInitialState } from "@/lib/a1-seed";
 import type {
   AppState,
   FounderMessage,

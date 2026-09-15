@@ -21,6 +21,10 @@ const CATEGORIES: (ShopCategory | "all")[] = [
   "boulangerie",
   "kiosque",
   "cremiere",
+  "boucherie",
+  "coiffure",
+  "laverie",
+  "rotisserie",
   "autre",
 ];
 

@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import { createInitialState } from "./seed";
+import { createA1InitialState as createInitialState } from "./a1-seed";
 import { emitStore } from "./store-events";
 import type {
   AppState,

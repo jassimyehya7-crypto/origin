@@ -4,6 +4,7 @@ const variants: Record<string, string> = {
   flash: "bg-ec-red text-white",
   promo: "bg-ec-blue text-white",
   arrivage: "bg-ec-green text-ec-ink",
+  exclusive: "bg-[#7C3AED] text-white",
   derniere: "bg-ec-ink text-white",
   success: "bg-ec-soft text-ec-ink",
   warning: "bg-ec-soft text-ec-ink",

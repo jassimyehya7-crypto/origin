@@ -11,6 +11,7 @@ export function OfferTypeBadge({ type }: { type: OfferType }) {
     FLASH: "flash",
     PROMO: "promo",
     ARRIVAGE: "arrivage",
+    EXCLUSIVITE: "exclusive",
     DERNIERE_MINUTE: "derniere",
   } as const;
   return <Badge variant={map[type]}>{OFFER_TYPE_LABELS[type]}</Badge>;

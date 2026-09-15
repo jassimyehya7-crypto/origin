@@ -23,6 +23,7 @@ import Image from "next/image";
 import { VisualMark } from "@/components/VisualMark";
 import { offerPhoto } from "@/lib/offer-photos";
 import { isValidSwissPhone } from "@/lib/phone";
+import { isPrototypeOffer, PROTOTYPE_NOTICE } from "@/lib/prototype";
 import {
   discountPercent,
   formatCHF,
@@ -97,6 +98,7 @@ export function OfferDetailClient({
   const distance = formatWalkDistance(shop.lat, shop.lng);
   const left = offer.quantityLeft;
   const tone = stockTone(left);
+  const prototype = isPrototypeOffer(offer);
 
   function applyRisk(s: ClientRiskStatus) {
     setPhoneRisk(s.risk);
@@ -306,6 +308,11 @@ export function OfferDetailClient({
       )}
 
       <div className="space-y-5 px-4 pt-5">
+        {prototype && (
+          <div className="ec-corner-cut border border-ec-rule bg-ec-soft px-3 py-2 text-xs font-extrabold text-ec-ink">
+            {PROTOTYPE_NOTICE}
+          </div>
+        )}
         <div className="space-y-3">
           <h1 className="font-display text-[2rem] leading-[1.05] text-ec-ink">
             {offer.title}
@@ -502,7 +509,9 @@ export function OfferDetailClient({
               : banned
                 ? "Réservations en pause"
                 : available
-                  ? "Réserver"
+                  ? prototype
+                    ? "Tester la réservation"
+                    : "Réserver"
                   : "Indisponible"}
           </Button>
           <p className="mt-2 text-center text-[11px] font-semibold text-ec-muted">

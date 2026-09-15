@@ -9,7 +9,11 @@ export const CATEGORY_LABELS: Record<ShopCategory, string> = {
   epicerie: "Épicerie",
   boulangerie: "Boulangerie",
   kiosque: "Kiosque",
-  cremiere: "Crémière",
+  cremiere: "Fromagerie",
+  boucherie: "Boucherie",
+  coiffure: "Coiffure",
+  laverie: "Laverie",
+  rotisserie: "Rôtisserie",
   autre: "Autre local",
 };
 
@@ -18,15 +22,20 @@ export const CATEGORY_ICONS: Record<ShopCategory, string> = {
   epicerie: "É",
   boulangerie: "B",
   kiosque: "K",
-  cremiere: "C",
+  cremiere: "F",
+  boucherie: "B",
+  coiffure: "C",
+  laverie: "L",
+  rotisserie: "R",
   autre: "A",
 };
 
 /** Visible French retail labels — DB enum values stay FLASH/PROMO/… */
 export const OFFER_TYPE_LABELS: Record<OfferType, string> = {
-  FLASH: "OFFRES",
-  PROMO: "Promo en réduction",
-  ARRIVAGE: "Nouveautés",
+  FLASH: "Offre du jour",
+  PROMO: "Réduction",
+  ARRIVAGE: "Nouveauté",
+  EXCLUSIVITE: "Exclusivité",
   DERNIERE_MINUTE: "Dernière chance",
 };
 

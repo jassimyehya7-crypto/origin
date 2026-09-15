@@ -11,6 +11,7 @@ import {
   formatWalkDistance,
 } from "@/lib/utils";
 import { offerPhoto } from "@/lib/offer-photos";
+import { isPrototypeOffer } from "@/lib/prototype";
 
 function priceMeta(offer: Offer) {
   const disc = discountPercent(offer.price, offer.originalPrice);
@@ -35,6 +36,7 @@ export function OfferCard({
   const available = offer.status === "PUBLIEE" && offer.quantityLeft > 0;
   const href = `/offre/${offer.id}`;
   const distance = shop ? formatWalkDistance(shop.lat, shop.lng) : null;
+  const prototype = isPrototypeOffer(offer);
 
   return (
     <article className="ec-corner-cut overflow-hidden border border-ec-rule bg-ec-surface">
@@ -61,6 +63,11 @@ export function OfferCard({
           <div className="absolute left-3 top-3">
             <OfferTypeBadge type={offer.type} />
           </div>
+          {prototype && (
+            <span className="absolute bottom-3 right-3 rounded-full bg-white/95 px-2.5 py-1 text-[10px] font-black uppercase tracking-wide text-ec-ink shadow-sm">
+              Démo fictive
+            </span>
+          )}
           {offer.status === "EPUISEE" && (
             <span className="absolute inset-0 flex items-center justify-center bg-ec-ink/40 text-sm font-bold uppercase tracking-wide text-white">
               Épuisée
@@ -102,6 +109,12 @@ export function OfferCard({
             </p>
           )}
 
+          {prototype && (
+            <p className="text-[11px] font-bold text-ec-muted">
+              Exemple non publié par le commerce
+            </p>
+          )}
+
           <p className="inline-flex items-center gap-1.5 text-xs font-semibold text-ec-muted">
             <Clock className="h-3.5 w-3.5 text-ec-green" />
             Jusqu&apos;à {formatTime(offer.validUntil)}
@@ -118,7 +131,7 @@ export function OfferCard({
         <div className="flex items-center justify-center px-4 pb-4 pt-3">
           {available ? (
             <span className="inline-flex w-full max-w-sm items-center justify-center bg-ec-yellow px-6 py-3 text-sm font-extrabold text-ec-ink">
-              Réserver
+              {prototype ? "Voir la démo" : "Réserver"}
             </span>
           ) : (
             <span className="inline-flex w-full max-w-sm items-center justify-center bg-ec-rule px-6 py-3 text-sm font-extrabold text-ec-muted">
