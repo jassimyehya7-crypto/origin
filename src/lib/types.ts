@@ -25,6 +25,8 @@ export type ReservationStatus =
 
 export type DevicePlan = "telephone" | "tablette";
 
+export type TabletRequestStatus = "none" | "pending" | "approved" | "installed";
+
 export interface Shop {
   id: string;
   name: string;
@@ -43,6 +45,10 @@ export interface Shop {
   trialEndsAt: string;
   emoji: string;
   color: string;
+  /** Founder-controlled; Pro cannot toggle. */
+  subscriptionActive: boolean;
+  tabletRequestStatus: TabletRequestStatus;
+  tabletRequestedAt?: string;
 }
 
 export interface Offer {

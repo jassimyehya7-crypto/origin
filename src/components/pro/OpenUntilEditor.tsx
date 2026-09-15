@@ -46,15 +46,17 @@ export function OpenUntilEditor({
   const dirty = value !== initial;
 
   return (
-    <div className="space-y-3">
-      <label className="block text-base font-extrabold text-ec-ink">
+    <div className="min-w-0 space-y-3 overflow-hidden">
+      <label className="block min-w-0 text-base font-extrabold text-ec-ink">
         Heure de fin
-        <input
-          type="time"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          className="mt-3 block h-16 w-full rounded-[12px] border-2 border-ec-rule bg-ec-paper px-4 text-2xl font-extrabold tabular-nums text-ec-ink"
-        />
+        <span className="mt-3 flex min-w-0 items-center gap-2 overflow-hidden">
+          <input
+            type="time"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            className="box-border block h-14 w-full min-w-0 max-w-full overflow-hidden rounded-[12px] border-2 border-ec-rule bg-ec-paper px-3 text-xl font-extrabold tabular-nums text-ec-ink"
+          />
+        </span>
       </label>
       <p className="text-sm font-semibold leading-relaxed text-ec-muted">
         À {value}, les réservations non retirées se terminent et le stock

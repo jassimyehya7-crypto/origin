@@ -4,7 +4,6 @@ import { usePathname } from "next/navigation";
 import { LiveRefresh } from "@/hooks/useLiveRefresh";
 import { Logo } from "@/components/Logo";
 import { ProMobileNav, ProSidebar } from "@/components/pro/ProSidebar";
-import { PRO_SHOP_CITY, PRO_SHOP_NAME } from "@/lib/pro-shop";
 
 export function ProChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -19,14 +18,11 @@ export function ProChrome({ children }: { children: React.ReactNode }) {
       </div>
       <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col lg:mx-0 lg:max-w-none lg:pl-64">
         <header className="sticky top-0 z-30 border-b border-ec-rule bg-ec-surface px-4 py-3 lg:hidden">
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <Logo size="sm" withText={false} />
             <div className="min-w-0">
-              <div className="truncate text-sm font-extrabold text-ec-ink">
-                {PRO_SHOP_NAME}
-              </div>
-              <div className="text-xs font-semibold text-ec-muted">
-                Pro · {PRO_SHOP_CITY}
+              <div className="truncate text-sm font-extrabold tracking-tight text-ec-ink">
+                épicerie.club
               </div>
             </div>
           </div>

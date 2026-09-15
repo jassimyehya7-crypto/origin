@@ -1,5 +1,6 @@
 import type {
   DevicePlan,
+  TabletRequestStatus,
   Favorite,
   Offer,
   OfferStatus,
@@ -34,6 +35,9 @@ export type EcShopRow = {
   trial_ends_at: string | null;
   emoji: string | null;
   color: string | null;
+  subscription_active: boolean | null;
+  tablet_request_status: string | null;
+  tablet_requested_at: string | null;
 };
 
 export type EcOfferRow = {
@@ -121,6 +125,10 @@ export function rowToShop(r: EcShopRow): Shop {
     trialEndsAt: r.trial_ends_at || new Date().toISOString(),
     emoji: r.emoji || "",
     color: r.color || "#2E7D32",
+    subscriptionActive: Boolean(r.subscription_active),
+    tabletRequestStatus:
+      (r.tablet_request_status as TabletRequestStatus) || "none",
+    tabletRequestedAt: r.tablet_requested_at || undefined,
   };
 }
 
@@ -143,6 +151,9 @@ export function shopToRow(s: Shop): Record<string, unknown> {
     trial_ends_at: s.trialEndsAt,
     emoji: s.emoji,
     color: s.color,
+    subscription_active: s.subscriptionActive,
+    tablet_request_status: s.tabletRequestStatus,
+    tablet_requested_at: s.tabletRequestedAt ?? null,
     updated_at: new Date().toISOString(),
   };
 }

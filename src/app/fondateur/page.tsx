@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { ResetDemoButton } from "@/components/ResetDemoButton";
 import { OfferTypeBadge } from "@/components/StatusBadge";
+import { ShopOpsControls } from "@/components/fondateur/ShopOpsControls";
 import { CATEGORY_LABELS } from "@/lib/labels";
-import { getFounderStats } from "@/lib/store";
+import { getFounderStats, getShops } from "@/lib/store";
 import { formatDateTime, formatCHF } from "@/lib/utils";
 import { LiveCounter } from "./LiveCounter";
 import { VisualMark } from "@/components/VisualMark";
@@ -10,7 +11,19 @@ import { VisualMark } from "@/components/VisualMark";
 export const dynamic = "force-dynamic";
 
 export default async function FondateurPage() {
-  const stats = await getFounderStats();
+  const [stats, shops] = await Promise.all([getFounderStats(), getShops()]);
+
+  const tabletRequests = shops
+    .filter(
+      (s) =>
+        s.tabletRequestStatus === "pending" ||
+        s.tabletRequestStatus === "approved"
+    )
+    .sort((a, b) => {
+      const ta = a.tabletRequestedAt || "";
+      const tb = b.tabletRequestedAt || "";
+      return tb.localeCompare(ta);
+    });
 
   return (
     <div className="mx-auto max-w-lg px-4 py-5 lg:max-w-4xl">
@@ -60,6 +73,48 @@ export default async function FondateurPage() {
 
       <section className="mb-6">
         <h2 className="mb-3 text-sm font-extrabold text-ec-ink">
+          Demandes tablette
+        </h2>
+        {tabletRequests.length === 0 ? (
+          <div className="ec-corner-cut border border-ec-rule bg-ec-surface p-4 text-sm font-semibold text-ec-muted">
+            Aucune demande en cours
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {tabletRequests.map((shop) => (
+              <div
+                key={shop.id}
+                className="ec-corner-cut min-w-0 overflow-hidden border border-ec-rule bg-ec-surface p-4"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate font-extrabold text-ec-ink">
+                      {shop.name}
+                    </p>
+                    <p className="text-[11px] font-semibold text-ec-muted">
+                      {shop.address} · {shop.city}
+                    </p>
+                    {shop.tabletRequestedAt && (
+                      <p className="mt-1 text-[11px] font-semibold text-ec-muted">
+                        Demandée {formatDateTime(shop.tabletRequestedAt)}
+                      </p>
+                    )}
+                  </div>
+                  <span className="shrink-0 rounded-full bg-ec-paper px-2 py-0.5 text-[10px] font-extrabold uppercase text-ec-muted">
+                    {shop.tabletRequestStatus === "approved"
+                      ? "Validée"
+                      : "En attente"}
+                  </span>
+                </div>
+                <ShopOpsControls shop={shop} />
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <section className="mb-6">
+        <h2 className="mb-3 text-sm font-extrabold text-ec-ink">
           Funnel QR
         </h2>
         <div className="grid grid-cols-2 gap-2">
@@ -88,32 +143,43 @@ export default async function FondateurPage() {
 
       <section className="mb-6">
         <h2 className="mb-3 text-sm font-extrabold text-ec-ink">
-          Commerces · statut publication
+          Commerces · abo & tablette
         </h2>
         <div className="space-y-3">
           {stats.perShop.map((row) => (
             <div
               key={row.shop.id}
-              className="ec-corner-cut border border-ec-rule bg-ec-surface p-4"
+              className="ec-corner-cut min-w-0 overflow-hidden border border-ec-rule bg-ec-surface p-4"
             >
               <div className="flex items-start justify-between gap-2">
-                <div>
-                  <p className="font-extrabold text-ec-ink">
+                <div className="min-w-0">
+                  <p className="truncate font-extrabold text-ec-ink">
                     {row.shop.name}
                   </p>
                   <p className="text-[11px] font-semibold text-ec-muted">
                     {CATEGORY_LABELS[row.shop.category]} · {row.shop.devicePlan}
                   </p>
                 </div>
-                {row.published ? (
-                  <span className="rounded-full bg-ec-soft px-2 py-0.5 text-[10px] font-extrabold text-ec-green">
-                    Publié
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  {row.published ? (
+                    <span className="rounded-full bg-ec-soft px-2 py-0.5 text-[10px] font-extrabold text-ec-green">
+                      Publié
+                    </span>
+                  ) : (
+                    <span className="rounded-full bg-ec-paper px-2 py-0.5 text-[10px] font-extrabold text-ec-muted">
+                      Non publié
+                    </span>
+                  )}
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${
+                      row.shop.subscriptionActive
+                        ? "bg-ec-soft text-ec-green"
+                        : "bg-[#FDECEA] text-ec-red"
+                    }`}
+                  >
+                    {row.shop.subscriptionActive ? "Abo actif" : "Abo inactif"}
                   </span>
-                ) : (
-                  <span className="rounded-full bg-ec-paper px-2 py-0.5 text-[10px] font-extrabold text-ec-muted">
-                    Non publié
-                  </span>
-                )}
+                </div>
               </div>
               <div className="mt-3 grid grid-cols-4 gap-1 text-center">
                 {[
@@ -134,6 +200,7 @@ export default async function FondateurPage() {
                 QR {row.funnel.scans} → {row.funnel.browsedNoReserve} →{" "}
                 {row.funnel.reservations} → {row.funnel.pickups}
               </p>
+              <ShopOpsControls shop={row.shop} />
             </div>
           ))}
         </div>
