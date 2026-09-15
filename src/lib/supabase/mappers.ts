@@ -11,6 +11,8 @@ import type {
   ReservationStatus,
   Shop,
   ShopCategory,
+  FounderMessage,
+  FounderMessageStatus,
 } from "@/lib/types";
 import {
   encodeImageUrlInEmoji,
@@ -295,4 +297,27 @@ export function rowToPresence(r: EcPresenceRow): PresenceClient {
 
 export function rowToFavorite(r: EcFavoriteRow): Favorite {
   return { shopId: r.shop_id, addedAt: r.created_at };
+}
+
+
+export type EcFounderMessageRow = {
+  id: string;
+  shop_id: string;
+  body: string | null;
+  audio_url: string | null;
+  status: string;
+  created_at: string;
+  shop_name?: string | null;
+};
+
+export function rowToFounderMessage(r: EcFounderMessageRow): FounderMessage {
+  return {
+    id: r.id,
+    shopId: r.shop_id,
+    shopName: r.shop_name || undefined,
+    body: r.body || undefined,
+    audioUrl: r.audio_url || undefined,
+    status: (r.status as FounderMessageStatus) || "nouveau",
+    createdAt: r.created_at,
+  };
 }

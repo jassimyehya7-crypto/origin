@@ -17,14 +17,9 @@ export function ProChrome({ children }: { children: React.ReactNode }) {
         <ProSidebar />
       </div>
       <div className="mx-auto flex min-h-dvh w-full max-w-lg flex-col lg:mx-0 lg:max-w-none lg:pl-64">
-        <header className="sticky top-0 z-30 border-b border-ec-rule bg-ec-surface px-4 py-3 lg:hidden">
-          <div className="flex min-w-0 items-center gap-3">
-            <Logo size="sm" withText={false} />
-            <div className="min-w-0">
-              <div className="truncate text-sm font-extrabold tracking-tight text-ec-ink">
-                épicerie.club
-              </div>
-            </div>
+        <header className="sticky top-0 z-30 border-b border-ec-rule bg-ec-paper px-4 pb-3 pt-4 lg:hidden">
+          <div className="flex items-center justify-between gap-3">
+            <Logo size="sm" />
           </div>
         </header>
         <div className="flex-1 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">

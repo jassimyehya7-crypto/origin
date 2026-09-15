@@ -90,6 +90,7 @@ function setState(next: AppState, opts?: { persist?: boolean }) {
 export async function resetDemo(): Promise<AppState> {
   const state = createInitialState();
   setState(state);
+  global.__epicerieClubFounderMessages = [];
   await resetStrikesDemo();
   emitStore("offers");
   emitStore("reservations");
@@ -732,4 +733,52 @@ export function getMerchantKPIs(shopId: string) {
   const views = offers.reduce((s, o) => s + o.views, 0);
   const pending = reservas.filter((r) => r.status === "EN_ATTENTE").length;
   return { active, todayResas, picked, views, pending };
+}
+
+type LocalFounderMessage = import("./types").FounderMessage;
+
+declare global {
+  // eslint-disable-next-line no-var
+  var __epicerieClubFounderMessages: LocalFounderMessage[] | undefined;
+}
+
+function founderMessages(): LocalFounderMessage[] {
+  if (!global.__epicerieClubFounderMessages) {
+    global.__epicerieClubFounderMessages = [];
+  }
+  return global.__epicerieClubFounderMessages;
+}
+
+export function createFounderMessage(input: {
+  shopId: string;
+  body?: string;
+  audioUrl?: string;
+}): LocalFounderMessage {
+  const shop = getShop(input.shopId);
+  const msg: LocalFounderMessage = {
+    id: generateId("fmsg"),
+    shopId: input.shopId,
+    shopName: shop?.name,
+    body: input.body,
+    audioUrl: input.audioUrl,
+    status: "nouveau",
+    createdAt: new Date().toISOString(),
+  };
+  founderMessages().unshift(msg);
+  return msg;
+}
+
+export function getFounderMessages(): LocalFounderMessage[] {
+  return [...founderMessages()];
+}
+
+export function updateFounderMessageStatus(
+  id: string,
+  status: import("./types").FounderMessageStatus
+): LocalFounderMessage | undefined {
+  const list = founderMessages();
+  const idx = list.findIndex((m) => m.id === id);
+  if (idx < 0) return undefined;
+  list[idx] = { ...list[idx], status };
+  return list[idx];
 }

@@ -117,6 +117,19 @@ export interface DemoClient {
   phone: string;
 }
 
+
+export type FounderMessageStatus = "nouveau" | "lu" | "traite";
+
+export interface FounderMessage {
+  id: string;
+  shopId: string;
+  shopName?: string;
+  body?: string;
+  audioUrl?: string;
+  status: FounderMessageStatus;
+  createdAt: string;
+}
+
 export interface AppState {
   shops: Shop[];
   offers: Offer[];

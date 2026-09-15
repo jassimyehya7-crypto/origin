@@ -9,9 +9,11 @@ import {
   rowToReservation,
   rowToScan,
   rowToShop,
+  rowToFounderMessage,
   scanToRow,
   shopToRow,
   type EcFavoriteRow,
+  type EcFounderMessageRow,
   type EcOfferRow,
   type EcPresenceRow,
   type EcReservationRow,
@@ -21,6 +23,8 @@ import {
 import { createInitialState } from "@/lib/seed";
 import type {
   AppState,
+  FounderMessage,
+  FounderMessageStatus,
   Offer,
   OfferType,
   Reservation,
@@ -750,6 +754,7 @@ export async function resetDemo(): Promise<AppState> {
   const client = sb();
 
   // Order matters for FKs
+  await client.from("ec_founder_messages").delete().neq("id", "");
   await client.from("ec_reservations").delete().neq("id", "");
   await client.from("ec_favorites").delete().neq("client_id", "");
   await client.from("ec_scans").delete().neq("id", "");
@@ -880,4 +885,57 @@ export async function ensureShopDayClosed(
   }
 
   return { expiredReservations, expiredOffers };
+}
+
+export async function createFounderMessage(input: {
+  shopId: string;
+  body?: string;
+  audioUrl?: string;
+}): Promise<FounderMessage> {
+  const id = generateId("fmsg");
+  const row = {
+    id,
+    shop_id: input.shopId,
+    body: input.body || null,
+    audio_url: input.audioUrl || null,
+    status: "nouveau",
+  };
+  const { data, error } = await sb()
+    .from("ec_founder_messages")
+    .insert(row)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return rowToFounderMessage(data as EcFounderMessageRow);
+}
+
+export async function getFounderMessages(): Promise<FounderMessage[]> {
+  const { data, error } = await sb()
+    .from("ec_founder_messages")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  const rows = (data || []) as EcFounderMessageRow[];
+  const shops = await getShops();
+  const nameById = Object.fromEntries(shops.map((s) => [s.id, s.name]));
+  return rows.map((r) =>
+    rowToFounderMessage({ ...r, shop_name: nameById[r.shop_id] || null })
+  );
+}
+
+export async function updateFounderMessageStatus(
+  id: string,
+  status: FounderMessageStatus
+): Promise<FounderMessage | undefined> {
+  const { data, error } = await sb()
+    .from("ec_founder_messages")
+    .update({ status })
+    .eq("id", id)
+    .select("*")
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return undefined;
+  const msg = rowToFounderMessage(data as EcFounderMessageRow);
+  const shop = await getShop(msg.shopId);
+  return { ...msg, shopName: shop?.name };
 }

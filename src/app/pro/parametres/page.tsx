@@ -1,3 +1,4 @@
+import { FounderContactModule } from "@/components/pro/FounderContactModule";
 import { InterfaceModule } from "@/components/pro/InterfaceModule";
 import { OpenUntilEditor } from "@/components/pro/OpenUntilEditor";
 import { Card } from "@/components/ui/Card";
@@ -36,31 +37,36 @@ export default async function ProParametresPage() {
           <h2 className="mb-3 text-base font-extrabold text-ec-ink">
             Commerce
           </h2>
-          <div className="min-w-0 space-y-1">
-            <div className="text-base font-semibold text-ec-ink">
-              {shop.address}
+          <div className="flex min-w-0 items-stretch gap-3">
+            <div className="min-w-0 flex-1 space-y-1">
+              <div className="text-base font-semibold text-ec-ink">
+                {shop.address}
+              </div>
+              <div className="text-sm font-semibold text-ec-muted">
+                {shop.zip} {shop.city}
+              </div>
+              <a
+                href={`tel:${shop.phone}`}
+                className="mt-2 inline-block text-base font-extrabold text-ec-blue"
+              >
+                {shop.phone}
+              </a>
             </div>
-            <div className="text-sm font-semibold text-ec-muted">
-              {shop.zip} {shop.city}
-            </div>
-            <a
-              href={`tel:${shop.phone}`}
-              className="mt-2 inline-block text-base font-extrabold text-ec-blue"
-            >
-              {shop.phone}
-            </a>
-            <div className="mt-4 flex min-h-12 items-center justify-between gap-3 rounded-[12px] bg-ec-soft px-4 py-3">
-              <span className="min-w-0 text-sm font-semibold text-ec-ink">
-                Retraits aujourd’hui
+            <div className="flex w-28 shrink-0 flex-col items-center justify-center rounded-[12px] bg-ec-soft px-2 py-3 text-center">
+              <span className="text-[11px] font-extrabold leading-tight text-ec-muted">
+                Retraits
               </span>
-              <strong className="shrink-0 text-xl font-black tabular-nums text-ec-ink">
+              <span className="text-[11px] font-semibold leading-tight text-ec-muted">
+                aujourd’hui
+              </span>
+              <strong className="mt-1 text-2xl font-black tabular-nums text-ec-ink">
                 {pickupsToday}
               </strong>
             </div>
           </div>
         </Card>
 
-        <Card className="min-w-0 overflow-hidden box-border">
+        <Card className="box-border min-w-0 overflow-hidden">
           <OpenUntilEditor shopId={PRO_SHOP_ID} initial={shop.openUntil} />
         </Card>
 
@@ -94,6 +100,10 @@ export default async function ProParametresPage() {
 
         <Card className="min-w-0 overflow-hidden">
           <InterfaceModule status={tabletStatus} />
+        </Card>
+
+        <Card className="min-w-0 overflow-hidden">
+          <FounderContactModule shopId={PRO_SHOP_ID} />
         </Card>
       </div>
     </div>

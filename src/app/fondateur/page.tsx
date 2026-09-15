@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { ResetDemoButton } from "@/components/ResetDemoButton";
 import { OfferTypeBadge } from "@/components/StatusBadge";
+import { FounderMessagesSection } from "@/components/fondateur/FounderMessagesSection";
 import { ShopOpsControls } from "@/components/fondateur/ShopOpsControls";
 import { CATEGORY_LABELS } from "@/lib/labels";
-import { getFounderStats, getShops } from "@/lib/store";
+import { getFounderMessages, getFounderStats, getShops } from "@/lib/store";
 import { formatDateTime, formatCHF } from "@/lib/utils";
 import { LiveCounter } from "./LiveCounter";
 import { VisualMark } from "@/components/VisualMark";
@@ -11,7 +12,11 @@ import { VisualMark } from "@/components/VisualMark";
 export const dynamic = "force-dynamic";
 
 export default async function FondateurPage() {
-  const [stats, shops] = await Promise.all([getFounderStats(), getShops()]);
+  const [stats, shops, founderMessages] = await Promise.all([
+    getFounderStats(),
+    getShops(),
+    getFounderMessages(),
+  ]);
 
   const tabletRequests = shops
     .filter(
@@ -70,6 +75,8 @@ export default async function FondateurPage() {
           </div>
         </div>
       </div>
+
+      <FounderMessagesSection messages={founderMessages} />
 
       <section className="mb-6">
         <h2 className="mb-3 text-sm font-extrabold text-ec-ink">

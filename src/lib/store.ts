@@ -230,3 +230,28 @@ export async function getMerchantKPIs(shopId: string) {
     ? remote.getMerchantKPIs(shopId)
     : Promise.resolve(local.getMerchantKPIs(shopId));
 }
+
+export async function createFounderMessage(input: {
+  shopId: string;
+  body?: string;
+  audioUrl?: string;
+}) {
+  return preferSupabase()
+    ? remote.createFounderMessage(input)
+    : Promise.resolve(local.createFounderMessage(input));
+}
+
+export async function getFounderMessages() {
+  return preferSupabase()
+    ? remote.getFounderMessages()
+    : Promise.resolve(local.getFounderMessages());
+}
+
+export async function updateFounderMessageStatus(
+  id: string,
+  status: import("./types").FounderMessageStatus
+) {
+  return preferSupabase()
+    ? remote.updateFounderMessageStatus(id, status)
+    : Promise.resolve(local.updateFounderMessageStatus(id, status));
+}

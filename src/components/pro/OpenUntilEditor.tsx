@@ -49,12 +49,12 @@ export function OpenUntilEditor({
     <div className="min-w-0 space-y-3 overflow-hidden">
       <label className="block min-w-0 text-base font-extrabold text-ec-ink">
         Heure de fin
-        <span className="mt-3 flex min-w-0 items-center gap-2 overflow-hidden">
+        <span className="mt-3 block min-w-0 w-full">
           <input
             type="time"
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            className="box-border block h-14 w-full min-w-0 max-w-full overflow-hidden rounded-[12px] border-2 border-ec-rule bg-ec-paper px-3 text-xl font-extrabold tabular-nums text-ec-ink"
+            className="box-border block h-14 w-full min-w-0 max-w-full rounded-[12px] border-2 border-ec-rule bg-ec-paper px-3 text-center text-xl font-extrabold tabular-nums text-ec-ink"
           />
         </span>
       </label>
