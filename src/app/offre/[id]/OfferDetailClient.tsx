@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Clock, Heart, MapPin, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Heart, Info } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { LiveRefresh } from "@/hooks/useLiveRefresh";
 import type { Offer, Shop } from "@/lib/types";
@@ -21,53 +21,15 @@ import {
 } from "@/lib/risk-status";
 import Image from "next/image";
 import { VisualMark } from "@/components/VisualMark";
+import { Logo } from "@/components/Logo";
 import { offerPhoto } from "@/lib/offer-photos";
 import { isValidSwissPhone } from "@/lib/phone";
 import { isPrototypeOffer, PROTOTYPE_NOTICE } from "@/lib/prototype";
 import {
   discountPercent,
   formatCHF,
-  formatTime,
   formatWalkDistance,
 } from "@/lib/utils";
-
-function stockTone(n: number): {
-  number: string;
-  label: string;
-  box: string;
-} {
-  if (n <= 1) {
-    return {
-      number: "text-ec-red",
-      label: "text-ec-red",
-      box: "border-ec-red/40 bg-ec-paper",
-    };
-  }
-  if (n <= 2) {
-    return {
-      number: "text-ec-ink",
-      label: "text-ec-ink",
-      box: "border-ec-ink/15 bg-ec-yellow",
-    };
-  }
-  if (n <= 4) {
-    return {
-      number: "text-[#C4890A]",
-      label: "text-[#C4890A]",
-      box: "border-[#C4890A]/30 bg-[#FFF8E8]",
-    };
-  }
-  return {
-    number: "text-ec-green",
-    label: "text-ec-green",
-    box: "border-ec-green/30 bg-[#E8F8F0]",
-  };
-}
-
-function stockLabel(n: number): string {
-  if (n === 1) return "Dernière";
-  return "Encore";
-}
 
 export function OfferDetailClient({
   offer,
@@ -81,7 +43,6 @@ export function OfferDetailClient({
   openReserve?: boolean;
 }) {
   const router = useRouter();
-  const [message, setMessage] = useState("");
   const [prenom, setPrenom] = useState("");
   const [phone, setPhone] = useState("");
   const [phoneRisk, setPhoneRisk] = useState(false);
@@ -97,7 +58,10 @@ export function OfferDetailClient({
   const available = offer.status === "PUBLIEE" && offer.quantityLeft > 0;
   const distance = formatWalkDistance(shop.lat, shop.lng);
   const left = offer.quantityLeft;
-  const tone = stockTone(left);
+  const stockPercent = Math.max(
+    8,
+    Math.min(100, Math.round((left / Math.max(offer.quantityTotal, left, 1)) * 100)),
+  );
   const prototype = isPrototypeOffer(offer);
 
   function applyRisk(s: ClientRiskStatus) {
@@ -206,7 +170,7 @@ export function OfferDetailClient({
         body: JSON.stringify({
           offerId: offer.id,
           quantity: 1,
-          message: message || undefined,
+          message: undefined,
           clientName: resolveClientName(name),
           clientPhone,
           softUserId,
@@ -237,26 +201,42 @@ export function OfferDetailClient({
   }
 
   return (
-    <div className="mx-auto min-h-dvh max-w-lg bg-ec-surface pb-28">
+    <div className="mx-auto min-h-dvh max-w-lg bg-white pb-8 text-[#07132c]">
       <LiveRefresh types={["offers", "reservations"]} />
-      <div className="relative flex h-64 items-center justify-center overflow-hidden bg-ec-soft">
+      <header className="flex h-[76px] items-center justify-between px-5">
         <Link
           href="/"
-          className="absolute left-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-ec-rule bg-white"
+          className="flex h-11 w-11 items-center justify-start"
+          aria-label="Retour à l'accueil"
         >
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeft className="h-8 w-8" strokeWidth={2.4} />
         </Link>
+        <Logo size="lg" className="absolute left-1/2 -translate-x-1/2" />
         <button
           type="button"
           onClick={toggleFav}
-          className="absolute right-4 top-4 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-ec-rule bg-white"
+          className="flex h-11 w-11 items-center justify-end"
           aria-label="Favori"
         >
           <Heart
-            className={`h-5 w-5 ${favorite ? "fill-ec-red text-ec-red" : "text-ec-muted"}`}
+            className={`h-8 w-8 ${favorite ? "fill-ec-red text-ec-red" : "text-[#07132c]"}`}
+            strokeWidth={2.2}
           />
         </button>
-        {photo ? (
+      </header>
+
+      <main className="px-5">
+        <h2 className="mb-4 text-center text-[28px] font-black leading-tight tracking-[-0.035em]">
+          {shop.name}
+        </h2>
+
+        <div className="relative h-[250px] overflow-hidden rounded-[5px] bg-ec-soft sm:h-[300px]">
+          {disc !== null && (
+            <span className="absolute left-2 top-2 z-10 rounded-[4px] bg-[#ff2032] px-3 py-2 text-[25px] font-black text-white shadow-sm">
+              -{disc}%
+            </span>
+          )}
+          {photo ? (
           <button
             type="button"
             onClick={() => setPhotoOpen(true)}
@@ -272,10 +252,10 @@ export function OfferDetailClient({
               sizes="(max-width: 512px) 100vw, 512px"
             />
           </button>
-        ) : (
-          <VisualMark label={offer.title} stored={offer.emoji} size="hero" />
-        )}
-      </div>
+          ) : (
+            <VisualMark label={offer.title} stored={offer.emoji} size="hero" />
+          )}
+        </div>
 
       {photoOpen && photo && (
         <div
@@ -307,105 +287,61 @@ export function OfferDetailClient({
         </div>
       )}
 
-      <div className="space-y-5 px-4 pt-5">
+      <div className="space-y-4 pt-3">
         {prototype && (
           <div className="ec-corner-cut border border-ec-rule bg-ec-soft px-3 py-2 text-xs font-extrabold text-ec-ink">
             {PROTOTYPE_NOTICE}
           </div>
         )}
-        <div className="space-y-3">
-          <h1 className="font-display text-[2rem] leading-[1.05] text-ec-ink">
+        <section className="space-y-2">
+          <h1 className="text-[25px] font-black leading-tight tracking-[-0.025em]">
             {offer.title}
           </h1>
-
-          {/* Deal — % rouge bold, pas pastille pleine */}
-          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            {disc !== null ? (
-              <>
-                <span className="font-display text-[2.5rem] leading-none text-ec-red">
-                  −{disc}%
-                </span>
-                <span className="font-display text-[1.75rem] leading-none text-ec-ink">
-                  {formatCHF(offer.price)}
-                </span>
-                {offer.originalPrice != null && (
-                  <span className="text-base font-semibold text-ec-muted line-through">
-                    {formatCHF(offer.originalPrice)}
-                  </span>
-                )}
-              </>
-            ) : (
-              <span className="font-display text-[1.75rem] leading-none text-ec-ink">
-                {formatCHF(offer.price)}
+          <div className="flex items-baseline gap-3">
+            {offer.originalPrice != null && (
+              <span className="text-[20px] font-bold text-[#9099ad] line-through">
+                {formatCHF(offer.originalPrice)}
               </span>
             )}
+            <span className="text-[27px] font-black text-[#ff2032]">
+              {formatCHF(offer.price)}
+            </span>
           </div>
-
-          <p className="text-sm font-semibold text-ec-muted">{shop.name}</p>
-
-          {/* Stock live — typo LARGE, vert→ambre→rouge ; jaune si ≤2 */}
           {available && (
-            <div
-              className={`ec-corner-cut flex items-end gap-3 border px-4 py-3 ${tone.box}`}
-              aria-live="polite"
-            >
-              <div className="flex items-baseline gap-2">
-                <span
-                  className={`font-display text-[3.25rem] leading-none tracking-tight ${tone.number}`}
-                >
-                  {left}
-                </span>
-                <div className="pb-1">
-                  <p
-                    className={`text-[11px] font-extrabold uppercase tracking-[0.08em] ${tone.label}`}
-                  >
-                    {stockLabel(left)}
-                  </p>
-                  <p className={`text-sm font-bold ${tone.label}`}>
-                    {left === 1 ? "place" : "lots restants"}
-                  </p>
+            <div className="grid grid-cols-[148px_1fr] gap-2" aria-live="polite">
+              <div className="flex min-h-[58px] items-center justify-center rounded-[4px] bg-[#ff2032] px-3 text-[25px] font-black text-white">
+                {left} dispo
+              </div>
+              <div className="rounded-[4px] bg-[#fff0f2] p-2">
+                <div className="h-3.5 overflow-hidden rounded-[3px] bg-[#f7cbd1]">
+                  <div className="h-full rounded-[3px] bg-[#ff2032]" style={{ width: `${stockPercent}%` }} />
                 </div>
+                <p className="mt-1 text-[14px] font-bold">Plus que {left} disponible{left > 1 ? "s" : ""} !</p>
               </div>
             </div>
           )}
+        </section>
 
-          {/* Meta muted sous le wow */}
-          <div className="space-y-1.5 pt-0.5">
-            <p className="inline-flex flex-wrap items-center gap-1.5 text-sm font-semibold text-ec-muted">
-              <MapPin className="h-4 w-4 shrink-0 text-ec-blue" />
-              <a
-                href={`https://maps.apple.com/?ll=${shop.lat},${shop.lng}&q=${encodeURIComponent(shop.name)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-bold text-ec-blue underline-offset-2 hover:underline"
-                aria-label={`Ouvrir ${shop.name} dans Plans / Maps`}
-              >
-                {distance}
-              </a>
-              <span>· {shop.address}, Villeneuve</span>
-            </p>
-            <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-ec-muted">
-              <Clock className="h-4 w-4 text-ec-green" />
-              Jusqu&apos;à {formatTime(offer.validUntil)}
-            </p>
+        <a
+          href={`https://maps.apple.com/?ll=${shop.lat},${shop.lng}&q=${encodeURIComponent(shop.name)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block overflow-hidden rounded-[5px] border border-[#dde1e8] bg-white shadow-sm"
+        >
+          <iframe
+            title={`Carte de ${shop.name}`}
+            src={`https://www.openstreetmap.org/export/embed.html?bbox=${shop.lng - 0.025}%2C${shop.lat - 0.012}%2C${shop.lng + 0.025}%2C${shop.lat + 0.012}&layer=mapnik&marker=${shop.lat}%2C${shop.lng}`}
+            className="pointer-events-none h-[112px] w-full border-0"
+            loading="lazy"
+          />
+          <div className="flex items-center justify-between px-3 py-2.5">
+            <div>
+              <p className="text-[17px] font-black">À {shop.city || "Villeneuve"}</p>
+              <p className="text-[14px] font-semibold text-[#7f899f]">{distance}</p>
+            </div>
+            <ArrowRight className="h-7 w-7" />
           </div>
-        </div>
-
-        <ul className="space-y-2 text-sm">
-          {[
-            "Frais / local",
-            "Retrait en magasin",
-            "Réservation gratuite · code",
-          ].map((t) => (
-            <li
-              key={t}
-              className="flex items-center gap-2 font-semibold text-ec-ink"
-            >
-              <ShieldCheck className="h-4 w-4 shrink-0 text-ec-green" />
-              {t}
-            </li>
-          ))}
-        </ul>
+        </a>
 
         {strikeNote && (
           <div
@@ -423,37 +359,29 @@ export function OfferDetailClient({
           <div
             ref={reserveRef}
             id="reserver"
-            className="ec-corner-cut space-y-4 border border-ec-rule p-4 transition"
+            className="space-y-4 rounded-[6px] border border-[#e2e5eb] bg-white p-3 shadow-[0_3px_16px_rgba(7,19,44,0.06)] transition"
           >
-            <p className="text-[13px] font-medium tracking-wide text-ec-muted/80">
-              1 lot · 1 réservation par personne
-            </p>
-
             <div>
-              <label className="mb-1 block text-sm font-extrabold text-ec-ink">
-                Prénom
-              </label>
-              <p className="mb-2 text-xs font-semibold text-ec-muted">
-                Pour le magasin au retrait
+              <h3 className="text-[23px] font-black tracking-[-0.025em]">Finaliser ma réservation</h3>
+              <p className="text-[13px] font-medium text-[#8993a8]">
+                Votre réservation est gratuite et sans engagement. Vous recevez une confirmation par SMS.
               </p>
+            </div>
+
+            <div className="grid grid-cols-[88px_1fr] items-center gap-3">
+              <label className="text-[15px] font-black">Prénom</label>
               <input
                 type="text"
                 autoComplete="given-name"
                 value={prenom}
                 onChange={(e) => setPrenom(e.target.value)}
-                placeholder="Ex. Marie"
-                className="w-full rounded-[12px] border border-ec-rule px-3 py-2.5 text-sm text-ec-ink placeholder:font-normal placeholder:text-ec-muted/55 outline-none focus:ring-2 focus:ring-ec-blue"
+                placeholder="Votre prénom"
+                className="h-12 w-full rounded-[5px] border border-[#d7dce5] px-3 text-[15px] font-semibold outline-none placeholder:text-[#a2aabc] focus:border-[#07132c]"
               />
             </div>
 
-            <div>
-              <label className="mb-1 block text-sm font-extrabold text-ec-ink">
-                Téléphone
-              </label>
-              <p className="mb-2 text-xs font-semibold text-ec-muted">
-                Pour t&apos;envoyer le code et que le commerce t&apos;appelle si
-                besoin
-              </p>
+            <div className="grid grid-cols-[88px_1fr] items-center gap-3">
+              <label className="text-[15px] font-black">Téléphone</label>
               <input
                 type="tel"
                 inputMode="tel"
@@ -461,31 +389,38 @@ export function OfferDetailClient({
                 value={phone}
                 disabled={banned}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="079 000 00 00"
+                placeholder="+41 7X XXX XX XX"
                 required
-                className="w-full rounded-[12px] border border-ec-rule px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ec-blue disabled:bg-ec-soft disabled:text-ec-muted"
+                className="h-12 w-full rounded-[5px] border border-[#d7dce5] px-3 text-[15px] font-semibold outline-none placeholder:text-[#a2aabc] focus:border-[#07132c] disabled:bg-ec-soft"
               />
-              {phoneRisk && phone.trim() && !banned && (
-                <p className="mt-2 rounded-[12px] bg-ec-soft px-3 py-2 text-xs font-bold text-ec-ink">
-                  Vérification requise bientôt
-                </p>
-              )}
             </div>
 
-            <div>
-              <label className="mb-1 block text-sm font-semibold text-ec-muted">
-                Message (optionnel)
-              </label>
-              <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                rows={2}
-                disabled={banned}
-                placeholder="Ex. Je passe vers 17h"
-                className="w-full rounded-[12px] border border-ec-rule px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ec-blue disabled:bg-ec-soft"
-              />
+            <div className="flex items-center justify-end gap-2 text-[13px] font-semibold text-[#8993a8]">
+              <Info className="h-5 w-5 text-[#07132c]" />
+              Pourquoi demandons-nous votre numéro ?
+              <ArrowRight className="h-4 w-4 text-[#07132c]" />
             </div>
+
+            {phoneRisk && phone.trim() && !banned && (
+              <p className="rounded-[5px] bg-ec-soft px-3 py-2 text-xs font-bold">Vérification requise bientôt</p>
+            )}
             {error && <p className="text-sm font-bold text-ec-red">{error}</p>}
+
+            <Button
+              full
+              size="lg"
+              variant="confirm"
+              className="min-h-[58px] rounded-[4px] text-[16px] font-black"
+              disabled={!available || loading || banned}
+              onClick={reserve}
+            >
+              {loading ? "Envoi…" : banned ? "Réservations en pause" : `Réserver et recevoir ma confirmation`}
+              {!loading && !banned && <ArrowRight className="ml-2 h-6 w-6" />}
+            </Button>
+
+            <p className="text-center text-[11px] font-semibold text-[#8993a8]">
+              1 lot · 1 réservation par personne
+            </p>
           </div>
         ) : (
           <div className="ec-corner-cut border border-ec-red/30 bg-ec-paper p-4 text-center text-sm font-extrabold text-ec-red">
@@ -493,32 +428,7 @@ export function OfferDetailClient({
           </div>
         )}
       </div>
-
-      <div className="fixed bottom-0 left-0 right-0 border-t border-ec-rule bg-ec-surface/95 p-4 backdrop-blur">
-        <div className="mx-auto max-w-lg">
-          <Button
-            full
-            size="lg"
-            variant="confirm"
-            className="rounded-none"
-            disabled={!available || loading || banned}
-            onClick={reserve}
-          >
-            {loading
-              ? "Envoi…"
-              : banned
-                ? "Réservations en pause"
-                : available
-                  ? prototype
-                    ? "Tester la réservation"
-                    : "Réserver"
-                  : "Indisponible"}
-          </Button>
-          <p className="mt-2 text-center text-[11px] font-semibold text-ec-muted">
-            Réservation gratuite · Pas de paiement en ligne · Retrait en magasin
-          </p>
-        </div>
-      </div>
+      </main>
     </div>
   );
 }
