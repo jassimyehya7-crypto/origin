@@ -16,12 +16,15 @@ export default async function FavorisPage() {
   const favorites = await getFavorites();
   const rows = (
     await Promise.all(
-      favorites.map(async (f) => {
+      favorites
+        .filter((f) => f.shopId.startsWith("demo_"))
+        .slice(0, 5)
+        .map(async (f) => {
         const shop = await getShop(f.shopId);
         if (!shop) return null;
         const offers = await getOffers({ shopId: shop.id, publishedOnly: true });
         return { f, shop, active: offers.length, photo: offers[0] ? offerPhoto(offers[0]) : null };
-      })
+        })
     )
   ).filter(Boolean) as Array<{
     f: (typeof favorites)[number];

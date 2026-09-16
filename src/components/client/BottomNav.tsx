@@ -15,8 +15,8 @@ const items = [
 export function BottomNav() {
   const pathname = usePathname();
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-ec-rule bg-white pb-[max(5px,env(safe-area-inset-bottom))]">
-      <div className="mx-auto flex max-w-lg items-stretch justify-around px-3 py-1.5">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-ec-rule bg-white pb-[max(8px,env(safe-area-inset-bottom))] shadow-[0_-3px_16px_rgba(17,24,32,0.06)]">
+      <div className="mx-auto flex h-[82px] max-w-lg items-center justify-around px-4 py-2">
         {items.map(({ href, label, icon: Icon }) => {
           const active =
             href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -25,14 +25,14 @@ export function BottomNav() {
               key={href}
               href={href}
               className={cn(
-                "flex h-11 min-w-[4.5rem] items-center justify-center rounded-[9px] py-2 text-[0px] font-bold transition",
+                "flex h-16 min-w-[5rem] items-center justify-center rounded-[12px] py-2 text-[0px] font-bold transition",
                 active
                   ? "text-ec-ink"
                   : "text-ec-muted hover:text-ec-ink"
               )}
             >
-              <span className={cn("flex h-8 w-8 items-center justify-center rounded-md", active && "bg-ec-yellow")}>
-                <Icon className={cn("h-5 w-5", active && "stroke-[2.8]")} />
+              <span className={cn("flex h-12 w-12 items-center justify-center rounded-[12px]", active && "bg-ec-yellow")}>
+                <Icon className={cn("h-7 w-7", active && "stroke-[2.8]")} />
               </span>
               <span className="sr-only">{label}</span>
             </Link>
