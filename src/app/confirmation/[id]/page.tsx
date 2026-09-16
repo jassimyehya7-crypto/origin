@@ -13,6 +13,8 @@ import { VisualMark } from "@/components/VisualMark";
 import { offerPhoto } from "@/lib/offer-photos";
 import { formatSwissPhoneDisplay } from "@/lib/phone";
 import { RESERVATION_STATUS_LABELS } from "@/lib/labels";
+import { headers } from "next/headers";
+import QRCode from "qrcode";
 
 export const dynamic = "force-dynamic";
 
@@ -34,6 +36,21 @@ export default async function ConfirmationPage({
   const phoneDisplay = reservation.clientPhone
     ? formatSwissPhoneDisplay(reservation.clientPhone)
     : "";
+  const qrActive =
+    reservation.status === "CONFIRMEE" &&
+    Boolean(reservation.pickupToken) &&
+    !reservation.pickupTokenConsumedAt;
+  let qrDataUrl: string | null = null;
+  if (qrActive && reservation.pickupToken) {
+    const h = headers();
+    const host = h.get("x-forwarded-host") || h.get("host");
+    const protocol = h.get("x-forwarded-proto") || "https";
+    const base = host ? `${protocol}://${host}` : "";
+    qrDataUrl = await QRCode.toDataURL(
+      `${base}/pro/scan/${reservation.pickupToken}`,
+      { errorCorrectionLevel: "H", margin: 2, width: 420, color: { dark: "#080808", light: "#ffffff" } }
+    );
+  }
 
   return (
     <div className="mx-auto min-h-dvh max-w-lg bg-ec-paper">
@@ -79,6 +96,20 @@ export default async function ConfirmationPage({
                     ? "Le stock a été remis à disposition."
                     : "Consulte le détail ci-dessous."}
             </p>
+
+            {qrDataUrl ? (
+              <div className="mt-5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={qrDataUrl}
+                  alt="QR de retrait à usage unique"
+                  className="mx-auto h-52 w-52 bg-white p-2"
+                />
+                <p className="mt-2 rounded-md bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600">
+                  À présenter au commerçant · ce QR se désactive au premier scan
+                </p>
+              </div>
+            ) : null}
 
             {/* Big EC code — Encre mono XL, Papier, bordure tiretée Règle */}
             <div className="mt-6 inline-flex w-full max-w-sm flex-col items-center border-2 border-dashed border-ec-rule bg-ec-paper px-6 py-5">

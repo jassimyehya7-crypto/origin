@@ -41,7 +41,7 @@ export function LocationOfferFeed({ offers, shopMap }: LocationOfferFeedProps) {
   }
 
   return (
-    <div className="grid gap-5">
+    <div className="grid">
       {filtered.map((offer) => (
         <OfferCard
           key={offer.id}

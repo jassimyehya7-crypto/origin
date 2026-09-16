@@ -13,6 +13,12 @@ import type { ReservationStatus } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
+function withoutPickupToken<T extends { pickupToken?: string }>(reservation: T) {
+  const safe = { ...reservation };
+  delete safe.pickupToken;
+  return safe;
+}
+
 const ALLOWED: ReservationStatus[] = [
   "EN_ATTENTE",
   "CONFIRMEE",
@@ -43,7 +49,7 @@ export async function GET(
   if (!reservation)
     return NextResponse.json({ error: "Introuvable" }, { status: 404 });
   return NextResponse.json({
-    reservation,
+    reservation: withoutPickupToken(reservation),
     offer: await getOffer(reservation.offerId),
     shop: await getShop(reservation.shopId),
   });
@@ -80,7 +86,7 @@ export async function PATCH(
       // Idempotent: déjà annulée → OK (évite faux "ne peut plus" après refresh raté)
       if (before.status === "ANNULEE") {
         return NextResponse.json({
-          reservation: before,
+          reservation: withoutPickupToken(before),
           offer: await getOffer(before.offerId),
           shop: await getShop(before.shopId),
           alreadyCancelled: true,
@@ -168,7 +174,7 @@ export async function PATCH(
       : undefined;
 
   return NextResponse.json({
-    reservation: result.reservation,
+    reservation: withoutPickupToken(result.reservation),
     offer: await getOffer(result.reservation.offerId),
     shop: await getShop(result.reservation.shopId),
     notifications,

@@ -96,6 +96,11 @@ export interface Reservation {
   updatedAt: string;
   confirmedAt?: string;
   pickedUpAt?: string;
+  /** Opaque 256-bit bearer token rendered only inside the approved pickup QR. */
+  pickupToken?: string;
+  pickupTokenCreatedAt?: string;
+  pickupTokenConsumedAt?: string;
+  pickupTokenExpiresAt?: string;
 }
 
 export interface Favorite {

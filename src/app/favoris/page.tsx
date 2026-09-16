@@ -1,4 +1,6 @@
 import Link from "next/link";
+import Image from "next/image";
+import { ChevronRight } from "lucide-react";
 import { BottomNav } from "@/components/client/BottomNav";
 import { LiveRefresh } from "@/hooks/useLiveRefresh";
 import { Logo } from "@/components/Logo";
@@ -6,6 +8,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { CATEGORY_LABELS } from "@/lib/labels";
 import { getFavorites, getOffers, getShop } from "@/lib/store";
 import { VisualMark } from "@/components/VisualMark";
+import { offerPhoto } from "@/lib/offer-photos";
 
 export const dynamic = "force-dynamic";
 
@@ -16,28 +19,27 @@ export default async function FavorisPage() {
       favorites.map(async (f) => {
         const shop = await getShop(f.shopId);
         if (!shop) return null;
-        const active = (
-          await getOffers({ shopId: shop.id, publishedOnly: true })
-        ).length;
-        return { f, shop, active };
+        const offers = await getOffers({ shopId: shop.id, publishedOnly: true });
+        return { f, shop, active: offers.length, photo: offers[0] ? offerPhoto(offers[0]) : null };
       })
     )
   ).filter(Boolean) as Array<{
     f: (typeof favorites)[number];
     shop: NonNullable<Awaited<ReturnType<typeof getShop>>>;
     active: number;
+    photo: string | null;
   }>;
 
   return (
     <div className="mx-auto min-h-dvh max-w-lg bg-ec-paper">
       <LiveRefresh />
-      <header className="sticky top-0 z-30 border-b border-ec-rule bg-ec-surface px-4 py-4">
+      <header className="sticky top-0 z-30 bg-white px-4 py-4">
         <Logo size="sm" />
-        <h1 className="mt-3 font-display text-2xl text-ec-ink">
-          Vos commerces.
+        <h1 className="mt-5 text-center text-2xl font-black text-ec-ink">
+          Commerces suivis
         </h1>
-        <p className="text-sm font-semibold text-ec-muted">
-          Favoris à Villeneuve
+        <p className="text-center text-xs font-semibold text-ec-muted">
+          Retrouvez ici les commerces que vous suivez.
         </p>
       </header>
       <main className="safe-pb space-y-3 px-4 pt-4">
@@ -47,23 +49,25 @@ export default async function FavorisPage() {
             description="Ajoutez un commerce depuis une offre."
           />
         ) : (
-          rows.map(({ f, shop, active }) => (
+          rows.map(({ f, shop, active, photo }) => (
             <Link
               key={f.shopId}
               href={`/q/${shop.slug}`}
-              className="ec-corner-cut flex items-center gap-3 border border-ec-rule bg-ec-surface p-4"
+              className="flex items-center gap-3 border-b border-ec-rule bg-white py-3"
             >
-              <VisualMark label={shop.name} stored={shop.emoji} size="md" />
+              <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-md bg-ec-soft">
+                {photo ? <Image src={photo} alt="" fill className="object-cover" sizes="112px" /> : <VisualMark label={shop.name} stored={shop.emoji} size="md" />}
+              </div>
               <div className="flex-1">
                 <div className="font-extrabold text-ec-ink">{shop.name}</div>
                 <div className="text-xs font-semibold text-ec-muted">
                   {CATEGORY_LABELS[shop.category]} · {shop.address}
                 </div>
-                <div className="mt-1 text-xs font-extrabold text-ec-green">
-                  {active} offre{active !== 1 ? "s" : ""} active
-                  {active !== 1 ? "s" : ""}
+                <div className="mt-2 text-[11px] font-black text-ec-green">
+                  + {active} offre{active !== 1 ? "s" : ""} disponible{active !== 1 ? "s" : ""}
                 </div>
               </div>
+              <ChevronRight className="h-5 w-5 text-ec-ink" />
             </Link>
           ))
         )}

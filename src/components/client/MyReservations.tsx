@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ReservationStatusBadge } from "@/components/StatusBadge";
+import Image from "next/image";
+import { ChevronRight, MapPin } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CancelReservationButton } from "@/components/client/CancelReservationButton";
 import {
@@ -14,6 +15,7 @@ import {
 import { formatCHF, formatDateTime } from "@/lib/utils";
 import type { Offer, Reservation, Shop } from "@/lib/types";
 import { VisualMark } from "@/components/VisualMark";
+import { offerPhoto } from "@/lib/offer-photos";
 
 type Row = Reservation & { offer?: Offer | null; shop?: Shop | null };
 
@@ -77,13 +79,13 @@ export function MyReservations({ tab }: { tab: "avenir" | "historique" }) {
 
   return (
     <>
-      <div className="mb-3 flex gap-2 px-4">
+      <div className="mb-3 flex rounded-lg bg-ec-soft p-1 mx-4">
         <Link
           href="/reservations"
           className={`flex-1 rounded-[12px] py-2.5 text-center text-sm font-extrabold ${
             tab === "avenir"
               ? "bg-ec-ink text-white"
-              : "border border-ec-rule bg-ec-surface text-ec-ink"
+              : "text-ec-muted"
           }`}
         >
           À venir ({upcoming.length})
@@ -93,7 +95,7 @@ export function MyReservations({ tab }: { tab: "avenir" | "historique" }) {
           className={`flex-1 rounded-[12px] py-2.5 text-center text-sm font-extrabold ${
             tab === "historique"
               ? "bg-ec-ink text-white"
-              : "border border-ec-rule bg-ec-surface text-ec-ink"
+              : "text-ec-muted"
           }`}
         >
           Historique ({history.length})
@@ -119,34 +121,30 @@ export function MyReservations({ tab }: { tab: "avenir" | "historique" }) {
           list.map((r) => (
             <div
               key={r.id}
-              className="ec-corner-cut border border-ec-rule bg-ec-surface p-3"
+              className="rounded-xl border border-ec-rule bg-white p-3 shadow-sm"
             >
               <Link
                 href={`/confirmation/${r.id}`}
                 className="flex gap-3"
               >
-                <VisualMark
-                  label={r.offer?.title || "Offre"}
-                  stored={r.offer?.emoji}
-                  size="lg"
-                />
+                <div className="relative h-20 w-24 shrink-0 overflow-hidden rounded-lg bg-ec-soft">
+                  {r.offer && offerPhoto(r.offer) ? <Image src={offerPhoto(r.offer)!} alt="" fill className="object-cover" sizes="96px" /> : <VisualMark label={r.offer?.title || "Offre"} stored={r.offer?.emoji} size="lg" />}
+                </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="truncate font-extrabold text-ec-ink">
                       {r.offer?.title}
                     </h3>
-                    <ReservationStatusBadge status={r.status} />
+                    <ChevronRight className="h-5 w-5 shrink-0 text-ec-ink" />
                   </div>
                   <p className="text-xs font-semibold text-ec-muted">
                     {r.shop?.name} · {r.quantity}× ·{" "}
                     {r.offer ? formatCHF(r.offer.price * r.quantity) : ""}
                   </p>
-                  <p className="mt-1 font-mono text-sm font-black text-ec-ink">
-                    {r.code}
+                  <p className="mt-1 rounded-sm bg-rose-50 px-2 py-1 text-[11px] font-black text-rose-500">
+                    {r.status === "CONFIRMEE" ? "À retirer aujourd’hui" : r.status === "EN_ATTENTE" ? "En attente de confirmation" : formatDateTime(r.createdAt)}
                   </p>
-                  <p className="text-[11px] font-semibold text-ec-muted">
-                    {formatDateTime(r.createdAt)}
-                  </p>
+                  <p className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-ec-muted"><MapPin className="h-3 w-3" /> {r.shop?.address}</p>
                 </div>
               </Link>
               <CancelReservationButton

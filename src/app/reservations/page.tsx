@@ -15,13 +15,13 @@ export default function ReservationsPage({
   return (
     <div className="mx-auto min-h-dvh max-w-lg bg-ec-paper">
       <LiveRefresh />
-      <header className="sticky top-0 z-30 border-b border-ec-rule bg-ec-surface px-4 py-4">
+      <header className="sticky top-0 z-30 bg-white px-4 py-4">
         <Logo size="sm" />
-        <h1 className="mt-3 font-display text-2xl text-ec-ink">
-          Vos réservations.
+        <h1 className="mt-5 text-center text-2xl font-black text-ec-ink">
+          Mes réservations
         </h1>
-        <p className="mt-1 text-sm font-semibold text-ec-muted">
-          Présentez le code au commerçant avant l&apos;heure indiquée.
+        <p className="mt-1 text-center text-xs font-semibold text-ec-muted">
+          Retrouvez ici vos offres réservées.
         </p>
       </header>
       <main className="pt-4">

@@ -4,16 +4,16 @@
 
 :root {
   /* Official Épicerie Club brand tokens */
-  --ec-ink: #171b15;
-  --ec-yellow: #eaff4f;
+  --ec-ink: #111820;
+  --ec-yellow: #dfff00;
   --ec-blue: #255cff;
   --ec-green: #0caf68;
   --ec-red: #eb4a3f;
-  --ec-paper: #f5f6f2;
+  --ec-paper: #ffffff;
   --ec-surface: #ffffff;
-  --ec-rule: #dde1d8;
-  --ec-muted: #71776d;
-  --ec-soft: #ecefe8;
+  --ec-rule: #e7e9ec;
+  --ec-muted: #727982;
+  --ec-soft: #f5f6f7;
 
   /* Legacy aliases */
   --ec-green-bright: #0caf68;
@@ -91,20 +91,9 @@ body {
 
 /* 45° chamfered / pointed corners for marketplace cards */
 .ec-corner-cut {
-  --ec-cut: 14px;
-  border-radius: 0 !important;
-  clip-path: polygon(
-    var(--ec-cut) 0,
-    calc(100% - var(--ec-cut)) 0,
-    100% var(--ec-cut),
-    100% calc(100% - var(--ec-cut)),
-    calc(100% - var(--ec-cut)) 100%,
-    var(--ec-cut) 100%,
-    0 calc(100% - var(--ec-cut)),
-    0 var(--ec-cut)
-  );
-  /* edge definition when border is clipped with path */
-  box-shadow: inset 0 0 0 1px var(--ec-rule);
+  border-radius: 12px !important;
+  clip-path: none;
+  box-shadow: 0 1px 3px rgb(17 24 32 / 5%);
 }
 
 .ec-corner-cut-sm {

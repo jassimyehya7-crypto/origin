@@ -18,6 +18,12 @@ import { requireStaff } from "@/lib/staff-auth";
 
 export const dynamic = "force-dynamic";
 
+function withoutPickupToken<T extends { pickupToken?: string }>(reservation: T) {
+  const safe = { ...reservation };
+  delete safe.pickupToken;
+  return safe;
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const shopId = searchParams.get("shopId") || undefined;
@@ -70,7 +76,7 @@ export async function GET(req: NextRequest) {
     const list = await getReservations({ shopId, status });
     const enriched = await Promise.all(
       list.map(async (r) => ({
-        ...r,
+        ...withoutPickupToken(r),
         offer: await getOffer(r.offerId),
         shop: await getShop(r.shopId),
       }))
@@ -112,7 +118,7 @@ export async function GET(req: NextRequest) {
 
   const enriched = await Promise.all(
     list.map(async (r) => ({
-      ...r,
+      ...withoutPickupToken(r),
       offer: await getOffer(r.offerId),
       shop: await getShop(r.shopId),
     }))
@@ -182,7 +188,7 @@ export async function POST(req: NextRequest) {
   });
   return NextResponse.json(
     {
-      reservation: result.reservation,
+      reservation: withoutPickupToken(result.reservation),
       offer,
       shop: await getShop(result.reservation.shopId),
       phoneRisk: strike.risk,

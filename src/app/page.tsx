@@ -3,7 +3,6 @@ import { BottomNav } from "@/components/client/BottomNav";
 import { HeaderLocation } from "@/components/client/HeaderLocation";
 import { LocationOfferFeed } from "@/components/client/LocationOfferFeed";
 import { NearestCoverageBanner } from "@/components/client/NearestCoverageBanner";
-import { RiskBanner } from "@/components/client/RiskBanner";
 import { ScrollHideOnDown } from "@/components/client/ScrollHideOnDown";
 import { TodayInCity } from "@/components/client/TodayInCity";
 import { ClientLocationProvider } from "@/hooks/useClientLocation";
@@ -63,21 +62,20 @@ export default async function HomePage({
     <div className="mx-auto min-h-dvh max-w-lg bg-ec-paper">
       <LiveRefresh types={["offers", "shops"]} toast={false} />
       <ClientLocationProvider shops={shopGeo}>
-        <header className="sticky top-0 z-30 border-b border-ec-rule bg-ec-paper px-4 pb-3 pt-4">
+        <header className="sticky top-0 z-30 bg-white px-4 pb-2 pt-4">
           <div className="flex items-center justify-between gap-3">
             <Logo size="sm" />
             <HeaderLocation />
           </div>
         </header>
 
-        <main className="safe-pb px-4 pt-4">
-          <RiskBanner />
+        <main className="safe-pb px-4 pt-1">
           <TodayInCity />
           <NearestCoverageBanner />
 
           {/* Chips : visibles seulement en haut de page */}
-          <ScrollHideOnDown className="-mx-4 mb-4 overflow-hidden border-b border-ec-rule/60 bg-ec-paper px-4 py-2">
-            <div className="scrollbar-hide flex gap-2 overflow-x-auto pb-0.5">
+          <ScrollHideOnDown className="-mx-4 mb-2 overflow-hidden border-b border-ec-rule bg-white px-4 pb-3 pt-1">
+            <div className="scrollbar-hide flex gap-3 overflow-x-auto pb-0.5">
               {CATEGORIES.map((c) => {
                 const active = cat === c;
                 const href =
@@ -90,16 +88,12 @@ export default async function HomePage({
                   <Link
                     key={c}
                     href={href}
-                    className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-extrabold transition ${
-                      active
-                        ? "border-ec-ink bg-ec-ink text-white"
-                        : "border-ec-rule bg-ec-surface text-ec-ink"
-                    }`}
+                    className="flex w-10 shrink-0 flex-col items-center gap-1 text-[9px] font-bold text-ec-ink"
                   >
                     <span
                       aria-hidden
-                      className={`inline-flex h-5 w-5 items-center justify-center text-[10px] font-black ${
-                        active ? "text-ec-yellow" : "text-ec-ink"
+                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border text-[11px] font-black ${
+                        active ? "border-ec-yellow bg-ec-yellow text-ec-ink" : "border-ec-rule bg-white text-ec-ink"
                       }`}
                     >
                       {c === "all" ? "T" : CATEGORY_ICONS[c]}
@@ -110,6 +104,8 @@ export default async function HomePage({
               })}
             </div>
           </ScrollHideOnDown>
+
+          <h1 className="mb-1 text-sm font-black text-ec-ink">Offres autour de vous</h1>
 
           <LocationOfferFeed offers={offers} shopMap={shopMap} />
 

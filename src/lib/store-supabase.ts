@@ -48,6 +48,7 @@ import {
   resetStrikesDemo,
 } from "@/lib/phone-risk";
 import { resolveClientName } from "@/lib/soft-profile";
+import { createHash, randomBytes } from "node:crypto";
 
 /** Service-role only — fail closed (never silent anon for writes/reads). */
 function sb() {
@@ -419,9 +420,26 @@ export async function updateReservationStatus(
     pickedUpAt: status === "RECUPEREE" ? now : current.pickedUpAt,
   };
 
+  // A QR exists only after staff approval. Its 256-bit opaque token is
+  // unguessable; the hash is used by the atomic consume RPC.
+  if (status === "CONFIRMEE" && current.status !== "CONFIRMEE") {
+    const token = randomBytes(32).toString("base64url");
+    updated.pickupToken = token;
+    updated.pickupTokenCreatedAt = now;
+    updated.pickupTokenConsumedAt = undefined;
+    updated.pickupTokenExpiresAt = new Date(Date.now() + 24 * 60 * 60_000).toISOString();
+  } else if (["RECUPEREE", "REFUSEE", "ANNULEE", "NON_RECUPEREE", "EXPIREE"].includes(status)) {
+    updated.pickupToken = undefined;
+    updated.pickupTokenExpiresAt = undefined;
+  }
+
+  const row = reservationToRow(updated);
+  row.pickup_token_hash = updated.pickupToken
+    ? createHash("sha256").update(updated.pickupToken).digest("hex")
+    : null;
   const { data, error } = await sb()
     .from("ec_reservations")
-    .update(reservationToRow(updated))
+    .update(row)
     .eq("id", id)
     .select("*")
     .single();

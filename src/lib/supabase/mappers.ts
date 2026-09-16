@@ -77,6 +77,11 @@ export type EcReservationRow = {
   updated_at: string;
   confirmed_at: string | null;
   picked_up_at: string | null;
+  pickup_token?: string | null;
+  pickup_token_hash?: string | null;
+  pickup_token_created_at?: string | null;
+  pickup_token_consumed_at?: string | null;
+  pickup_token_expires_at?: string | null;
 };
 
 export type EcScanRow = {
@@ -238,6 +243,10 @@ export function rowToReservation(r: EcReservationRow): Reservation {
     updatedAt: r.updated_at,
     confirmedAt: r.confirmed_at || undefined,
     pickedUpAt: r.picked_up_at || undefined,
+    pickupToken: r.pickup_token || undefined,
+    pickupTokenCreatedAt: r.pickup_token_created_at || undefined,
+    pickupTokenConsumedAt: r.pickup_token_consumed_at || undefined,
+    pickupTokenExpiresAt: r.pickup_token_expires_at || undefined,
   };
 }
 
@@ -257,6 +266,10 @@ export function reservationToRow(r: Reservation): Record<string, unknown> {
     updated_at: r.updatedAt,
     confirmed_at: r.confirmedAt ?? null,
     picked_up_at: r.pickedUpAt ?? null,
+    pickup_token: r.pickupToken ?? null,
+    pickup_token_created_at: r.pickupTokenCreatedAt ?? null,
+    pickup_token_consumed_at: r.pickupTokenConsumedAt ?? null,
+    pickup_token_expires_at: r.pickupTokenExpiresAt ?? null,
   };
 }
 

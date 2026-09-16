@@ -12,7 +12,7 @@ export function Logo({
   className?: string;
 }) {
   const mark =
-    size === "sm" ? "h-8 w-8 text-[22px]" : size === "lg" ? "h-12 w-12 text-[34px]" : "h-10 w-10 text-[28px]";
+    size === "sm" ? "h-7 w-7 text-[20px]" : size === "lg" ? "h-11 w-11 text-[32px]" : "h-9 w-9 text-[26px]";
   const text =
     size === "sm" ? "text-[17px]" : size === "lg" ? "text-2xl" : "text-xl";
 
@@ -24,9 +24,9 @@ export function Logo({
       {/* Jaune Club mark — rare yellow, brand signature only */}
       <div
         className={cn(
-          "flex shrink-0 items-center justify-center rounded-[11px] border-2 border-ec-ink bg-ec-yellow font-bold leading-none text-ec-ink",
+          "flex shrink-0 items-center justify-center rounded-[2px] bg-ec-yellow font-bold leading-none text-ec-ink",
           mark,
-          inverted && "border-white"
+          inverted && "ring-1 ring-white"
         )}
         style={{ fontFamily: "Georgia, serif" }}
         aria-hidden
