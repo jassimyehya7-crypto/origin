@@ -11,7 +11,6 @@ import {
   MessageCircle,
   Phone,
   ShieldCheck,
-  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { LiveRefresh } from "@/hooks/useLiveRefresh";
@@ -62,6 +61,8 @@ export function OfferDetailClient({
   const [favorite, setFavorite] = useState(initialFavorite);
   const [photoOpen, setPhotoOpen] = useState(false);
   const [phoneInfoOpen, setPhoneInfoOpen] = useState(false);
+  const [sheetDragStart, setSheetDragStart] = useState<number | null>(null);
+  const [sheetDragOffset, setSheetDragOffset] = useState(0);
   const reserveRef = useRef<HTMLDivElement>(null);
   const photo = offerPhoto(offer);
   const disc = discountPercent(offer.price, offer.originalPrice);
@@ -451,23 +452,53 @@ export function OfferDetailClient({
           role="dialog"
           aria-modal="true"
           aria-labelledby="phone-info-title"
-          onClick={() => setPhoneInfoOpen(false)}
         >
           <section
-            className="relative max-h-[82dvh] w-full max-w-lg overflow-y-auto rounded-t-[22px] bg-white px-6 pb-7 pt-12 shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
+            className="relative max-h-[82dvh] w-full max-w-lg overflow-y-auto rounded-t-[22px] bg-white px-6 pb-7 pt-12 shadow-2xl transition-transform duration-200 ease-out"
+            style={{
+              transform: `translateY(${sheetDragOffset}px)`,
+              transitionDuration: sheetDragStart === null ? "200ms" : "0ms",
+            }}
           >
-            <div className="absolute left-1/2 top-4 h-1.5 w-16 -translate-x-1/2 rounded-full bg-[#a8adb7]" />
-            <button
-              type="button"
-              onClick={() => setPhoneInfoOpen(false)}
-              className="absolute right-4 top-3 flex h-11 w-11 items-center justify-center rounded-full border border-[#d9dde5] bg-white"
-              aria-label="Fermer"
+            <div
+              className="absolute inset-x-0 top-0 flex h-11 touch-none cursor-grab items-center justify-center active:cursor-grabbing"
+              role="button"
+              tabIndex={0}
+              aria-label="Faire glisser vers le bas pour fermer"
+              onPointerDown={(event) => {
+                event.currentTarget.setPointerCapture(event.pointerId);
+                setSheetDragStart(event.clientY);
+              }}
+              onPointerMove={(event) => {
+                if (sheetDragStart === null) return;
+                setSheetDragOffset(Math.max(0, event.clientY - sheetDragStart));
+              }}
+              onPointerUp={(event) => {
+                event.currentTarget.releasePointerCapture(event.pointerId);
+                const finalOffset =
+                  sheetDragStart === null
+                    ? sheetDragOffset
+                    : Math.max(0, event.clientY - sheetDragStart);
+                if (finalOffset > 90) {
+                  setSheetDragOffset(window.innerHeight);
+                  window.setTimeout(() => {
+                    setPhoneInfoOpen(false);
+                    setSheetDragOffset(0);
+                  }, 180);
+                } else {
+                  setSheetDragOffset(0);
+                }
+                setSheetDragStart(null);
+              }}
+              onPointerCancel={() => {
+                setSheetDragStart(null);
+                setSheetDragOffset(0);
+              }}
             >
-              <X className="h-7 w-7" />
-            </button>
+              <span className="h-1.5 w-16 rounded-full bg-[#a8adb7]" />
+            </div>
 
-            <h2 id="phone-info-title" className="pr-8 text-[24px] font-black leading-tight tracking-[-0.025em]">
+            <h2 id="phone-info-title" className="text-[24px] font-black leading-tight tracking-[-0.025em]">
               Pourquoi demandons-nous votre numéro ?
             </h2>
             <p className="mt-2 text-[15px] font-medium leading-snug text-[#7f899f]">
