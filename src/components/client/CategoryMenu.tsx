@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   Beef,
@@ -55,6 +56,15 @@ export function CategoryMenu({ active, query }: { active: CategoryKey; query: st
   const visible = CATEGORIES.filter((category) => VISIBLE_KEYS.includes(category.key));
   const hiddenActive = active !== "all" && !VISIBLE_KEYS.includes(active);
 
+  useEffect(() => {
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [open]);
+
   return (
     <div className="relative">
       <div className="scrollbar-hide flex items-start justify-between gap-3 overflow-x-auto pb-0.5">
@@ -84,27 +94,60 @@ export function CategoryMenu({ active, query }: { active: CategoryKey; query: st
         </button>
       </div>
 
-      {open && (
-        <div className="mt-3 rounded-[14px] border border-[#e3e6e1] bg-white p-3 shadow-[0_10px_28px_rgba(9,21,45,0.12)]">
-          <div className="mb-3 flex items-center justify-between">
-            <p className="text-[15px] font-black text-[#09152d]">Toutes les catégories</p>
-            <button type="button" onClick={() => setOpen(false)} className="text-xs font-bold text-[#7a8378]">Fermer</button>
-          </div>
-          <div className="grid grid-cols-3 gap-x-2 gap-y-4">
-            {CATEGORIES.map(({ key, label, icon: Icon }) => (
-              <Link
-                key={key}
-                href={categoryHref(key, query)}
-                className="flex min-w-0 flex-col items-center gap-1.5 text-center"
+      {open && typeof document !== "undefined" && createPortal(
+        <div
+          className="fixed inset-0 z-[80] flex items-end justify-center bg-[#09152d]/55 px-0"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="category-menu-title"
+          onClick={() => setOpen(false)}
+        >
+          <section
+            className="w-full max-w-lg rounded-t-[24px] bg-white px-5 pb-[calc(28px+env(safe-area-inset-bottom))] pt-4 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mx-auto mb-4 h-1.5 w-14 rounded-full bg-[#c1c6cf]" />
+            <div className="mb-5 flex items-center justify-between gap-4">
+              <div>
+                <h2 id="category-menu-title" className="text-[24px] font-black leading-tight text-[#09152d]">
+                  Toutes les catégories
+                </h2>
+                <p className="mt-1 text-sm font-semibold text-[#7d879b]">
+                  Choisissez le commerce que vous recherchez
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-ec-soft text-[#09152d]"
+                aria-label="Fermer la liste des catégories"
               >
-                <span className={`inline-flex h-12 w-12 items-center justify-center rounded-full ${active === key ? "bg-ec-yellow" : "bg-ec-soft"}`}>
-                  <Icon className="h-5 w-5 stroke-[2.5]" />
-                </span>
-                <span className="w-full truncate text-[11px] font-bold text-[#09152d]">{label}</span>
-              </Link>
-            ))}
-          </div>
-        </div>
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="grid max-h-[62dvh] grid-cols-2 gap-3 overflow-y-auto pb-1">
+              {CATEGORIES.map(({ key, label, icon: Icon }) => (
+                <Link
+                  key={key}
+                  href={categoryHref(key, query)}
+                  onClick={() => setOpen(false)}
+                  className={`flex min-h-[76px] items-center gap-3 rounded-[14px] border px-3 py-2 text-left active:scale-[0.98] ${
+                    active === key
+                      ? "border-ec-yellow bg-ec-yellow"
+                      : "border-[#e3e6e1] bg-[#f7f8f5]"
+                  }`}
+                >
+                  <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+                    <Icon className="h-6 w-6 stroke-[2.5]" />
+                  </span>
+                  <span className="min-w-0 text-[13px] font-black leading-tight text-[#09152d]">{label}</span>
+                </Link>
+              ))}
+            </div>
+          </section>
+        </div>,
+        document.body
       )}
     </div>
   );
