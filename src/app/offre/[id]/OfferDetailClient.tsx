@@ -395,12 +395,10 @@ export function OfferDetailClient({
               />
             </div>
 
-            <div className="grid grid-cols-[88px_1fr] gap-3">
-              <div className="col-start-2 flex items-center gap-2 text-[13px] font-semibold text-[#8993a8]">
-                <Info className="h-5 w-5 shrink-0 text-[#07132c]" />
-                <span className="flex-1">Pourquoi demandons-nous votre numéro ?</span>
-                <ArrowRight className="h-4 w-4 shrink-0 text-[#07132c]" />
-              </div>
+            <div className="flex items-center gap-2 text-[13px] font-semibold text-[#8993a8]">
+              <Info className="h-5 w-5 shrink-0 text-[#07132c]" />
+              <span className="flex-1">Pourquoi demandons-nous votre numéro ?</span>
+              <ArrowRight className="h-4 w-4 shrink-0 text-[#07132c]" />
             </div>
 
             {phoneRisk && phone.trim() && !banned && (
