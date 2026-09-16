@@ -1,14 +1,12 @@
 import Link from "next/link";
+import { Croissant, Flower2, Grid2X2, MoreHorizontal, Scissors, ShoppingBasket, Store, Utensils } from "lucide-react";
 import { BottomNav } from "@/components/client/BottomNav";
 import { HeaderLocation } from "@/components/client/HeaderLocation";
 import { LocationOfferFeed } from "@/components/client/LocationOfferFeed";
-import { NearestCoverageBanner } from "@/components/client/NearestCoverageBanner";
 import { ScrollHideOnDown } from "@/components/client/ScrollHideOnDown";
-import { TodayInCity } from "@/components/client/TodayInCity";
 import { ClientLocationProvider } from "@/hooks/useClientLocation";
 import { LiveRefresh } from "@/hooks/useLiveRefresh";
 import { Logo } from "@/components/Logo";
-import { CATEGORY_ICONS, CATEGORY_LABELS } from "@/lib/labels";
 import { getOffers, getShops } from "@/lib/store";
 import type { ShopCategory } from "@/lib/types";
 
@@ -26,6 +24,19 @@ const CATEGORIES: (ShopCategory | "all")[] = [
   "rotisserie",
   "autre",
 ];
+
+const CATEGORY_VISUALS = {
+  all: Grid2X2,
+  epicerie: Croissant,
+  boulangerie: Scissors,
+  kiosque: ShoppingBasket,
+  cremiere: Store,
+  boucherie: Utensils,
+  coiffure: Flower2,
+  laverie: MoreHorizontal,
+  rotisserie: Utensils,
+  autre: MoreHorizontal,
+} as const;
 
 export default async function HomePage({
   searchParams,
@@ -50,6 +61,13 @@ export default async function HomePage({
     );
   }
 
+  const preferredOrder = ["demo_pain", "demo_brush", "demo_tomates", "demo_snacks", "demo_tomme"];
+  offers.sort((a, b) => {
+    const ai = preferredOrder.indexOf(a.id);
+    const bi = preferredOrder.indexOf(b.id);
+    return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi);
+  });
+
   const shopMap = Object.fromEntries(shops.map((s) => [s.id, s]));
   const shopGeo = shops.map((s) => ({
     id: s.id,
@@ -62,22 +80,21 @@ export default async function HomePage({
     <div className="mx-auto min-h-dvh max-w-lg bg-ec-paper">
       <LiveRefresh types={["offers", "shops"]} toast={false} />
       <ClientLocationProvider shops={shopGeo}>
-        <header className="sticky top-0 z-30 bg-white px-4 pb-2 pt-4">
+        <header className="sticky top-0 z-30 bg-white px-4 pb-3 pt-5">
           <div className="flex items-center justify-between gap-3">
-            <Logo size="sm" />
+            <Logo size="lg" />
             <HeaderLocation />
           </div>
         </header>
 
         <main className="safe-pb px-4 pt-1">
-          <TodayInCity />
-          <NearestCoverageBanner />
 
           {/* Chips : visibles seulement en haut de page */}
-          <ScrollHideOnDown className="-mx-4 mb-2 overflow-hidden border-b border-ec-rule bg-white px-4 pb-3 pt-1">
-            <div className="scrollbar-hide flex gap-3 overflow-x-auto pb-0.5">
+          <ScrollHideOnDown className="-mx-4 mb-5 overflow-hidden bg-white px-4 pb-3 pt-2">
+            <div className="scrollbar-hide flex justify-between gap-3 overflow-x-auto pb-0.5">
               {CATEGORIES.map((c) => {
                 const active = cat === c;
+                const CategoryIcon = CATEGORY_VISUALS[c];
                 const href =
                   c === "all"
                     ? q
@@ -88,24 +105,23 @@ export default async function HomePage({
                   <Link
                     key={c}
                     href={href}
-                    className="flex w-10 shrink-0 flex-col items-center gap-1 text-[9px] font-bold text-ec-ink"
+                    className="flex shrink-0 items-center justify-center"
+                    aria-label={c === "all" ? "Toutes les offres" : c}
                   >
                     <span
-                      aria-hidden
-                      className={`inline-flex h-9 w-9 items-center justify-center rounded-full border text-[11px] font-black ${
-                        active ? "border-ec-yellow bg-ec-yellow text-ec-ink" : "border-ec-rule bg-white text-ec-ink"
+                      className={`inline-flex h-11 w-11 items-center justify-center rounded-full ${
+                        active ? "bg-ec-yellow text-ec-ink" : "bg-ec-soft text-ec-ink"
                       }`}
                     >
-                      {c === "all" ? "T" : CATEGORY_ICONS[c]}
+                      <CategoryIcon className="h-5 w-5 stroke-[2.6]" />
                     </span>
-                    {c === "all" ? "Tout" : CATEGORY_LABELS[c]}
                   </Link>
                 );
               })}
             </div>
           </ScrollHideOnDown>
 
-          <h1 className="mb-1 text-sm font-black text-ec-ink">Offres autour de vous</h1>
+          <h1 className="mb-2 text-[1.7rem] font-black tracking-tight text-[#09152d]">Offres autour de vous</h1>
 
           <LocationOfferFeed offers={offers} shopMap={shopMap} />
 

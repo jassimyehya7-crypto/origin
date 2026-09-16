@@ -49,6 +49,47 @@ import {
 } from "@/lib/phone-risk";
 import { resolveClientName } from "@/lib/soft-profile";
 import { createHash, randomBytes } from "node:crypto";
+import { DEMO_CLIENT_SHOPS, demoClientOffers } from "@/lib/demo-client-catalog";
+
+let demoCatalogReady: Promise<void> | null = null;
+
+async function ensureDemoClientCatalog(): Promise<void> {
+  if (demoCatalogReady) return demoCatalogReady;
+  demoCatalogReady = (async () => {
+    const client = sb();
+    const shopIds = DEMO_CLIENT_SHOPS.map((shop) => shop.id);
+    const offers = demoClientOffers();
+    const offerIds = offers.map((offer) => offer.id);
+    const { data: shopRows, error: shopReadError } = await client.from("ec_shops").select("id").in("id", shopIds);
+    if (shopReadError) throw shopReadError;
+    const existingShops = new Set((shopRows || []).map((row) => row.id));
+    const missingShops = DEMO_CLIENT_SHOPS.filter((shop) => !existingShops.has(shop.id));
+    if (missingShops.length) {
+      const { error } = await client.from("ec_shops").insert(missingShops.map(shopToRow));
+      if (error) throw error;
+    }
+    const { data: offerRows, error: offerReadError } = await client.from("ec_offers").select("id, ends_at").in("id", offerIds);
+    if (offerReadError) throw offerReadError;
+    const existingOffers = new Map((offerRows || []).map((row) => [row.id, row.ends_at]));
+    const hasImageColumn = await supportsOfferImageUrl();
+    const missingOffers = offers.filter((offer) => !existingOffers.has(offer.id));
+    if (missingOffers.length) {
+      const { error } = await client.from("ec_offers").insert(missingOffers.map((offer) => offerToRow(offer, { imageUrlColumn: hasImageColumn })));
+      if (error) throw error;
+    }
+    for (const offer of offers) {
+      const endsAt = existingOffers.get(offer.id);
+      if (endsAt && new Date(endsAt).getTime() < Date.now()) {
+        const { error } = await client.from("ec_offers").update({ status: "PUBLIEE", ends_at: offer.validUntil, published_at: offer.publishedAt, quantity_left: offer.quantityLeft }).eq("id", offer.id);
+        if (error) throw error;
+      }
+    }
+  })().catch((error) => {
+    demoCatalogReady = null;
+    throw error;
+  });
+  return demoCatalogReady;
+}
 
 /** Service-role only — fail closed (never silent anon for writes/reads). */
 function sb() {
@@ -86,12 +127,14 @@ function sortReservations(list: Reservation[]): Reservation[] {
 }
 
 export async function getShops(): Promise<Shop[]> {
+  await ensureDemoClientCatalog();
   const { data, error } = await sb().from("ec_shops").select("*");
   if (error) throw error;
   return (data as EcShopRow[]).map(rowToShop);
 }
 
 export async function getShop(id: string): Promise<Shop | undefined> {
+  if (id.startsWith("demo_")) await ensureDemoClientCatalog();
   const { data, error } = await sb()
     .from("ec_shops")
     .select("*")
@@ -102,6 +145,7 @@ export async function getShop(id: string): Promise<Shop | undefined> {
 }
 
 export async function getShopBySlug(slug: string): Promise<Shop | undefined> {
+  if (DEMO_CLIENT_SHOPS.some((shop) => shop.slug === slug)) await ensureDemoClientCatalog();
   const { data, error } = await sb()
     .from("ec_shops")
     .select("*")
@@ -133,6 +177,7 @@ export async function getOffers(opts?: {
   status?: string;
   publishedOnly?: boolean;
 }): Promise<Offer[]> {
+  if (opts?.publishedOnly || opts?.shopId?.startsWith("demo_")) await ensureDemoClientCatalog();
   let q = sb().from("ec_offers").select("*");
   if (opts?.shopId) q = q.eq("shop_id", opts.shopId);
   if (opts?.status) q = q.eq("status", opts.status);
@@ -151,6 +196,7 @@ export async function getOffers(opts?: {
 }
 
 export async function getOffer(id: string): Promise<Offer | undefined> {
+  if (id.startsWith("demo_")) await ensureDemoClientCatalog();
   const { data, error } = await sb()
     .from("ec_offers")
     .select("*")
@@ -312,6 +358,7 @@ export async function createReservation(input: {
 }): Promise<
   { ok: true; reservation: Reservation } | { ok: false; error: string }
 > {
+  if (input.offerId.startsWith("demo_")) await ensureDemoClientCatalog();
   const offer = await getOffer(input.offerId);
   if (!offer) return { ok: false, error: "Offre introuvable" };
   if (offer.status !== "PUBLIEE")
