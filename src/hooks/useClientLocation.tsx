@@ -12,6 +12,7 @@ import {
   FALLBACK_CANTON,
   FALLBACK_CITY,
   FALLBACK_COORDS,
+  haversineMeters,
   pickCanton,
   pickCityName,
   resolveCoverage,
@@ -98,6 +99,10 @@ export function ClientLocationProvider({
 
   useEffect(() => {
     let cancelled = false;
+    let watchId: number | null = null;
+    let lastGeocodedCoords: LatLng | null = null;
+    let lastCity = FALLBACK_CITY;
+    let lastCanton = FALLBACK_CANTON;
     const currentShops: ShopGeo[] = JSON.parse(shopsFingerprint).map(
       ([id, city, lat, lng]: [string, string, number, number]) => ({
         id,
@@ -110,14 +115,23 @@ export function ClientLocationProvider({
     const apply = async (coords: LatLng, fromGps: boolean) => {
       let city = FALLBACK_CITY;
       let canton = FALLBACK_CANTON;
-      if (fromGps) {
+      if (
+        fromGps &&
+        (!lastGeocodedCoords || haversineMeters(lastGeocodedCoords, coords) > 500)
+      ) {
         try {
           const geo = await reverseGeocode(coords.lat, coords.lng);
           city = geo.city;
           canton = geo.canton;
+          lastCity = city;
+          lastCanton = canton;
+          lastGeocodedCoords = coords;
         } catch {
           /* keep labels; still use real coords for distance */
         }
+      } else if (fromGps) {
+        city = lastCity;
+        canton = lastCanton;
       }
       if (cancelled) return;
       setValue(
@@ -136,7 +150,7 @@ export function ClientLocationProvider({
       return;
     }
 
-    navigator.geolocation.getCurrentPosition(
+    watchId = navigator.geolocation.watchPosition(
       (pos) => {
         void apply(
           { lat: pos.coords.latitude, lng: pos.coords.longitude },
@@ -146,11 +160,12 @@ export function ClientLocationProvider({
       () => {
         void apply(FALLBACK_COORDS, false);
       },
-      { enableHighAccuracy: false, maximumAge: 300_000, timeout: 8_000 }
+      { enableHighAccuracy: true, maximumAge: 15_000, timeout: 15_000 }
     );
 
     return () => {
       cancelled = true;
+      if (watchId !== null) navigator.geolocation.clearWatch(watchId);
     };
   }, [shopsFingerprint]);
 
