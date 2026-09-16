@@ -14,17 +14,18 @@ export function HeaderLocation() {
     feedCity,
     nearestDistanceM,
   } = useClientLocation();
+  const cleanCity = detectedCity.replace(/\s*\([A-Z]{2}\)\s*$/i, "").trim();
 
   const title =
     status === "loading"
       ? "Localisation…"
-      : `À ${detectedCity}${canton ? ` (${canton})` : ""}`;
+      : `À ${cleanCity}${canton ? ` (${canton})` : ""}`;
 
   const subtitle =
     status === "loading"
       ? "Recherche des offres proches"
       : covered
-        ? `Retrouvez nos offres à ${feedCity}`
+        ? "Retrouvez nos offres"
         : nearestDistanceM != null
           ? `Le plus proche : ${feedCity} · ${formatDistanceFr(nearestDistanceM)}`
           : `Retrouvez nos offres à ${feedCity}`;
