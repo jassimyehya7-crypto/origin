@@ -3,7 +3,16 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Heart, Info } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Heart,
+  Info,
+  MessageCircle,
+  Phone,
+  ShieldCheck,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { LiveRefresh } from "@/hooks/useLiveRefresh";
 import type { Offer, Shop } from "@/lib/types";
@@ -52,6 +61,7 @@ export function OfferDetailClient({
   const [error, setError] = useState("");
   const [favorite, setFavorite] = useState(initialFavorite);
   const [photoOpen, setPhotoOpen] = useState(false);
+  const [phoneInfoOpen, setPhoneInfoOpen] = useState(false);
   const reserveRef = useRef<HTMLDivElement>(null);
   const photo = offerPhoto(offer);
   const disc = discountPercent(offer.price, offer.originalPrice);
@@ -395,11 +405,16 @@ export function OfferDetailClient({
               />
             </div>
 
-            <div className="flex items-center gap-2 text-[13px] font-semibold text-[#8993a8]">
+            <button
+              type="button"
+              onClick={() => setPhoneInfoOpen(true)}
+              className="flex w-full items-center gap-2 text-left text-[13px] font-semibold text-[#8993a8] active:opacity-70"
+              aria-haspopup="dialog"
+            >
               <Info className="h-5 w-5 shrink-0 text-[#07132c]" />
               <span className="flex-1">Pourquoi demandons-nous votre numéro ?</span>
               <ArrowRight className="h-4 w-4 shrink-0 text-[#07132c]" />
-            </div>
+            </button>
 
             {phoneRisk && phone.trim() && !banned && (
               <p className="rounded-[5px] bg-ec-soft px-3 py-2 text-xs font-bold">Vérification requise bientôt</p>
@@ -429,6 +444,96 @@ export function OfferDetailClient({
         )}
       </div>
       </main>
+
+      {phoneInfoOpen && (
+        <div
+          className="fixed inset-0 z-[70] flex items-end justify-center bg-black/55"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="phone-info-title"
+          onClick={() => setPhoneInfoOpen(false)}
+        >
+          <section
+            className="relative max-h-[82dvh] w-full max-w-lg overflow-y-auto rounded-t-[22px] bg-white px-6 pb-7 pt-12 shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="absolute left-1/2 top-4 h-1.5 w-16 -translate-x-1/2 rounded-full bg-[#a8adb7]" />
+            <button
+              type="button"
+              onClick={() => setPhoneInfoOpen(false)}
+              className="absolute right-4 top-3 flex h-11 w-11 items-center justify-center rounded-full border border-[#d9dde5] bg-white"
+              aria-label="Fermer"
+            >
+              <X className="h-7 w-7" />
+            </button>
+
+            <h2 id="phone-info-title" className="pr-8 text-[24px] font-black leading-tight tracking-[-0.025em]">
+              Pourquoi demandons-nous votre numéro ?
+            </h2>
+            <p className="mt-2 text-[15px] font-medium leading-snug text-[#7f899f]">
+              Votre numéro de téléphone est uniquement utilisé dans le cadre des réservations sur Épicerie Club. Il nous permet de :
+            </p>
+
+            <div className="mt-5 space-y-4">
+              {[
+                [MessageCircle, "Confirmer votre réservation", "Vous recevez un SMS de confirmation avec les détails de votre réservation."],
+                [Phone, "Permettre au commerçant de vous contacter", "Le commerçant peut vous joindre si nécessaire au sujet du retrait de votre produit."],
+                [ShieldCheck, "Garantir un service fiable et équitable", "Nous vérifions qu’il s’agit d’un numéro réel afin de limiter les abus et de garantir l’accès au plus grand nombre."],
+              ].map(([Icon, title, description]) => {
+                const RowIcon = Icon as typeof MessageCircle;
+                return (
+                  <div key={String(title)} className="grid grid-cols-[52px_1fr] items-center gap-3">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#f3f4f6]">
+                      <RowIcon className="h-6 w-6" />
+                    </span>
+                    <div>
+                      <h3 className="text-[15px] font-black leading-tight">{String(title)}</h3>
+                      <p className="mt-0.5 text-[13px] font-medium leading-snug text-[#7f899f]">{String(description)}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="my-5 h-px bg-[#dfe2e8]" />
+
+            <h3 className="text-[20px] font-black leading-tight">Que se passe-t-il en cas de réservation non retirée ?</h3>
+            <p className="mt-1 text-[13px] font-medium leading-snug text-[#7f899f]">
+              Pour assurer un bon fonctionnement du service et par respect pour les commerçants, un système de suivi est mis en place :
+            </p>
+
+            <ol className="relative mt-4 space-y-4 rounded-[10px] bg-[#f6f7f9] px-4 py-4 before:absolute before:bottom-7 before:left-[29px] before:top-7 before:w-px before:bg-[#cbd0da]">
+              {[
+                ["1er retrait manqué sans annulation", "Un avertissement est enregistré sur votre numéro."],
+                ["2e retrait manqué sans annulation", "Un SMS d’avertissement est envoyé sur votre numéro."],
+                ["3e retrait manqué sans annulation", "Vos réservations sont suspendues pendant 7 jours."],
+                ["Après réactivation, 3 nouveaux retraits manqués", "Vos réservations sont suspendues pendant 30 jours."],
+                ["Après une nouvelle réactivation, 3 nouveaux retraits manqués", "Votre numéro est définitivement suspendu. Vous pouvez nous écrire pour demander une réactivation."],
+              ].map(([title, description], index) => (
+                <li key={title} className="relative grid grid-cols-[36px_1fr] gap-3">
+                  <span className="z-10 flex h-8 w-8 items-center justify-center rounded-full bg-[#b9bfcb] text-sm font-black text-white">
+                    {index + 1}
+                  </span>
+                  <div>
+                    <p className="text-[13px] font-black leading-tight">{title}</p>
+                    <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#7f899f]">{description}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+
+            <div className="mt-4 flex gap-3 rounded-[10px] bg-[#f5fbcf] p-4">
+              <Info className="h-7 w-7 shrink-0" />
+              <div>
+                <p className="text-sm font-black">Bon à savoir</p>
+                <p className="mt-0.5 text-[12px] font-medium leading-snug">
+                  Une réservation annulée avant l’échéance ne compte pas comme un retrait manqué.
+                </p>
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 }
