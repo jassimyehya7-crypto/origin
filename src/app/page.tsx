@@ -1,6 +1,5 @@
-import Link from "next/link";
-import { Croissant, Flower2, Grid2X2, MoreHorizontal, Scissors, ShoppingBasket, Store, Utensils } from "lucide-react";
 import { BottomNav } from "@/components/client/BottomNav";
+import { CategoryMenu } from "@/components/client/CategoryMenu";
 import { HeaderLocation } from "@/components/client/HeaderLocation";
 import { LocationOfferFeed } from "@/components/client/LocationOfferFeed";
 import { ScrollHideOnDown } from "@/components/client/ScrollHideOnDown";
@@ -11,32 +10,6 @@ import { getOffers, getShops } from "@/lib/store";
 import type { ShopCategory } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
-
-const CATEGORIES: (ShopCategory | "all")[] = [
-  "all",
-  "epicerie",
-  "boulangerie",
-  "kiosque",
-  "cremiere",
-  "boucherie",
-  "coiffure",
-  "laverie",
-  "rotisserie",
-  "autre",
-];
-
-const CATEGORY_VISUALS = {
-  all: Grid2X2,
-  epicerie: Croissant,
-  boulangerie: Scissors,
-  kiosque: ShoppingBasket,
-  cremiere: Store,
-  boucherie: Utensils,
-  coiffure: Flower2,
-  laverie: MoreHorizontal,
-  rotisserie: Utensils,
-  autre: MoreHorizontal,
-} as const;
 
 export default async function HomePage({
   searchParams,
@@ -91,34 +64,7 @@ export default async function HomePage({
 
           {/* Chips : visibles seulement en haut de page */}
           <ScrollHideOnDown className="-mx-4 mb-5 overflow-hidden bg-white px-4 pb-3 pt-2">
-            <div className="scrollbar-hide flex justify-between gap-3 overflow-x-auto pb-0.5">
-              {CATEGORIES.map((c) => {
-                const active = cat === c;
-                const CategoryIcon = CATEGORY_VISUALS[c];
-                const href =
-                  c === "all"
-                    ? q
-                      ? `/?q=${encodeURIComponent(q)}`
-                      : "/"
-                    : `/?cat=${c}${q ? `&q=${encodeURIComponent(q)}` : ""}`;
-                return (
-                  <Link
-                    key={c}
-                    href={href}
-                    className="flex shrink-0 items-center justify-center"
-                    aria-label={c === "all" ? "Toutes les offres" : c}
-                  >
-                    <span
-                      className={`inline-flex h-11 w-11 items-center justify-center rounded-full ${
-                        active ? "bg-ec-yellow text-ec-ink" : "bg-ec-soft text-ec-ink"
-                      }`}
-                    >
-                      <CategoryIcon className="h-5 w-5 stroke-[2.6]" />
-                    </span>
-                  </Link>
-                );
-              })}
-            </div>
+            <CategoryMenu active={cat} query={q} />
           </ScrollHideOnDown>
 
           <h1 className="mb-2 text-[1.7rem] font-black tracking-tight text-[#09152d]">Offres autour de vous</h1>
