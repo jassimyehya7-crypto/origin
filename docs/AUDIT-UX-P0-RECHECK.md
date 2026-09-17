@@ -1,4 +1,4 @@
-# Re-audit UX P0 — client Épicerie Club
+# Re-audit UX P0 — client OffresLocal
 Date: 2026-09-13
 Auditeur: UX Épuré
 Réf: AUDIT-UX-POST.md (baseline 5,5/10)

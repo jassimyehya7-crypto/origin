@@ -1,7 +1,7 @@
-# Audit copy post-restyle — Épicerie Club (client)
+# Audit copy post-restyle — OffresLocal (client)
 
 **Date :** 2026-09-13  
-**Cible :** `/workspace/epicerie-club`  
+**Cible :** `/workspace/offreslocal`  
 **Référence :** `docs/copy-grille.md`  
 **Périmètre :** écrans CLIENT uniquement (accueil, carte, fiche offre, réservations, confirmation, favoris, nav, profil/q si copy visible)  
 **Hors périmètre :** `pro/`, `fondateur/`, API, CSS purs, logique métier

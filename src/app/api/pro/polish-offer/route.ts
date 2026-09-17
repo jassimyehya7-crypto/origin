@@ -19,7 +19,7 @@ async function polishWithLlm(input: {
   const key = xaiKey || openaiKey!;
   const model = xaiKey ? "grok-2-latest" : "gpt-4o-mini";
 
-  const system = `Tu reformules des offres pour Épicerie Club (Villeneuve, CH).
+  const system = `Tu reformules des offres pour OffresLocal (Villeneuve, CH).
 Règles: français clair et chaleureux, zéro emoji, titre ≤ 45 caractères, description courte si fournie.
 Corrige les fautes (ex. mauto→moto, vandre→vendre, croisan→croissant) sans inventer de produit.
 Style commerçant de quartier — concret, appétissant, sans superlatifs creux.

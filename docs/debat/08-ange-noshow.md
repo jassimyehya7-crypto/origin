@@ -4,7 +4,7 @@
 Fondateur voit une résa sans `RECUPEREE` (code jamais scanné) → **no-show déduit** → **SMS progressifs**.  
 Tension : téléphone **skippable** (verdicts OTP + compte) vs besoin du n° pour SMS / appel.
 
-**Contexte Épicerie Club (Villeneuve)**  
+**Contexte OffresLocal (Villeneuve)**  
 Résa gratuite → stock gelé → Confirmer / Refuser Pro → code retrait.  
 **Déjà tranché :** Pattern C OTP (`03`) ; soft profile à la 1ʳᵉ résa, téléphone demandé skippable (`06`).
 
@@ -69,8 +69,8 @@ SMS toujours **courts**, factuels, sans culpabilisation moraliste, sans lien mar
 | **Quand** | Dès le passage auto en `NON_RECUPEREE` (1er strike sur le fil) |
 | **Ton** | Humain : oubli possible, stock local |
 | **But** | Informer + réapprendre la règle, **pas** punir |
-| **SMS** | `Épicerie Club: ta résa n’a pas été retirée. Le stock est rendu au magasin. Pense à venir ou annuler la prochaine fois.` |
-| **Variante ultra-courte** | `Épicerie Club: résa non retirée — stock rendu au magasin.` |
+| **SMS** | `OffresLocal: ta résa n’a pas été retirée. Le stock est rendu au magasin. Pense à venir ou annuler la prochaine fois.` |
+| **Variante ultra-courte** | `OffresLocal: résa non retirée — stock rendu au magasin.` |
 | **Reco texte** | Variante ultra-courte en V1 (coût + lisibilité) ; phrase « annuler » en P2 si on a un deep link d’annulation |
 | **In-app** | Bannière sur Réservations / prochaine offre : même message |
 | **Conséquence résa** | Aucune — peut réserver demain |
@@ -83,7 +83,7 @@ SMS toujours **courts**, factuels, sans culpabilisation moraliste, sans lien mar
 | **Quand** | 2e `NON_RECUPEREE` sur le même soft user / n° (dans une fenêtre glissante **90 jours**) |
 | **Ton** | Clair, toujours respectueux |
 | **But** | Prévenir le blocage ; protéger les commerçants |
-| **SMS** | `Épicerie Club: 2e résa non retirée. Encore une = pause 7 jours. Merci de respecter le stock des commerces.` |
+| **SMS** | `OffresLocal: 2e résa non retirée. Encore une = pause 7 jours. Merci de respecter le stock des commerces.` |
 | **In-app** | Modal soft une fois : même copy + « J’ai compris » |
 | **Conséquence résa** | Toujours possible, mais OTP Pattern C si n° ; badge Pro optionnel « historique fragile » (interne, pas humiliant côté client) |
 | **Appel** | Pro **peut** appeler si n° — pas d’obligation ; le SMS porte la discipline plateforme |
@@ -95,7 +95,7 @@ SMS toujours **courts**, factuels, sans culpabilisation moraliste, sans lien mar
 | **Quand** | 3e `NON_RECUPEREE` (même fenêtre 90 j) |
 | **Ton** | Ferme, factuel, réversible |
 | **But** | Protéger le stock ; signal sérieux |
-| **SMS** | `Épicerie Club: 3 résas non retirées. Pause jusqu’au [date +7j]. Après, tu pourras réserver à nouveau.` |
+| **SMS** | `OffresLocal: 3 résas non retirées. Pause jusqu’au [date +7j]. Après, tu pourras réserver à nouveau.` |
 | **In-app** | Écran bloqué à la résa : date de fin + explication 1 ligne |
 | **Conséquence** | **Blocage résa 7 jours** (soft user id **et** n° si présent) |
 | **Pas** | Ban à vie, pas doxxing, pas message moralisateur |
@@ -232,8 +232,8 @@ Critère ange : `NON_RECUPEREE` baisse **sans** explosion d’abandon 1ʳᵉ ré
 
 SMS reco V1 :
 
-1. `Épicerie Club: résa non retirée — stock rendu au magasin.`  
-2. `Épicerie Club: 2e résa non retirée. Encore une = pause 7 jours. Merci de respecter le stock des commerces.`  
-3. `Épicerie Club: 3 résas non retirées. Pause jusqu’au [date]. Après, tu pourras réserver à nouveau.`
+1. `OffresLocal: résa non retirée — stock rendu au magasin.`  
+2. `OffresLocal: 2e résa non retirée. Encore une = pause 7 jours. Merci de respecter le stock des commerces.`  
+3. `OffresLocal: 3 résas non retirées. Pause jusqu’au [date]. Après, tu pourras réserver à nouveau.`
 
 Discipline magasin ≠ froid. C’est prévenir d’abord, puis protéger le stock.

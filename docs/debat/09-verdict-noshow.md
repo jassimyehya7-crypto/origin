@@ -66,7 +66,7 @@ Le cockpit distingue clairement :
 | | |
 |---|---|
 | **In-app** | Bannière : `Résa non retirée — stock rendu au magasin.` |
-| **SMS** (si n° présent) | `Épicerie Club: résa non retirée — stock rendu au magasin.` |
+| **SMS** (si n° présent) | `OffresLocal: résa non retirée — stock rendu au magasin.` |
 | **SMS** (si n° absent) | Aucun — même copy in-app + nudge « Ajoute un n° pour les rappels » |
 | **Réservation** | Toujours possible |
 | **Pattern C** | Oui : OTP avant prochaine résa **si** n° présent (`03`) |
@@ -77,7 +77,7 @@ Le cockpit distingue clairement :
 | | |
 |---|---|
 | **In-app** | Modal une fois : `2e résa non retirée. Encore une = pause 7 jours.` + « J’ai compris » |
-| **SMS** (si n°) | `Épicerie Club: 2e résa non retirée. Encore une = pause 7 jours.` |
+| **SMS** (si n°) | `OffresLocal: 2e résa non retirée. Encore une = pause 7 jours.` |
 | **Réservation** | Possible (+ OTP Pattern C si n°) |
 | **Pro** | Badge interne optionnel « historique fragile » — **pas** visible client |
 
@@ -86,7 +86,7 @@ Le cockpit distingue clairement :
 | | |
 |---|---|
 | **In-app** | Mur à la résa jusqu’à date +7 j |
-| **SMS** (si n°) | `Épicerie Club: 3 résas non retirées. Pause jusqu’au [date]. Après, tu pourras réserver à nouveau.` |
+| **SMS** (si n°) | `OffresLocal: 3 résas non retirées. Pause jusqu’au [date]. Après, tu pourras réserver à nouveau.` |
 | **Blocage** | **Pause résa 7 jours** sur soft user id **et** n° si présent (device id en renfort anti-contournement léger V1) |
 | **Sortie** | Auto à J+7 ; compteur repasse à **1** (sous surveillance), pas à 0 |
 | **Pas** | Ban à vie, doxxing, sermon |
@@ -209,5 +209,5 @@ Le commerçant dit la vérité en un tap. La plateforme protège le réseau. Le 
 
 ---
 
-*Juge produit — Épicerie Club*  
+*Juge produit — OffresLocal*  
 *Sources : `07-diable-noshow.md`, `08-ange-noshow.md`, `03-verdict-juge.md`, `06-verdict-compte.md`, `phone-risk.ts`*

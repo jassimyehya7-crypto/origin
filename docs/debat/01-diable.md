@@ -1,6 +1,6 @@
 # Débat vérif téléphone — Position DIABLE (CONTRE)
 
-**Contexte Épicerie Club (Villeneuve)**  
+**Contexte OffresLocal (Villeneuve)**  
 Réservation gratuite → code retrait → stock gelé à la résa → commerçant Confirmer / Refuser.  
 **Proposition Yehya :** le client entre un numéro → OTP SMS (4/5/6 chiffres) → *seulement ensuite* la résa part au commerçant.
 
@@ -96,7 +96,7 @@ C’est ça « nan laisse tomber ». Pas une théorie UX. Un humain debout devan
 
 ### 2.8 Autofill et SMS « le plus léger » s’annulent
 
-Pour coller au &lt; 2 %, il faut autofill. iOS/Android WebOTP veulent un SMS **formé pour le domaine**, pas `Épicerie Club: 482917`. Le SMS minimal (sans domaine, sans format origin-bound) **casse** l’autofill. Le SMS compatible autofill est plus long = risque 2 segments = coût × 2, et plus de copie manuelle s’il échoue.
+Pour coller au &lt; 2 %, il faut autofill. iOS/Android WebOTP veulent un SMS **formé pour le domaine**, pas `OffresLocal: 482917`. Le SMS minimal (sans domaine, sans format origin-bound) **casse** l’autofill. Le SMS compatible autofill est plus long = risque 2 segments = coût × 2, et plus de copie manuelle s’il échoue.
 
 On ne peut pas vendre en même temps : SMS ultra-court *et* impact conversion &lt; 2 %. Choisir l’un, perdre l’autre.
 
@@ -199,7 +199,7 @@ Sans A/B, on débat des croyances.
 - LPD proportionnalité / minimisation : https://www.fedlex.admin.ch/eli/cc/2022/491/fr
 - TGTG : prépaiement + no-show non remboursé (5 mars 2026) — **aucun** taux no-show publié, **aucune** étude OTP → −no-show
 - NN/g login walls y compris flash-sale : https://www.nngroup.com/articles/login-walls/ (2014, qualitatif)
-- Docs internes : `PRODUCT.md` (brand), `Architecture_MVP.md`, `Epicerie_Club_dossier.txt` §11 / §21 / §22, `AUDIT-UX-POST.md`, `copy-grille.md`
+- Docs internes : `PRODUCT.md` (brand), `Architecture_MVP.md`, `OffresLocal_dossier.txt` §11 / §21 / §22, `AUDIT-UX-POST.md`, `copy-grille.md`
 - Code : app principale `OfferDetailClient.tsx` (résa sans OTP) vs prototype brand `app/page.tsx` (numéro + OTP)
 
 ---

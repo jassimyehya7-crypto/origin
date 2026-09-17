@@ -19,9 +19,9 @@ export function Logo({
   return (
     <div
       className={cn("flex items-center gap-2.5", className)}
-      aria-label="Épicerie Club"
+      aria-label="OffresLocal"
     >
-      {/* Jaune Club mark — rare yellow, brand signature only */}
+      {/* Marque OffresLocal — le O graphique est la première lettre du nom. */}
       <div
         className={cn(
           "flex shrink-0 items-center justify-center rounded-[2px] bg-ec-yellow font-bold leading-none text-ec-ink",
@@ -31,7 +31,7 @@ export function Logo({
         style={{ fontFamily: "Georgia, serif" }}
         aria-hidden
       >
-        é
+        O
       </div>
       {withText && (
         <span
@@ -41,8 +41,8 @@ export function Logo({
             inverted ? "text-white" : "text-ec-ink"
           )}
         >
-          <span className="font-black">picerie</span>{" "}
-          <span className="font-normal">Club</span>
+          <span className="font-black">ffres</span>
+          <span className="font-normal">Local</span>
         </span>
       )}
     </div>

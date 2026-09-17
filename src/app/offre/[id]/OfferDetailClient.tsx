@@ -502,7 +502,7 @@ export function OfferDetailClient({
               Pourquoi demandons-nous votre numéro ?
             </h2>
             <p className="mt-2 text-[15px] font-medium leading-snug text-[#7f899f]">
-              Votre numéro de téléphone est uniquement utilisé dans le cadre des réservations sur Épicerie Club. Il nous permet de :
+              Votre numéro de téléphone est uniquement utilisé dans le cadre des réservations sur OffresLocal. Il nous permet de :
             </p>
 
             <div className="mt-5 space-y-4">

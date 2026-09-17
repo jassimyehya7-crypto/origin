@@ -1,4 +1,4 @@
-# Grille copy — app client Épicerie Club
+# Grille copy — app client OffresLocal
 
 Zone : **Villeneuve**. Style : marché éditorial suisse — direct, jamais jargon.  
 Objectif : attirer, décider en quelques secondes.  

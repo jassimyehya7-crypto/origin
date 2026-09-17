@@ -10,7 +10,7 @@ const config: Config = {
     extend: {
       colors: {
         ec: {
-          // Brand tokens (Épicerie Club)
+          // Brand tokens (OffresLocal)
           ink: "#171B15",
           yellow: "#EAFF4F",
           blue: "#255CFF",

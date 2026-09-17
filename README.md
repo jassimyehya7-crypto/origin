@@ -1,11 +1,11 @@
-# Épicerie Club — MVP démo (Villeneuve VD)
+# OffresLocal — MVP démo (Villeneuve VD)
 
 Marketplace locale de **réservation gratuite** + **code de retrait** pour les commerces alimentaires de proximité. Pas de paiement, pas de livraison, pas de chat libre client–commerçant.
 
 ## Démarrage
 
 ```bash
-cd /workspace/epicerie-club
+cd /workspace/offreslocal
 npm install
 cp .env.local.example .env.local   # si besoin — voir Supabase ci-dessous
 npm run seed:supabase              # une fois : shops + offers + résas

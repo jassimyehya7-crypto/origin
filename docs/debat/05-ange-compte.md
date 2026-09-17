@@ -4,7 +4,7 @@
 Faut-il une **inscription dès l’arrivée** (nom + prénom + numéro + SMS) qui reste active jusqu’à suppression du compte ?  
 Ou **guest / résa sans compte** ?
 
-**Contexte Épicerie Club (Villeneuve)**  
+**Contexte OffresLocal (Villeneuve)**  
 Réservation gratuite → code retrait → stock gelé → commerçant Confirmer / Refuser.  
 **Verdict OTP déjà tranché** (`03-verdict-juge.md`) : Pattern C (risk-based) — pas d’OTP à l’entrée du pilote ; numéro demandé avec raison ; OTP seulement si risque.
 

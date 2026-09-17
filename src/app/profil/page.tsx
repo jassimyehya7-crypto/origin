@@ -23,7 +23,7 @@ export default function ProfilPage() {
         </div>
         <section className="flex items-center gap-3 rounded-xl bg-[#f7ffe2] p-4">
           <PiggyBank className="h-12 w-12 text-ec-ink" />
-          <div className="flex-1"><p className="text-sm font-black">Économisé avec<br />Épicerie Club</p><p className="text-[10px] text-ec-muted">Grâce aux offres des commerçants</p></div>
+          <div className="flex-1"><p className="text-sm font-black">Économisé avec<br />OffresLocal</p><p className="text-[10px] text-ec-muted">Grâce aux offres des commerçants</p></div>
           <div className="text-right"><strong className="rounded bg-ec-yellow px-2 py-1 text-lg">0.00 CHF</strong><p className="mt-1 text-[9px] text-ec-muted">d&apos;économies réalisées</p></div>
         </section>
         <SoftProfileCard />

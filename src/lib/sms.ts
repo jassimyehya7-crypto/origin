@@ -41,17 +41,17 @@ function appBase(): string {
   const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
   if (fromEnv) return fromEnv;
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return "https://epicerie-club.vercel.app";
+  return "https://offreslocal.ch";
 }
 
 export function buildReservationSmsBody(p: ReservationSmsPayload): string {
   const link = `${appBase()}/reservations`;
-  return `Épicerie Club — demande envoyée. Code ${p.code}. Suivi : ${link}`;
+  return `OffresLocal — demande envoyée. Code ${p.code}. Suivi : ${link}`;
 }
 
 export function buildConfirmedSmsBody(p: ReservationSmsPayload): string {
   const link = `${appBase()}/reservations`;
-  return `Épicerie Club — réservation confirmée. Code ${p.code}. Suivi : ${link}`;
+  return `OffresLocal — réservation confirmée. Code ${p.code}. Suivi : ${link}`;
 }
 
 export async function sendReservationSms(
@@ -63,7 +63,7 @@ export async function sendReservationSms(
       : buildReservationSmsBody(p);
   const e164 = toE164CH(p.to) || p.to.trim();
   const apiKey = process.env.SEVEN_API_KEY?.trim();
-  const from = process.env.SEVEN_FROM?.trim() || "EpicerieClb"; // max 11 alnum
+  const from = process.env.SEVEN_FROM?.trim() || "OffresLocal"; // max 11 alnum
 
   if (!apiKey) {
     console.info("[sms:stub] missing SEVEN_API_KEY", {

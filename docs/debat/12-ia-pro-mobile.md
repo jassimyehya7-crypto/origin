@@ -1,4 +1,4 @@
-# IA Pro mobile — Épicerie Club
+# IA Pro mobile — OffresLocal
 Date: 2026-09-14 (rév. clôture auto)  
 Auteur: UX Épuré  
 Contraintes: mobile-first, coins 45°, zéro emoji, simplicité max  

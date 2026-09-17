@@ -1,6 +1,6 @@
 # Débat no-show + SMS auto — Position DIABLE (CONTRE)
 
-**Contexte Épicerie Club (Villeneuve)**  
+**Contexte OffresLocal (Villeneuve)**  
 Résa gratuite, code `EC-xxxx`, stock à la résa, Pro Confirmer / Refuser.  
 **Déjà tranché :** Pattern C (`03-verdict-juge.md`) ; téléphone skippable ; soft profile prénom à la 1ʳᵉ résa (`06-verdict-compte.md`) ; pas d’OTP à l’entrée ; SMS seulement si risque *prouvé*.
 
@@ -39,7 +39,7 @@ Le scan `RECUPEREE` est un **geste Pro**. Il manque quand :
 - le Wi-Fi lâche, l’app plante
 - c’est le 1er mardi du pilote et le geste n’existe pas encore
 
-Inférer `NON_RECUPEREE` de ça, c’est scorer la **compliance Pro**, pas l’honneur du client. Le dossier no-show (`Epicerie_Club_dossier.txt` §21) répond déjà : code, historique, limites, prépaiement plus tard — **pas** « absence de scan = faute ».
+Inférer `NON_RECUPEREE` de ça, c’est scorer la **compliance Pro**, pas l’honneur du client. Le dossier no-show (`OffresLocal_dossier.txt` §21) répond déjà : code, historique, limites, prépaiement plus tard — **pas** « absence de scan = faute ».
 
 Le code a déjà un helper démo `cancelExpiredConfirmed()` (`store-local.ts`) : toute `CONFIRMEE` dont l’offre est `validUntil` passé → `NON_RECUPEREE`. C’est un **raccourci de seed**, pas une spec. Le productiser sans garde-fou empoisonne Pattern C dès J1.
 
