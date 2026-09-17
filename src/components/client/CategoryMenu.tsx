@@ -5,7 +5,10 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
   Beef,
-  CircleEllipsis,
+  Gamepad2,
+  Car,
+  Plane,
+  Utensils,
   Croissant,
   Drumstick,
   Grid2X2,
@@ -35,7 +38,10 @@ const CATEGORIES: Array<{
   { key: "boucherie", label: "Boucherie", icon: Beef },
   { key: "laverie", label: "Laverie", icon: WashingMachine },
   { key: "rotisserie", label: "Rôtisserie", icon: Drumstick },
-  { key: "autre", label: "Autres", icon: CircleEllipsis },
+  { key: "espace_game", label: "Espace game", icon: Gamepad2 },
+  { key: "restaurant", label: "Restaurant", icon: Utensils },
+  { key: "agence_location", label: "Agence de location", icon: Car },
+  { key: "agence_voyage", label: "Agence de voyage", icon: Plane },
 ];
 
 const VISIBLE_KEYS: CategoryKey[] = [

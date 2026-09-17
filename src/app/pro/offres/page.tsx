@@ -102,8 +102,7 @@ export default async function ProOffresPage() {
                 <div className="min-w-0 flex-1">
                   <p className="font-extrabold text-ec-ink">{o.title}</p>
                   <p className="mt-0.5 text-sm font-semibold text-ec-ink">
-                    {formatCHF(o.price)} · stock {o.quantityLeft}/
-                    {o.quantityTotal}
+                    {formatCHF(o.price)} · {o.durationHours ? `durée ${o.durationHours} h` : `stock ${o.quantityLeft}/${o.quantityTotal}`}
                   </p>
                   <p className="mt-1 text-xs font-extrabold uppercase tracking-wide text-ec-muted">
                     {STATUS_FR[o.status]}

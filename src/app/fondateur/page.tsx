@@ -262,7 +262,7 @@ export default async function FondateurPage() {
                   {o.shopName}
                 </div>
                 <div className="text-xs font-semibold text-ec-muted">
-                  {formatCHF(o.price)} · {o.quantityLeft}/{o.quantityTotal} ·{" "}
+                  {formatCHF(o.price)} · {o.durationHours ? `${o.durationHours} h` : `${o.quantityLeft}/${o.quantityTotal}`} ·{" "}
                   {o.publishedAt ? formatDateTime(o.publishedAt) : ""}
                 </div>
               </div>

@@ -81,6 +81,7 @@ export async function createOffer(input: {
   price: number;
   originalPrice?: number;
   quantityTotal: number;
+  durationHours?: 3 | 6 | 12;
   unit: string;
   emoji?: string;
   imageUrl?: string;

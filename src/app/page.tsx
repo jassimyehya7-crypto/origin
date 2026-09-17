@@ -6,6 +6,7 @@ import { ScrollHideOnDown } from "@/components/client/ScrollHideOnDown";
 import { ClientLocationProvider } from "@/hooks/useClientLocation";
 import { LiveRefresh } from "@/hooks/useLiveRefresh";
 import { Logo } from "@/components/Logo";
+import { BestOffers } from "@/components/client/BestOffers";
 import { getOffers, getShops } from "@/lib/store";
 import type { ShopCategory } from "@/lib/types";
 
@@ -60,6 +61,10 @@ export default async function HomePage({
           </div>
         </header>
 
+        <p className="client-caption border-t-4 border-[#eef0ed] bg-white px-4 py-2 text-center text-ec-muted">
+          Réservation gratuite · Pas de paiement en ligne · Retrait en magasin
+        </p>
+
         <main className="safe-pb px-4 pt-1">
 
           {/* Chips : visibles seulement en haut de page */}
@@ -67,13 +72,12 @@ export default async function HomePage({
             <CategoryMenu active={cat} query={q} />
           </ScrollHideOnDown>
 
-          <h1 className="mb-2 text-[1.7rem] font-black tracking-tight text-[#09152d]">Offres autour de vous</h1>
+          <BestOffers offers={offers} shopMap={shopMap} />
+
+          <h1 className="client-title mb-2 text-center text-[#09152d]">Offres autour de vous</h1>
 
           <LocationOfferFeed offers={offers} shopMap={shopMap} />
 
-          <p className="pb-4 pt-8 text-center text-[11px] font-semibold text-ec-muted">
-            Réservation gratuite · Pas de paiement en ligne · Retrait en magasin
-          </p>
         </main>
       </ClientLocationProvider>
 

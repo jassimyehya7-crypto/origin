@@ -24,7 +24,7 @@ export function LocationOfferFeed({ offers, shopMap }: LocationOfferFeedProps) {
   if (filtered.length === 0) {
     return (
       <div className="ec-corner-cut border border-dashed border-ec-rule bg-ec-surface px-6 py-12 text-center">
-        <p className="font-display text-lg text-ec-ink">Rien pour ce filtre</p>
+        <p className="font-sans text-lg font-semibold text-ec-ink">Rien pour ce filtre</p>
         <p className="mt-1 text-sm text-ec-muted">
           {covered
             ? "Changez de catégorie, ou revenez plus tard."

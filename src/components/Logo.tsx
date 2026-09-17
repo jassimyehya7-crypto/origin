@@ -18,7 +18,7 @@ export function Logo({
 
   return (
     <div
-      className={cn("flex items-center gap-2.5", className)}
+      className={cn("flex items-center gap-1", className)}
       aria-label="OffresLocal"
     >
       {/* Marque OffresLocal — le O graphique est la première lettre du nom. */}

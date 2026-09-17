@@ -14,6 +14,10 @@ export const CATEGORY_LABELS: Record<ShopCategory, string> = {
   coiffure: "Coiffure",
   laverie: "Laverie",
   rotisserie: "Rôtisserie",
+  espace_game: "Espace game",
+  restaurant: "Restaurant",
+  agence_location: "Agence de location",
+  agence_voyage: "Agence de voyage",
   autre: "Autre local",
 };
 
@@ -27,6 +31,10 @@ export const CATEGORY_ICONS: Record<ShopCategory, string> = {
   coiffure: "C",
   laverie: "L",
   rotisserie: "R",
+  espace_game: "G",
+  restaurant: "R",
+  agence_location: "L",
+  agence_voyage: "V",
   autre: "A",
 };
 

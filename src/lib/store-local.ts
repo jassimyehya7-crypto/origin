@@ -142,7 +142,7 @@ export function getOffers(opts?: {
     offers = offers.filter(
       (o) =>
         o.status === "PUBLIEE" &&
-        o.quantityLeft > 0 &&
+        (o.durationHours || o.quantityLeft > 0) &&
         new Date(o.validUntil).getTime() >= now
     );
   }
@@ -165,6 +165,7 @@ export function createOffer(input: {
   price: number;
   originalPrice?: number;
   quantityTotal: number;
+  durationHours?: 3 | 6 | 12;
   unit: string;
   emoji?: string;
   imageUrl?: string;
@@ -184,10 +185,13 @@ export function createOffer(input: {
     originalPrice: input.originalPrice,
     quantityTotal: input.quantityTotal,
     quantityLeft: input.quantityTotal,
+    durationHours: input.durationHours,
     unit: input.unit || "lot",
     emoji: input.emoji || "",
     imageUrl: input.imageUrl,
-    validUntil: offerValidUntilISO(shop?.openUntil || "19:00"),
+    validUntil: input.durationHours
+      ? new Date(Date.now() + input.durationHours * 3_600_000).toISOString()
+      : offerValidUntilISO(shop?.openUntil || "19:00"),
     createdAt: now,
     publishedAt: input.publish ? now : undefined,
     views: 0,
@@ -239,7 +243,9 @@ export function publishOffer(id: string): Offer | undefined {
   const updated = updateOffer(id, {
     status: "PUBLIEE",
     publishedAt: now,
-    validUntil: offerValidUntilISO(shop?.openUntil || "19:00"),
+    validUntil: offer.durationHours
+      ? new Date(Date.now() + offer.durationHours * 3_600_000).toISOString()
+      : offerValidUntilISO(shop?.openUntil || "19:00"),
   });
   if (updated) {
     const state = getState();
@@ -290,7 +296,7 @@ export function getReservation(id: string): Reservation | undefined {
 
 function restoreStock(offerId: string, qty: number) {
   const offer = getOffer(offerId);
-  if (!offer) return;
+  if (!offer || offer.durationHours) return;
   const quantityLeft = offer.quantityLeft + qty;
   updateOffer(offerId, {
     quantityLeft,
@@ -306,7 +312,9 @@ function decrementStock(offerId: string, qty: number): boolean {
   const idx = state.offers.findIndex((o) => o.id === offerId);
   if (idx < 0) return false;
   const offer = state.offers[idx];
-  if (offer.status !== "PUBLIEE" || offer.quantityLeft < qty) return false;
+  if (offer.status !== "PUBLIEE" || new Date(offer.validUntil).getTime() <= Date.now()) return false;
+  if (offer.durationHours) return true;
+  if (offer.quantityLeft < qty) return false;
   const quantityLeft = offer.quantityLeft - qty;
   state.offers[idx] = {
     ...offer,
@@ -331,9 +339,11 @@ export async function createReservation(input: {
   if (!offer) return { ok: false, error: "Offre introuvable" };
   if (offer.status !== "PUBLIEE")
     return { ok: false, error: "Cette offre n'est plus disponible" };
+  if (new Date(offer.validUntil).getTime() <= Date.now())
+    return { ok: false, error: "Cette offre est terminée" };
   // Client rule: always 1 lot / 1 réservation
   const quantity = 1;
-  if (offer.quantityLeft < quantity)
+  if (!offer.durationHours && offer.quantityLeft < quantity)
     return { ok: false, error: "Stock insuffisant" };
 
   const clientPhone =

@@ -52,6 +52,7 @@ export type EcOfferRow = {
   original_price: number | string | null;
   quantity_total: number;
   quantity_left: number;
+  duration_hours?: number | null;
   status: string;
   ends_at: string;
   published_at: string | null;
@@ -182,6 +183,7 @@ export function rowToOffer(r: EcOfferRow): Offer {
       r.original_price == null ? undefined : num(r.original_price),
     quantityTotal: r.quantity_total,
     quantityLeft: r.quantity_left,
+    durationHours: r.duration_hours === 3 || r.duration_hours === 6 || r.duration_hours === 12 ? r.duration_hours : undefined,
     unit: r.unit || "lot",
     emoji,
     imageUrl,
@@ -224,6 +226,7 @@ export function offerToRow(
   if (hasCol) {
     row.image_url = o.imageUrl ?? null;
   }
+  if (o.durationHours) row.duration_hours = o.durationHours;
   return row;
 }
 

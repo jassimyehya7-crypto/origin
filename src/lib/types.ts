@@ -7,6 +7,10 @@ export type ShopCategory =
   | "coiffure"
   | "laverie"
   | "rotisserie"
+  | "espace_game"
+  | "restaurant"
+  | "agence_location"
+  | "agence_voyage"
   | "autre";
 
 export type OfferType =
@@ -71,11 +75,13 @@ export interface Offer {
   originalPrice?: number;
   quantityTotal: number;
   quantityLeft: number;
+  /** Present for an offer limited by time rather than by stock. */
+  durationHours?: 3 | 6 | 12;
   unit: string;
   emoji: string;
   /** Public product photo URL (Storage). */
   imageUrl?: string;
-  validUntil: string; // ISO date end of business day
+  validUntil: string; // ISO expiry time
   createdAt: string;
   publishedAt?: string;
   views: number;

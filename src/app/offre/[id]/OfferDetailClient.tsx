@@ -30,6 +30,7 @@ import {
 import Image from "next/image";
 import { VisualMark } from "@/components/VisualMark";
 import { Logo } from "@/components/Logo";
+import { OfferTimeRemaining } from "@/components/OfferTimeRemaining";
 import { offerPhoto } from "@/lib/offer-photos";
 import { isValidSwissPhone } from "@/lib/phone";
 import { isPrototypeOffer, PROTOTYPE_NOTICE } from "@/lib/prototype";
@@ -66,7 +67,7 @@ export function OfferDetailClient({
   const reserveRef = useRef<HTMLDivElement>(null);
   const photo = offerPhoto(offer);
   const disc = discountPercent(offer.price, offer.originalPrice);
-  const available = offer.status === "PUBLIEE" && offer.quantityLeft > 0;
+  const available = offer.status === "PUBLIEE" && (offer.durationHours || offer.quantityLeft > 0) && new Date(offer.validUntil).getTime() > Date.now();
   const distance = formatWalkDistance(shop.lat, shop.lng);
   const left = offer.quantityLeft;
   const stockPercent = Math.max(
@@ -319,7 +320,11 @@ export function OfferDetailClient({
             </span>
           </div>
           {available && (
-            <div className="grid grid-cols-[148px_1fr] gap-2" aria-live="polite">
+            offer.durationHours ? (
+              <div className="rounded-[4px] bg-[#ff2032] px-4 py-3 text-lg font-black text-white" aria-live="polite">
+                ◷ <OfferTimeRemaining validUntil={offer.validUntil} />
+              </div>
+            ) : <div className="grid grid-cols-[148px_1fr] gap-2" aria-live="polite">
               <div className="flex min-h-[58px] items-center justify-center rounded-[4px] bg-[#ff2032] px-3 text-[25px] font-black text-white">
                 {left} dispo
               </div>

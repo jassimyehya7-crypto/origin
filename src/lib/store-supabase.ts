@@ -189,7 +189,7 @@ export async function getOffers(opts?: {
     const now = Date.now();
     offers = offers.filter(
       (o) =>
-        o.quantityLeft > 0 && new Date(o.validUntil).getTime() >= now
+        (o.durationHours || o.quantityLeft > 0) && new Date(o.validUntil).getTime() >= now
     );
   }
   return offers;
@@ -214,6 +214,7 @@ export async function createOffer(input: {
   price: number;
   originalPrice?: number;
   quantityTotal: number;
+  durationHours?: 3 | 6 | 12;
   unit: string;
   emoji?: string;
   imageUrl?: string;
@@ -221,7 +222,9 @@ export async function createOffer(input: {
 }): Promise<Offer> {
   const shop = await getShop(input.shopId);
   const now = new Date().toISOString();
-  const validUntil = offerValidUntilISO(shop?.openUntil || "19:00");
+  const validUntil = input.durationHours
+    ? new Date(Date.now() + input.durationHours * 3_600_000).toISOString()
+    : offerValidUntilISO(shop?.openUntil || "19:00");
   const offer: Offer = {
     id: generateId("offer"),
     shopId: input.shopId,
@@ -233,6 +236,7 @@ export async function createOffer(input: {
     originalPrice: input.originalPrice,
     quantityTotal: input.quantityTotal,
     quantityLeft: input.quantityTotal,
+    durationHours: input.durationHours,
     unit: input.unit || "lot",
     emoji: input.emoji || "",
     imageUrl: input.imageUrl,
@@ -276,7 +280,9 @@ export async function publishOffer(id: string): Promise<Offer | undefined> {
   return updateOffer(id, {
     status: "PUBLIEE",
     publishedAt: new Date().toISOString(),
-    validUntil: offerValidUntilISO(shop?.openUntil || "19:00"),
+    validUntil: offer.durationHours
+      ? new Date(Date.now() + offer.durationHours * 3_600_000).toISOString()
+      : offerValidUntilISO(shop?.openUntil || "19:00"),
   });
 }
 
@@ -326,7 +332,7 @@ export async function getReservation(
 
 async function restoreStock(offerId: string, qty: number) {
   const offer = await getOffer(offerId);
-  if (!offer) return;
+  if (!offer || offer.durationHours) return;
   const quantityLeft = offer.quantityLeft + qty;
   await updateOffer(offerId, {
     quantityLeft,
@@ -338,7 +344,9 @@ async function restoreStock(offerId: string, qty: number) {
 async function decrementStock(offerId: string, qty: number): Promise<boolean> {
   const offer = await getOffer(offerId);
   if (!offer) return false;
-  if (offer.status !== "PUBLIEE" || offer.quantityLeft < qty) return false;
+  if (offer.status !== "PUBLIEE" || new Date(offer.validUntil).getTime() <= Date.now()) return false;
+  if (offer.durationHours) return true;
+  if (offer.quantityLeft < qty) return false;
   const quantityLeft = offer.quantityLeft - qty;
   await updateOffer(offerId, {
     quantityLeft,
@@ -363,9 +371,11 @@ export async function createReservation(input: {
   if (!offer) return { ok: false, error: "Offre introuvable" };
   if (offer.status !== "PUBLIEE")
     return { ok: false, error: "Cette offre n'est plus disponible" };
+  if (new Date(offer.validUntil).getTime() <= Date.now())
+    return { ok: false, error: "Cette offre est terminée" };
   // Client rule: always 1 lot / 1 réservation
   const quantity = 1;
-  if (offer.quantityLeft < quantity)
+  if (!offer.durationHours && offer.quantityLeft < quantity)
     return { ok: false, error: "Stock insuffisant" };
 
   const clientPhone =

@@ -5,10 +5,11 @@ import { VisualMark } from "./VisualMark";
 import type { Offer, Shop } from "@/lib/types";
 import { discountPercent, formatCHF } from "@/lib/utils";
 import { offerPhoto } from "@/lib/offer-photos";
+import { OfferTimeRemaining } from "./OfferTimeRemaining";
 
 export function OfferCard({ offer }: { offer: Offer; shop?: Shop | null }) {
   const photo = offerPhoto(offer);
-  const available = offer.status === "PUBLIEE" && offer.quantityLeft > 0;
+  const available = offer.status === "PUBLIEE" && (offer.durationHours || offer.quantityLeft > 0) && new Date(offer.validUntil).getTime() > Date.now();
   const disc = discountPercent(offer.price, offer.originalPrice);
   const stockWidth = Math.max(15, Math.min(100, offer.quantityLeft * 9));
   const kiosk = offer.id === "demo_snacks";
@@ -29,16 +30,20 @@ export function OfferCard({ offer }: { offer: Offer; shop?: Shop | null }) {
           <Heart className="absolute right-2 top-2 h-5 w-5 text-[#09152d]" />
           <h2 className="min-h-[34px] pr-7 text-[14px] font-black leading-[1.15] text-[#09152d]">{kiosk ? "Sur une sélection de magasins" : offer.title}</h2>
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5">
-            {offer.originalPrice ? <span className="text-[11px] font-bold text-[#91a0be] line-through">{formatCHF(offer.originalPrice)}</span> : null}
+            {offer.originalPrice ? <span className="client-caption text-[#91a0be] line-through">{formatCHF(offer.originalPrice)}</span> : null}
             <span className="text-[16px] font-black text-[#ff2033]">{kiosk ? "Dès " : ""}{formatCHF(offer.price)}</span>
           </div>
-          <div className="mt-1.5 grid grid-cols-[40%_1fr] gap-2">
+          {offer.durationHours ? (
+            <div className="mt-1.5 flex min-h-9 items-center gap-1 whitespace-nowrap bg-[#ff2033] px-2 text-[11px] font-black text-white">
+              <span aria-hidden>◷</span><OfferTimeRemaining validUntil={offer.validUntil} compact />
+            </div>
+          ) : <div className="mt-1.5 grid grid-cols-[40%_1fr] gap-2">
             <span className="flex h-9 items-center justify-center bg-[#ff2033] text-[14px] font-black text-white">{offer.quantityLeft} dispo</span>
             <div className="min-w-0">
               <div className="h-3 overflow-hidden bg-[#ffd3d8]"><div className="h-full bg-[#ff2033]" style={{ width: `${stockWidth}%` }} /></div>
-              <p className="mt-1 truncate text-[9px] font-bold text-[#09152d]">Plus que {offer.quantityLeft} disponibles !</p>
+              <p className="client-caption mt-1 truncate text-[#09152d]">Plus que {offer.quantityLeft} disponibles !</p>
             </div>
-          </div>
+          </div>}
           <span className={`mt-auto inline-flex h-10 w-full items-center justify-center gap-2 rounded-[3px] px-4 text-[14px] font-black shadow-sm ${available ? "bg-ec-yellow text-ec-ink" : "bg-ec-rule text-ec-muted"}`}>
             {available ? "Réserver" : "Indisponible"}<ArrowRight className="h-4 w-4" />
           </span>

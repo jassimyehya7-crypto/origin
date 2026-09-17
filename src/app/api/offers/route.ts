@@ -25,8 +25,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: gate.error }, { status: gate.status });
   }
   const body = await req.json();
-  if (!body.shopId || !body.title || !body.price || !body.quantityTotal) {
+  const timeLimited = body.limitMode === "time";
+  const durationHours = Number(body.durationHours);
+  const quantityTotal = timeLimited ? 0 : Number(body.quantityTotal);
+  if (!body.shopId || !body.title?.trim() || !Number.isFinite(Number(body.price)) || Number(body.price) <= 0) {
     return NextResponse.json({ error: "Champs requis manquants" }, { status: 400 });
+  }
+  if (timeLimited ? ![3, 6, 12].includes(durationHours) : !Number.isInteger(quantityTotal) || quantityTotal < 1) {
+    return NextResponse.json({ error: "Choisissez une durée de 3, 6 ou 12 h, ou une quantité valide" }, { status: 400 });
   }
   const offer = await createOffer({
     shopId: body.shopId,
@@ -35,7 +41,8 @@ export async function POST(req: NextRequest) {
     type: body.type || "PROMO",
     price: Number(body.price),
     originalPrice: body.originalPrice ? Number(body.originalPrice) : undefined,
-    quantityTotal: Number(body.quantityTotal),
+    quantityTotal,
+    durationHours: timeLimited ? durationHours as 3 | 6 | 12 : undefined,
     unit: body.unit || "lot",
     emoji: body.emoji,
     imageUrl: body.imageUrl || undefined,

@@ -146,12 +146,13 @@ export function shouldExpirePending(
  * (do not expire brand-new offers created after today's close).
  */
 export function shouldExpirePublishedOffer(
-  offer: { validUntil: string; createdAt: string; publishedAt?: string },
+  offer: { validUntil: string; createdAt: string; publishedAt?: string; durationHours?: 3 | 6 | 12 },
   openUntil: string,
   now = new Date()
 ): boolean {
   const pastValid = new Date(offer.validUntil).getTime() < now.getTime();
   if (pastValid) return true;
+  if (offer.durationHours) return false;
   if (!isPastShopClosing(openUntil, now)) return false;
   const close = closingInstantToday(openUntil, now);
   const anchor = new Date(offer.publishedAt || offer.createdAt).getTime();

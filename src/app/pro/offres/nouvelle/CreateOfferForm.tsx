@@ -23,6 +23,8 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
     type: "PROMO" as OfferType,
     price: "",
     quantityTotal: "5",
+    limitMode: "quantity" as "quantity" | "time",
+    durationHours: 3 as 3 | 6 | 12,
   });
 
   function flashToast(msg: string) {
@@ -131,7 +133,9 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
           description: form.description,
           type: form.type,
           price,
-          quantityTotal: Number(form.quantityTotal),
+          limitMode: form.limitMode,
+          quantityTotal: form.limitMode === "quantity" ? Number(form.quantityTotal) : undefined,
+          durationHours: form.limitMode === "time" ? form.durationHours : undefined,
           unit: "lot",
           imageUrl: imageUrl || undefined,
           publish: true,
@@ -260,7 +264,7 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className={`grid gap-3 ${form.limitMode === "quantity" ? "grid-cols-2" : "grid-cols-1"}`}>
         <div>
           <label className="mb-1.5 block text-sm font-extrabold text-ec-ink">
             Prix (CHF)
@@ -276,7 +280,7 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
             onChange={(e) => setForm({ ...form, price: e.target.value })}
           />
         </div>
-        <div>
+        {form.limitMode === "quantity" && <div>
           <label className="mb-1.5 block text-sm font-extrabold text-ec-ink">
             Quantité
           </label>
@@ -291,8 +295,33 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
               setForm({ ...form, quantityTotal: e.target.value })
             }
           />
-        </div>
+        </div>}
       </div>
+
+      <fieldset>
+        <legend className="mb-2 text-sm font-extrabold text-ec-ink">Limite de l&apos;offre</legend>
+        <div className="grid grid-cols-2 gap-2">
+          {(["quantity", "time"] as const).map((mode) => (
+            <button key={mode} type="button" onClick={() => setForm({ ...form, limitMode: mode })}
+              aria-pressed={form.limitMode === mode}
+              className={`min-h-12 rounded-[12px] border px-2 text-sm font-extrabold ${form.limitMode === mode ? "border-ec-ink bg-ec-ink text-white" : "border-ec-rule bg-ec-surface text-ec-ink"}`}>
+              {mode === "quantity" ? "Nombre disponible" : "Durée de validité"}
+            </button>
+          ))}
+        </div>
+        {form.limitMode === "time" && <div className="mt-3">
+          <p className="mb-2 text-sm font-semibold text-ec-muted">Valable dès la publication, sans limite de réservations</p>
+          <div className="grid grid-cols-3 gap-2">
+            {([3, 6, 12] as const).map((hours) => (
+              <button key={hours} type="button" onClick={() => setForm({ ...form, durationHours: hours })}
+                aria-pressed={form.durationHours === hours}
+                className={`h-12 rounded-[12px] border text-sm font-extrabold ${form.durationHours === hours ? "border-ec-ink bg-ec-yellow text-ec-ink" : "border-ec-rule bg-ec-surface text-ec-ink"}`}>
+                {hours} h
+              </button>
+            ))}
+          </div>
+        </div>}
+      </fieldset>
 
       <div>
         <label className="mb-1.5 block text-sm font-extrabold text-ec-ink">
@@ -316,9 +345,9 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
         </div>
       </div>
 
-      <p className="rounded-[12px] bg-ec-soft px-3 py-2 text-xs font-semibold text-ec-muted">
-        Valable jusqu&apos;à la fermeture — fin de journée (défaut).
-      </p>
+      {form.limitMode === "quantity" && <p className="rounded-[12px] bg-ec-soft px-3 py-2 text-xs font-semibold text-ec-muted">
+        Valable jusqu&apos;à la fermeture — fin de journée.
+      </p>}
 
       {error && <p className="text-sm font-bold text-ec-red">{error}</p>}
 
