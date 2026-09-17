@@ -1,7 +1,7 @@
-# Grille d’audit couleurs — Épicerie Club
+# Grille d’audit couleurs — OffresLocal
 
-Référence : `BRAND.md` + `DESIGN.md` (`/workspace/epicerie-brand/epicerie-club-client`)  
-Cible : `/workspace/epicerie-club`  
+Référence : `BRAND.md` + `DESIGN.md` (`/workspace/offreslocal-brand/offreslocal-client`)  
+Cible : `/workspace/offreslocal`  
 Règle critique : **Jaune Club `#EAFF4F` rare** — jamais fond de page continu.
 
 ## Palette officielle (seule autorisée)
@@ -54,7 +54,7 @@ Tout HEX hors des 9 codes ci-dessus = **FAIL** sauf :
 - Transparences dérivées des 9 (alpha sur Encre/Bleu/etc.)
 - Photos produit (contenu, pas UI)
 
-## Pré-audit actuel (`/workspace/epicerie-club` avant restyle)
+## Pré-audit actuel (`/workspace/offreslocal` avant restyle)
 
 | Token / usage actuel | HEX trouvé | Attendu | Verdict |
 |---|---|---|---|

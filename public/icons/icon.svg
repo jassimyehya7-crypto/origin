@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Épicerie Club">
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="OffresLocal">
   <rect width="512" height="512" fill="#EAFF4F"/>
   <rect x="14" y="14" width="484" height="484" rx="96" fill="none" stroke="#171B15" stroke-width="12"/>
-  <text x="256" y="355" text-anchor="middle" fill="#171B15" font-family="Georgia, 'DejaVu Serif', serif" font-size="360" font-weight="700">é</text>
+  <text x="256" y="360" text-anchor="middle" fill="#171B15" font-family="Georgia, 'DejaVu Serif', serif" font-size="360" font-weight="700">O</text>
 </svg>

@@ -1,4 +1,4 @@
-# Backend Supabase — Épicerie Club
+# Backend Supabase — OffresLocal
 
 Tables `ec_*`: shops, offers, reservations, scans, presence, favorites, strikes + Realtime.
 

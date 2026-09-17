@@ -1,7 +1,7 @@
-# Audit couleurs post-restyle — Épicerie Club (client)
+# Audit couleurs post-restyle — OffresLocal (client)
 
 **Date :** 2026-09-13  
-**Cible :** `/workspace/epicerie-club`  
+**Cible :** `/workspace/offreslocal`  
 **Référence :** `BRAND.md` / `DESIGN.md` + grille `docs/AUDIT-COULEURS.md`  
 **Routes auditées :** `/`, `/offre/[id]`, `/confirmation/[id]`, `/reservations`, `/favoris`, `/profil`  
 **Méthode :** scan tokens + classes TSX + contrastes WCAG + captures navigateur (voir `docs/audit-shots/`)

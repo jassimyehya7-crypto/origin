@@ -49,7 +49,7 @@ Après création réussie :
 
 1. Écran confirmation avec code `EC-xxxx`  
 2. **SMS** via **seven.io** : code EC **valide** **+** lien vers **Mes réservations**  
-3. Env : `SEVEN_API_KEY` + `SEVEN_FROM` (défaut `EpicerieClb`) — commit `6590bbb`
+3. Env : `SEVEN_API_KEY` + `SEVEN_FROM` (défaut `OffresLocal`) — commit `6590bbb`
 
 Ce SMS est **transactionnel post-résa**, **pas** un OTP gate. Pattern C OTP reste hors chemin résa normale.
 

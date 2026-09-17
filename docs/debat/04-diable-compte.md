@@ -1,6 +1,6 @@
 # Débat compte à l’entrée — Position DIABLE (CONTRE)
 
-**Contexte Épicerie Club (Villeneuve)**  
+**Contexte OffresLocal (Villeneuve)**  
 Résa gratuite, code retrait, stock à la résa, commerçant Confirmer / Refuser.  
 **Déjà tranché** (`03-verdict-juge.md`) : Pattern C — pas d’OTP à l’entrée de la résa ; téléphone demandé, expliqué, **skippable**.
 

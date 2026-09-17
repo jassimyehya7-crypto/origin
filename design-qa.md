@@ -9,7 +9,7 @@ reservations list/detail/cancellation, and account.
 
 ## Implemented alignment
 
-- White mobile canvas, compact Épicerie Club masthead, lime active accents.
+- White mobile canvas, compact OffresLocal masthead, lime active accents.
 - Compact category rail and horizontal offer rows with discount, stock meter,
   availability and reservation CTA.
 - Minimal fixed bottom navigation matching the four-icon reference.

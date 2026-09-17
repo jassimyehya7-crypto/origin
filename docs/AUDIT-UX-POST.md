@@ -1,4 +1,4 @@
-# Audit UX post-restyle — client Épicerie Club
+# Audit UX post-restyle — client OffresLocal
 Date: 2026-09-13
 Auditeur: UX Épuré
 Scope: routes client (`/`, `/offre/[id]`, confirmation, réservations, favoris, profil, nav, `q/[shopSlug]`)

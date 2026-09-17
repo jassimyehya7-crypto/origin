@@ -1,4 +1,4 @@
--- Épicerie Club core schema (prefixed ec_ to isolate from other apps)
+-- OffresLocal core schema (prefixed ec_ to isolate from other apps)
 create extension if not exists "pgcrypto";
 
 create table if not exists public.ec_shops (

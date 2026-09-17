@@ -1,5 +1,5 @@
 /**
- * Deterministic FR polish for offer title/description (Épicerie Club tone).
+ * Deterministic FR polish for offer title/description (OffresLocal tone).
  * Used when no LLM API key is configured — and always as a typo pass.
  */
 

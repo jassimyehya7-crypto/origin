@@ -145,5 +145,5 @@ Pas besoin de `Marie Dupont` pour Confirmer / Refuser / appeler.
 
 ---
 
-*Juge produit — Épicerie Club*  
+*Juge produit — OffresLocal*  
 *Sources : `04-diable-compte.md`, `05-ange-compte.md`, `03-verdict-juge.md`, code `OfferDetailClient.tsx` / `seed.ts` / `profil/page.tsx`*

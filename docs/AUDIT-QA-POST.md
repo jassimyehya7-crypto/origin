@@ -1,6 +1,6 @@
 # Audit QA client — post-restyle
 
-**Cible** : `http://localhost:3000` · code `/workspace/epicerie-club`  
+**Cible** : `http://localhost:3000` · code `/workspace/offreslocal`  
 **Date** : 2026-09-13  
 **Périmètre** : contraste, touch targets, logo, cohérence Villeneuve, parcours réservation  
 **Méthode** : revue code client + parcours UI (feed → fiche → résa → confirmation → nav)

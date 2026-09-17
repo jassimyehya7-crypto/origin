@@ -16,7 +16,7 @@
 | 4 | SMS **post-résa** : code `EC-xxxx` + lien `/reservations` — **pas OTP** | ✅ seven.io |
 | 5 | Surcharge Pattern C skippable (`03`/`06`) pour MVP fondateur | ✅ doc `10` |
 
-Provider SMS : **seven.io** (`SEVEN_API_KEY`, `SEVEN_FROM=EpicerieClb`).
+Provider SMS : **seven.io** (`SEVEN_API_KEY`, `SEVEN_FROM=OffresLocal`).
 
 ---
 

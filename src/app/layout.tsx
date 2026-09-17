@@ -2,21 +2,21 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { PresenceBeacon } from "@/components/client/PresenceBeacon";
 
-const siteUrl = "https://epicerie-club.vercel.app";
+const siteUrl = "https://offreslocal.ch";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Épicerie Club",
-    template: "%s · Épicerie Club",
+    default: "OffresLocal",
+    template: "%s · OffresLocal",
   },
-  applicationName: "Épicerie Club",
+  applicationName: "OffresLocal",
   description:
     "Les bons plans de ton quartier, tous les jours. Réservez les offres de proximité à Villeneuve. Gratuit, rapide, local.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
-    title: "Épicerie Club",
+    title: "OffresLocal",
     statusBarStyle: "default",
   },
   icons: {
@@ -33,8 +33,8 @@ export const metadata: Metadata = {
     type: "website",
     locale: "fr_CH",
     url: siteUrl,
-    siteName: "Épicerie Club",
-    title: "Épicerie Club",
+    siteName: "OffresLocal",
+    title: "OffresLocal",
     description:
       "Les bons plans de ton quartier, tous les jours. Réserve gratuitement, retire en commerce.",
     images: [
@@ -42,13 +42,13 @@ export const metadata: Metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Épicerie Club",
+        alt: "OffresLocal",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Épicerie Club",
+    title: "OffresLocal",
     description:
       "Les bons plans de ton quartier, tous les jours. Réserve gratuitement, retire en commerce.",
     images: ["/og-image.png"],

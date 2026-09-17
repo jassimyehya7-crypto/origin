@@ -1,7 +1,7 @@
 # Verdict juge — Vérif téléphone / OTP avant réservation
 
 **Dossier :** `01-diable.md` (y compris addendum §8) + `02-ange.md`  
-**Contexte :** Épicerie Club Villeneuve — résa gratuite, code retrait, stock déduit à la résa, fin de journée, Pro mobile, Supabase Realtime, risque abandon « trop compliqué ».  
+**Contexte :** OffresLocal Villeneuve — résa gratuite, code retrait, stock déduit à la résa, fin de journée, Pro mobile, Supabase Realtime, risque abandon « trop compliqué ».  
 **Critère de jugement :** parcours client le plus simple possible, pas barbant ; confiance commerçant ; preuves, pas croyances.
 
 ---
@@ -76,7 +76,7 @@ On **n’ouvre pas** Pattern B « 1ʳᵉ résa » pendant le cold start : là, P
 | UX | **Inline** obligatoire — zéro redirect, zéro page séparée |
 | TTL | **5 min** (Ange) ; UI resend dès **30–45 s**, max 3 |
 | SMS | Format compatible autofill (domaine / WebOTP) — **prioritaire** sur le SMS ultra-court marketing. Si conflit : on sacrifie la poésie, pas l’autofill (Diable §2.8 retenu) |
-| Exemple | `482917 is your Épicerie Club code` + domain bound selon stack SMS |
+| Exemple | `482917 is your OffresLocal code` + domain bound selon stack SMS |
 | Email | **Pas** de canal OTP V1 |
 | 4 / 5 chiffres | **Non** — 4 = sécurité théâtre + moins bon autofill ; débat inutile pour du pain |
 
@@ -153,7 +153,7 @@ Hors Pattern C : **aucun SMS OTP**. SMS transactionnel « c’est prêt / 20 min
 
 ---
 
-*Juge produit — Épicerie Club*  
+*Juge produit — OffresLocal*  
 *Fichiers sources : `docs/debat/01-diable.md`, `docs/debat/02-ange.md`*
 
 ---

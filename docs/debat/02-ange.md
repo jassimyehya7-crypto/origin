@@ -1,6 +1,6 @@
 # Débat vérif téléphone — Position ANGE (POUR)
 
-**Contexte Épicerie Club (Villeneuve)**  
+**Contexte OffresLocal (Villeneuve)**  
 Réservation gratuite → code retrait → stock gelé à la résa → commerçant Confirmer / Refuser.  
 **Proposition Yehya :** numéro → OTP SMS → puis envoi de la résa au commerçant.
 
@@ -25,7 +25,7 @@ Pattern A (OTP à chaque résa) = friction répétée injustifiée pour un panie
 
 ---
 
-## 2. Pourquoi Épicerie Club a besoin d’un vrai numéro
+## 2. Pourquoi OffresLocal a besoin d’un vrai numéro
 
 ### 2.1 Qualité des résas (anti no-show / anti spam)
 
@@ -78,7 +78,7 @@ Sans numéro réel, la marketplace devient un mur entre client et commerçant.
 ### 4.1 Texte SMS recommandé (V1)
 
 ```
-Épicerie Club: 482917
+OffresLocal: 482917
 ```
 
 **Règles :**
@@ -94,9 +94,9 @@ Variantes acceptables (si opérateur / légal impose un minimum) :
 
 | Rang | Texte | Quand |
 |---|---|---|
-| 1 (reco) | `Épicerie Club: 482917` | Défaut |
-| 2 | `482917 — ton code Épicerie Club` | Si le préfixe marque n’est pas fiable |
-| 3 | `Épicerie Club: 482917 pour confirmer` | Si contrainte légale « objet » |
+| 1 (reco) | `OffresLocal: 482917` | Défaut |
+| 2 | `482917 — ton code OffresLocal` | Si le préfixe marque n’est pas fiable |
+| 3 | `OffresLocal: 482917 pour confirmer` | Si contrainte légale « objet » |
 
 ### 4.2 Paramètres techniques légers
 
@@ -151,7 +151,7 @@ Critère ange de succès : baisse nette des fantômes **sans** chute &gt; ~2–3
 - Releasit — OTP **inline** : impact conversion souvent &lt; 2 % ; le redirect tue la conversion : https://www.releas.it/blogs/news/otp-verification-shopify-cod
 - Koder.ai — 6 digits, TTL 5 min, resend 30–45 s, max 3 ; ne pas OTP-iser les clients déjà fiables : https://koder.ai/blog/cash-on-delivery-confirmation-rto
 
-*Note : sources surtout COD e-com Inde/Shopify. Transposition Épicerie Club = même mécanique « engagement sans prépaiement + coût opérationnel si faux » ; calibrer avec nos métriques Villeneuve.*
+*Note : sources surtout COD e-com Inde/Shopify. Transposition OffresLocal = même mécanique « engagement sans prépaiement + coût opérationnel si faux » ; calibrer avec nos métriques Villeneuve.*
 
 ---
 
@@ -160,7 +160,7 @@ Critère ange de succès : baisse nette des fantômes **sans** chute &gt; ~2–3
 **POUR** numéro → OTP SMS → résa, **à condition que** :
 
 1. Pattern **B** (1 fois, pas chaque résa)
-2. SMS **minimal** (`Épicerie Club: 482917`)
+2. SMS **minimal** (`OffresLocal: 482917`)
 3. UX **inline + autofill + resend**
 4. 6 digits, TTL court
 5. Objectif explicite : numéro **joignable** pour le commerçant + stock non gaspillé

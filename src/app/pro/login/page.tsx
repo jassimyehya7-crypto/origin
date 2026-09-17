@@ -8,7 +8,7 @@ export default function ProLoginPage() {
     <Suspense fallback={<p className="p-8 text-center">Chargement…</p>}>
       <StaffLoginForm
         role="pro"
-        title="Épicerie Club Pro"
+        title="OffresLocal Pro"
         subtitle="Entrez le code commerçant pour accéder à l’espace Pro."
         defaultNext="/pro"
       />

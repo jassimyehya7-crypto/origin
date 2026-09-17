@@ -1,6 +1,6 @@
 {
-  "name": "Épicerie Club",
-  "short_name": "Épicerie Club",
+  "name": "OffresLocal",
+  "short_name": "OffresLocal",
   "description": "Les bons plans de ton quartier, tous les jours.",
   "start_url": "/",
   "display": "standalone",
