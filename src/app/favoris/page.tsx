@@ -1,6 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Heart } from "lucide-react";
 import { BottomNav } from "@/components/client/BottomNav";
 import { LiveRefresh } from "@/hooks/useLiveRefresh";
 import { Logo } from "@/components/Logo";
@@ -9,6 +9,7 @@ import { CATEGORY_LABELS } from "@/lib/labels";
 import { getFavorites, getOffers, getShop } from "@/lib/store";
 import { VisualMark } from "@/components/VisualMark";
 import { offerPhoto } from "@/lib/offer-photos";
+import { UnfavoriteButton } from "./UnfavoriteButton";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +18,7 @@ export default async function FavorisPage() {
   const rows = (
     await Promise.all(
       favorites
-        .filter((f) => f.shopId.startsWith("demo_"))
-        .slice(0, 5)
+        .slice(0, 50)
         .map(async (f) => {
         const shop = await getShop(f.shopId);
         if (!shop) return null;
@@ -32,6 +32,13 @@ export default async function FavorisPage() {
     active: number;
     photo: string | null;
   }>;
+
+  // Sort: shops with active offers first, then by name
+  rows.sort((a, b) => {
+    if (a.active > 0 && b.active === 0) return -1;
+    if (a.active === 0 && b.active > 0) return 1;
+    return a.shop.name.localeCompare(b.shop.name);
+  });
 
   return (
     <div className="mx-auto min-h-dvh max-w-lg bg-ec-paper">
@@ -53,25 +60,32 @@ export default async function FavorisPage() {
           />
         ) : (
           rows.map(({ f, shop, active, photo }) => (
-            <Link
+            <div
               key={f.shopId}
-              href={`/q/${shop.slug}`}
-              className="flex items-center gap-3 border-b border-ec-rule bg-white py-3"
+              className="relative flex items-center gap-3 border-b border-ec-rule bg-white py-3"
             >
-              <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-md bg-ec-soft">
-                {photo ? <Image src={photo} alt="" fill className="object-cover" sizes="112px" /> : <VisualMark label={shop.name} stored={shop.emoji} size="md" />}
-              </div>
-              <div className="flex-1">
-                <div className="font-extrabold text-ec-ink">{shop.name}</div>
-                <div className="text-xs font-semibold text-ec-muted">
-                  {CATEGORY_LABELS[shop.category]} · {shop.address}
+              <Link
+                href={`/q/${shop.slug}`}
+                className="flex flex-1 items-center gap-3"
+              >
+                <div className="relative h-20 w-28 shrink-0 overflow-hidden rounded-md bg-ec-soft">
+                  {photo ? <Image src={photo} alt="" fill className="object-cover" sizes="112px" /> : <VisualMark label={shop.name} stored={shop.emoji} size="md" />}
                 </div>
-                <div className="mt-2 text-[11px] font-black text-ec-green">
-                  + {active} offre{active !== 1 ? "s" : ""} disponible{active !== 1 ? "s" : ""}
+                <div className="flex-1">
+                  <div className="font-extrabold text-ec-ink">{shop.name}</div>
+                  <div className="text-xs font-semibold text-ec-muted">
+                    {CATEGORY_LABELS[shop.category]} · {shop.address}
+                  </div>
+                  <div className="mt-2 text-[11px] font-black text-ec-green">
+                    {active > 0
+                      ? `${active} offre${active !== 1 ? "s" : ""} disponible${active !== 1 ? "s" : ""}`
+                      : "Aucune offre active"}
+                  </div>
                 </div>
-              </div>
-              <ChevronRight className="h-5 w-5 text-ec-ink" />
-            </Link>
+                <ChevronRight className="h-5 w-5 text-ec-ink" />
+              </Link>
+              <UnfavoriteButton shopId={shop.id} />
+            </div>
           ))
         )}
       </main>

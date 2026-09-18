@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronRight, MapPin } from "lucide-react";
+import { ChevronRight, Download, MapPin } from "lucide-react";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CancelReservationButton } from "@/components/client/CancelReservationButton";
 import {
@@ -61,6 +61,32 @@ export function MyReservations({ tab }: { tab: "avenir" | "historique" }) {
     })();
   }, []);
 
+  function exportCSV() {
+    if (rows.length === 0) return;
+    const header = "Date,Offre,Commerce,Prix,Quantité,Statut,Code\n";
+    const body = rows
+      .map((r) =>
+        [
+          r.createdAt?.slice(0, 10) || "",
+          `"${(r.offer?.title || "").replace(/"/g, '""')}"`,
+          `"${(r.shop?.name || "").replace(/"/g, '""')}"`,
+          r.offer ? formatCHF(r.offer.price * r.quantity) : "",
+          r.quantity,
+          r.status,
+          r.code || "",
+        ].join(",")
+      )
+      .join("\n");
+    const csv = header + body;
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `reservations-offreslocal-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   if (!ready) {
     return (
       <p className="px-4 py-8 text-center text-sm font-semibold text-ec-muted">
@@ -79,27 +105,39 @@ export function MyReservations({ tab }: { tab: "avenir" | "historique" }) {
 
   return (
     <>
-      <div className="mb-3 flex rounded-lg bg-ec-soft p-1 mx-4">
-        <Link
-          href="/reservations"
-          className={`flex-1 rounded-[12px] py-2.5 text-center text-sm font-extrabold ${
-            tab === "avenir"
-              ? "bg-ec-ink text-white"
-              : "text-ec-muted"
-          }`}
-        >
-          À venir ({upcoming.length})
-        </Link>
-        <Link
-          href="/reservations?tab=historique"
-          className={`flex-1 rounded-[12px] py-2.5 text-center text-sm font-extrabold ${
-            tab === "historique"
-              ? "bg-ec-ink text-white"
-              : "text-ec-muted"
-          }`}
-        >
-          Historique ({history.length})
-        </Link>
+      <div className="mb-3 flex items-center gap-2 mx-4">
+        <div className="flex flex-1 rounded-lg bg-ec-soft p-1">
+          <Link
+            href="/reservations"
+            className={`flex-1 rounded-[12px] py-2.5 text-center text-sm font-extrabold ${
+              tab === "avenir"
+                ? "bg-ec-ink text-white"
+                : "text-ec-muted"
+            }`}
+          >
+            À venir ({upcoming.length})
+          </Link>
+          <Link
+            href="/reservations?tab=historique"
+            className={`flex-1 rounded-[12px] py-2.5 text-center text-sm font-extrabold ${
+              tab === "historique"
+                ? "bg-ec-ink text-white"
+                : "text-ec-muted"
+            }`}
+          >
+            Historique ({history.length})
+          </Link>
+        </div>
+        {rows.length > 0 && (
+          <button
+            type="button"
+            onClick={exportCSV}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-ec-rule bg-white text-ec-muted transition hover:text-ec-ink"
+            title="Exporter en CSV"
+          >
+            <Download className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       <div className="safe-pb space-y-3 px-4">

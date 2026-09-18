@@ -1,12 +1,14 @@
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { MapPin, Clock } from "lucide-react";
+import { MapPin, Clock, CalendarPlus, Share2 } from "lucide-react";
 import { BottomNav } from "@/components/client/BottomNav";
 import { LiveRefresh } from "@/hooks/useLiveRefresh";
 import { ReservationStatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/Button";
 import { CancelReservationButton } from "@/components/client/CancelReservationButton";
+import { CalendarButton, ShareCodeButton } from "@/components/client/ConfirmationActions";
+import { CopyableCode } from "@/components/client/CopyableCode";
 import { getOffer, getReservation, getShop } from "@/lib/store";
 import { formatCHF, formatTime } from "@/lib/utils";
 import { VisualMark } from "@/components/VisualMark";
@@ -103,7 +105,7 @@ export default async function ConfirmationPage({
                 <img
                   src={qrDataUrl}
                   alt="QR de retrait à usage unique"
-                  className="mx-auto h-52 w-52 bg-white p-2"
+                  className="mx-auto h-64 w-64 bg-white p-2 sm:h-72 sm:w-72"
                 />
                 <p className="mt-2 rounded-md bg-rose-50 px-3 py-2 text-xs font-bold text-rose-600">
                   À présenter au commerçant · ce QR se désactive au premier scan
@@ -112,20 +114,25 @@ export default async function ConfirmationPage({
             ) : null}
 
             {/* Big EC code — Encre mono XL, Papier, bordure tiretée Règle */}
-            <div className="mt-6 inline-flex w-full max-w-sm flex-col items-center border-2 border-dashed border-ec-rule bg-ec-paper px-6 py-5">
-              <span className="text-[11px] font-extrabold uppercase tracking-[0.08em] text-ec-muted">
-                Code de retrait
-              </span>
-              <span className="mt-2 font-mono text-4xl font-black tracking-wider text-ec-ink sm:text-5xl">
-                {reservation.code}
-              </span>
-            </div>
+            <CopyableCode code={reservation.code} />
 
             {phoneDisplay ? (
               <p className="mt-4 text-sm font-bold text-ec-ink">
                 SMS envoyé au {phoneDisplay}
               </p>
             ) : null}
+
+            {/* Calendar + Share buttons */}
+            <div className="mt-4 flex justify-center gap-2">
+              <CalendarButton
+                title={offer.title}
+                shopName={shop.name}
+                shopAddress={shop.address}
+                validUntil={offer.validUntil}
+                code={reservation.code}
+              />
+              <ShareCodeButton code={reservation.code} shopName={shop.name} />
+            </div>
 
             <div className="mt-5">
               {pending ? (

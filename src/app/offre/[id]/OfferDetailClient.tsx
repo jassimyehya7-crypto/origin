@@ -6,10 +6,12 @@ import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
+  Calendar,
   Heart,
   Info,
   MessageCircle,
   Phone,
+  Share2,
   ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -39,6 +41,7 @@ import {
   formatCHF,
   formatWalkDistance,
 } from "@/lib/utils";
+import { DistanceWidget } from "@/components/client/DistanceWidget";
 
 export function OfferDetailClient({
   offer,
@@ -216,13 +219,20 @@ export function OfferDetailClient({
     <div className="mx-auto min-h-dvh max-w-lg bg-white pb-8 text-[#07132c]">
       <LiveRefresh types={["offers", "reservations"]} />
       <header className="flex h-[76px] items-center justify-between px-5">
-        <Link
-          href="/"
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof document !== 'undefined' && document.referrer && document.referrer.includes('/q/')) {
+              router.back();
+            } else {
+              router.push(`/q/${shop.slug}`);
+            }
+          }}
           className="flex h-11 w-11 items-center justify-start"
-          aria-label="Retour à l'accueil"
+          aria-label="Retour à la vitrine"
         >
           <ArrowLeft className="h-8 w-8" strokeWidth={2.4} />
-        </Link>
+        </button>
         <Logo size="lg" className="absolute left-1/2 -translate-x-1/2" />
         <button
           type="button"
@@ -309,6 +319,46 @@ export function OfferDetailClient({
           <h1 className="text-[25px] font-black leading-tight tracking-[-0.025em]">
             {offer.title}
           </h1>
+
+          {/* Share + Calendar buttons */}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={async () => {
+                const url = typeof window !== "undefined" ? window.location.href : "";
+                const text = `${offer.title} — ${formatCHF(offer.price)} chez ${shop.name}`;
+                if (typeof navigator !== "undefined" && navigator.share) {
+                  try {
+                    await navigator.share({ title: offer.title, text, url });
+                  } catch { /* cancelled */ }
+                } else {
+                  try {
+                    await navigator.clipboard.writeText(url);
+                    alert("Lien copié dans le presse-papiers !");
+                  } catch { /* ignore */ }
+                }
+              }}
+              className="flex items-center gap-1.5 rounded-lg border border-[#dde1e8] bg-white px-3 py-1.5 text-xs font-bold text-[#07132c] transition active:scale-95"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+              Partager
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const end = new Date(offer.validUntil);
+                const start = new Date(end.getTime() - 30 * 60000); // 30 min before
+                const fmt = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d+/, "");
+                const calUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(`Retrait: ${offer.title}`)}&dates=${fmt(start)}/${fmt(end)}&location=${encodeURIComponent(`${shop.name}, ${shop.address}, Villeneuve`)}&details=${encodeURIComponent(`Code de retrait à présenter chez ${shop.name}`)}`;
+                window.open(calUrl, "_blank");
+              }}
+              className="flex items-center gap-1.5 rounded-lg border border-[#dde1e8] bg-white px-3 py-1.5 text-xs font-bold text-[#07132c] transition active:scale-95"
+            >
+              <Calendar className="h-3.5 w-3.5" />
+              Rappel
+            </button>
+          </div>
+
           <div className="flex items-baseline gap-3">
             {offer.originalPrice != null && (
               <span className="text-[20px] font-bold text-[#9099ad] line-through">
@@ -338,26 +388,13 @@ export function OfferDetailClient({
           )}
         </section>
 
-        <a
-          href={`https://maps.apple.com/?ll=${shop.lat},${shop.lng}&q=${encodeURIComponent(shop.name)}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block overflow-hidden rounded-[5px] border border-[#dde1e8] bg-white shadow-sm"
-        >
-          <iframe
-            title={`Carte de ${shop.name}`}
-            src={`https://www.openstreetmap.org/export/embed.html?bbox=${shop.lng - 0.025}%2C${shop.lat - 0.012}%2C${shop.lng + 0.025}%2C${shop.lat + 0.012}&layer=mapnik&marker=${shop.lat}%2C${shop.lng}`}
-            className="pointer-events-none h-[112px] w-full border-0"
-            loading="lazy"
-          />
-          <div className="flex items-center justify-between px-3 py-2.5">
-            <div>
-              <p className="text-[17px] font-black">À {shop.city || "Villeneuve"}</p>
-              <p className="text-[14px] font-semibold text-[#7f899f]">{distance}</p>
-            </div>
-            <ArrowRight className="h-7 w-7" />
-          </div>
-        </a>
+        <DistanceWidget
+          shopLat={shop.lat}
+          shopLng={shop.lng}
+          shopName={shop.name}
+          shopCity={shop.city || "Villeneuve"}
+          defaultDistance={distance}
+        />
 
         {strikeNote && (
           <div
@@ -533,37 +570,17 @@ export function OfferDetailClient({
 
             <div className="my-5 h-px bg-[#dfe2e8]" />
 
-            <h3 className="text-[20px] font-black leading-tight">Que se passe-t-il en cas de réservation non retirée ?</h3>
+            <h3 className="text-[18px] font-black leading-tight">Retraits manqués</h3>
             <p className="mt-1 text-[13px] font-medium leading-snug text-[#7f899f]">
-              Pour assurer un bon fonctionnement du service et par respect pour les commerçants, un système de suivi est mis en place :
+              Après 3 retraits manqués sans annulation, vos réservations sont suspendues temporairement. Une annulation avant l’échéance ne compte pas.
             </p>
-
-            <ol className="relative mt-4 space-y-4 rounded-[10px] bg-[#f6f7f9] px-4 py-4 before:absolute before:bottom-7 before:left-[29px] before:top-7 before:w-px before:bg-[#cbd0da]">
-              {[
-                ["1er retrait manqué sans annulation", "Un avertissement est enregistré sur votre numéro."],
-                ["2e retrait manqué sans annulation", "Un SMS d’avertissement est envoyé sur votre numéro."],
-                ["3e retrait manqué sans annulation", "Vos réservations sont suspendues pendant 7 jours."],
-                ["Après réactivation, 3 nouveaux retraits manqués", "Vos réservations sont suspendues pendant 30 jours."],
-                ["Après une nouvelle réactivation, 3 nouveaux retraits manqués", "Votre numéro est définitivement suspendu. Vous pouvez nous écrire pour demander une réactivation."],
-              ].map(([title, description], index) => (
-                <li key={title} className="relative grid grid-cols-[36px_1fr] gap-3">
-                  <span className="z-10 flex h-8 w-8 items-center justify-center rounded-full bg-[#b9bfcb] text-sm font-black text-white">
-                    {index + 1}
-                  </span>
-                  <div>
-                    <p className="text-[13px] font-black leading-tight">{title}</p>
-                    <p className="mt-0.5 text-[12px] font-medium leading-snug text-[#7f899f]">{description}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
 
             <div className="mt-4 flex gap-3 rounded-[10px] bg-[#f5fbcf] p-4">
               <Info className="h-7 w-7 shrink-0" />
               <div>
                 <p className="text-sm font-black">Bon à savoir</p>
                 <p className="mt-0.5 text-[12px] font-medium leading-snug">
-                  Une réservation annulée avant l’échéance ne compte pas comme un retrait manqué.
+                  Votre numéro n’est jamais partagé avec des tiers.
                 </p>
               </div>
             </div>
