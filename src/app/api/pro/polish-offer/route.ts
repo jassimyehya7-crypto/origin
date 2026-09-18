@@ -110,5 +110,88 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ...merged, source: "llm" });
   }
 
-  return NextResponse.json({ ...local, source: "local" });
+  // Generate marketing suggestions based on offer type
+  const suggestions = generateMarketingSuggestions({
+    title: local.title,
+    description: local.description,
+    type: body.type,
+  });
+
+  return NextResponse.json({ 
+    ...local, 
+    suggestions,
+    source: "local" 
+  });
+}
+
+function generateMarketingSuggestions(input: {
+  title: string;
+  description?: string;
+  type?: string;
+}): string[] {
+  const type = input.type || "PROMO";
+  const title = input.title;
+  
+  // Context detection
+  const isFruit = /mangue|banane|pomme|orange|citron|fraise|framboise|myrtille|raisin|poire|pêche|abricot|cerise|prune|figue|ananas|kiwi|melon|pastèque/i.test(title);
+  const isVegetable = /tomate|concombre|courgette|aubergine|poivron|oignon|ail|patate|carotte|navet|poireau|épinard|haricot|salade|légume/i.test(title);
+  const isDairy = /fromage|yaourt|lait|crème|beurre|œuf/i.test(title);
+  const isBakery = /pain|croissant|baguette|pâtisserie|gâteau|tarte|quiche/i.test(title);
+  const isEpicerie = isFruit || isVegetable || isDairy || isBakery;
+  
+  const isArrivage = type === "ARRIVAGE";
+  const isFlash = type === "FLASH";
+  const isPromo = type === "PROMO";
+  const isDerniereMinute = type === "DERNIERE_MINUTE";
+
+  const suggestions: string[] = [];
+
+  // Keep the original title as-is for marketing suggestions (it's already corrected)
+  const product = title;
+
+  if (isArrivage) {
+    if (isFruit) {
+      suggestions.push(`Nouvel arrivage : ${product.toLowerCase()}`);
+      suggestions.push(`${product}, fraîcheur garantie`);
+      suggestions.push(`${product} fraîchement reçu`);
+    } else if (isVegetable) {
+      suggestions.push(`Nouvel arrivage : ${product.toLowerCase()}`);
+      suggestions.push(`${product} du jour`);
+      suggestions.push(`${product}, fraîcheur garantie`);
+    } else if (isDairy || isBakery) {
+      suggestions.push(`Nouvel arrivage : ${product.toLowerCase()}`);
+      suggestions.push(`${product} du jour`);
+      suggestions.push(`${product}, fraîchement reçu`);
+    } else {
+      suggestions.push(`Nouvel arrivage : ${product.toLowerCase()}`);
+      suggestions.push(`${product} vient d'arriver`);
+      suggestions.push(`Arrivage frais : ${product.toLowerCase()}`);
+    }
+  } else if (isFlash) {
+    suggestions.push(`${product} en offre flash`);
+    suggestions.push(`Offre du jour : ${product.toLowerCase()}`);
+    if (isEpicerie) {
+      suggestions.push(`${product} à prix flash`);
+    } else {
+      suggestions.push(`Prix flash : ${product.toLowerCase()}`);
+    }
+  } else if (isPromo) {
+    suggestions.push(`${product} en promo`);
+    suggestions.push(`Belle affaire : ${product.toLowerCase()}`);
+    if (isEpicerie) {
+      suggestions.push(`${product} à prix réduit`);
+    } else {
+      suggestions.push(`${product} prix spécial`);
+    }
+  } else if (isDerniereMinute) {
+    suggestions.push(`${product}, dernière chance`);
+    suggestions.push(`Dernière chance : ${product.toLowerCase()}`);
+    suggestions.push(`${product} avant épuisement`);
+  } else {
+    suggestions.push(`${product} à découvrir`);
+    suggestions.push(`Belle opportunité : ${product.toLowerCase()}`);
+    suggestions.push(`${product} en offre`);
+  }
+
+  return suggestions.slice(0, 3);
 }

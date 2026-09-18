@@ -17,6 +17,8 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
   const [error, setError] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [ambiguousWords, setAmbiguousWords] = useState<Array<{ original: string; suggestions: string[] }>>([]);
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -70,9 +72,9 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
     }
     setPolishing(true);
     setError("");
+    setSuggestions([]);
+    setAmbiguousWords([]);
     try {
-      const prevTitle = form.title;
-      const prevDesc = form.description;
       const res = await fetch("/api/pro/polish-offer", {
         method: "POST",
         credentials: "include",
@@ -88,23 +90,29 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
         setError(data.error || "Amélioration impossible");
         return;
       }
-      const nextTitle =
-        typeof data.title === "string" && data.title.trim()
-          ? data.title.trim()
-          : prevTitle;
-      const nextDesc =
-        typeof data.description === "string"
-          ? data.description
-          : prevDesc;
+      
+      // Apply corrections automatically
+      const nextTitle = typeof data.title === "string" && data.title.trim() ? data.title.trim() : form.title;
+      const nextDesc = typeof data.description === "string" ? data.description : form.description;
+      
       setForm((f) => ({
         ...f,
         title: nextTitle,
         description: nextDesc,
       }));
-      const unchanged =
-        nextTitle === prevTitle.trim() &&
-        (nextDesc || "").trim() === (prevDesc || "").trim();
-      flashToast(unchanged ? "Déjà clair" : "Texte amélioré");
+      
+      // Show marketing suggestions if available
+      if (Array.isArray(data.suggestions) && data.suggestions.length > 0) {
+        setSuggestions(data.suggestions);
+      }
+      
+      // Show ambiguous words if any
+      if (Array.isArray(data.ambiguousWords) && data.ambiguousWords.length > 0) {
+        setAmbiguousWords(data.ambiguousWords);
+      }
+      
+      const hasChanges = nextTitle !== form.title.trim() || (nextDesc || "").trim() !== (form.description || "").trim();
+      flashToast(hasChanges ? "Texte corrigé" : "Texte déjà clair");
     } catch {
       setError("Amélioration impossible");
     } finally {
@@ -236,7 +244,11 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
           required
           className="h-14 w-full rounded-[12px] border border-ec-rule bg-ec-surface px-4 text-base outline-none focus:ring-2 focus:ring-ec-blue"
           value={form.title}
-          onChange={(e) => setForm({ ...form, title: e.target.value })}
+          onChange={(e) => {
+            setForm({ ...form, title: e.target.value });
+            setSuggestions([]);
+            setAmbiguousWords([]);
+          }}
           placeholder="Ex. Mangues mûres à point"
         />
         <button
@@ -245,8 +257,79 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
           disabled={polishing || !form.title.trim()}
           className="mt-2 inline-flex h-12 w-full items-center justify-center rounded-[12px] border-2 border-ec-blue bg-ec-surface text-sm font-extrabold text-ec-blue disabled:border-ec-rule disabled:text-ec-muted"
         >
-          {polishing ? "Amélioration…" : "Améliorer le texte"}
+          {polishing ? "Analyse en cours…" : "Améliorer le texte"}
         </button>
+
+        {/* Ambiguous words */}
+        {ambiguousWords.length > 0 && (
+          <div className="mt-3 rounded-xl border border-ec-red/30 bg-red-50 p-3">
+            <p className="mb-2 text-xs font-extrabold text-ec-red">
+              Mots à vérifier
+            </p>
+            {ambiguousWords.map((aw, i) => (
+              <div key={i} className="mb-2 last:mb-0">
+                <p className="text-xs font-bold text-ec-ink">
+                  <span className="line-through text-ec-muted">{aw.original}</span>
+                  {" "}
+                  <span className="text-ec-muted">→</span>
+                </p>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {aw.suggestions.map((s, j) => (
+                    <button
+                      key={j}
+                      type="button"
+                      onClick={() => {
+                        setForm((f) => ({
+                          ...f,
+                          title: f.title.replace(new RegExp(aw.original, "gi"), s),
+                        }));
+                        setAmbiguousWords((prev) => prev.filter((_, idx) => idx !== i));
+                      }}
+                      className="rounded-lg bg-white px-2 py-1 text-xs font-extrabold text-ec-blue shadow-sm transition hover:bg-ec-blue hover:text-white"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setAmbiguousWords((prev) => prev.filter((_, idx) => idx !== i))}
+                    className="rounded-lg bg-ec-soft px-2 py-1 text-xs font-bold text-ec-muted"
+                  >
+                    Garder
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Marketing suggestions */}
+        {suggestions.length > 0 && (
+          <div className="mt-3 rounded-xl border border-ec-blue/30 bg-blue-50 p-3">
+            <p className="mb-2 text-xs font-extrabold text-ec-blue">
+              Suggestions marketing
+            </p>
+            <div className="space-y-1.5">
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => {
+                    setForm((f) => ({ ...f, title: s }));
+                    setSuggestions([]);
+                    flashToast("Titre mis à jour");
+                  }}
+                  className="flex w-full items-center gap-2 rounded-lg bg-white px-3 py-2 text-left text-sm font-bold text-ec-ink shadow-sm transition hover:bg-ec-blue hover:text-white"
+                >
+                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ec-blue text-[10px] font-black text-white">
+                    {i + 1}
+                  </span>
+                  <span className="truncate">{s}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div>

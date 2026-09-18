@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { LiveRefresh } from "@/hooks/useLiveRefresh";
 import { Logo } from "@/components/Logo";
 import { ProMobileNav, ProSidebar, ProTopTabs } from "@/components/pro/ProSidebar";
+import { ReservationNotifier } from "@/components/pro/ReservationNotifier";
 import { PRO_SHOP_NAME, PRO_SHOP_CITY } from "@/lib/pro-shop";
 
 export function ProChrome({ children }: { children: React.ReactNode }) {
@@ -14,6 +15,7 @@ export function ProChrome({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-dvh bg-ec-paper">
       <LiveRefresh types={["offers", "reservations", "shops"]} />
+      <ReservationNotifier />
 
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64">

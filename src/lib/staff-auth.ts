@@ -122,14 +122,14 @@ export function setStaffCookies(
   const secure = process.env.NODE_ENV === "production";
   res.cookies.set(STAFF_COOKIE, "1", {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "none",
     path: "/",
     maxAge: 60 * 60 * 24 * 14,
-    secure,
+    secure: true,
   });
   res.cookies.set(STAFF_ROLE_COOKIE, roleValue, {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "none",
     path: "/",
     maxAge: 60 * 60 * 24 * 14,
     secure,

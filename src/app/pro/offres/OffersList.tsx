@@ -81,11 +81,11 @@ export function OffersList({ initialOffers }: { initialOffers: Offer[] }) {
 
   return (
     <>
-      <div className="mb-5">
+      <div className="mb-5 flex items-center gap-2">
         <h1 className="font-display text-[1.75rem] leading-tight text-ec-ink">Offres</h1>
-        <p className="mt-1 text-sm font-semibold text-ec-muted">
-          {offers.length} au total · {published} publiées · {drafts} brouillons
-        </p>
+        {published > 0 && (
+          <span className="h-3 w-3 rounded-full bg-ec-green animate-pulse" title="Offres actives" />
+        )}
       </div>
 
       {offers.length === 0 ? (

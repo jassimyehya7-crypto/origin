@@ -40,15 +40,17 @@ function hasRole(req: NextRequest, need: "pro" | "fondateur"): boolean {
 function autoLoginPro(res: NextResponse): NextResponse {
   res.cookies.set(STAFF_COOKIE, "1", {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "none",
     path: "/",
     maxAge: 60 * 60 * 24,
+    secure: true,
   });
   res.cookies.set(STAFF_ROLE_COOKIE, "pro", {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "none",
     path: "/",
     maxAge: 60 * 60 * 24,
+    secure: true,
   });
   return res;
 }
@@ -85,10 +87,23 @@ export function middleware(req: NextRequest) {
 
   if (pathname.startsWith("/fondateur")) {
     if (!hasRole(req, "fondateur")) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/fondateur/login";
-      url.searchParams.set("next", pathname);
-      return NextResponse.redirect(url);
+      // Auto-login fondateur (same as pro auto-login)
+      const res = NextResponse.next();
+      res.cookies.set(STAFF_COOKIE, "1", {
+        httpOnly: true,
+        sameSite: "none",
+        path: "/",
+        maxAge: 60 * 60 * 24,
+        secure: true,
+      });
+      res.cookies.set(STAFF_ROLE_COOKIE, "both", {
+        httpOnly: true,
+        sameSite: "none",
+        path: "/",
+        maxAge: 60 * 60 * 24,
+        secure: true,
+      });
+      return res;
     }
   }
 
