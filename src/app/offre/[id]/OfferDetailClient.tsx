@@ -221,15 +221,9 @@ export function OfferDetailClient({
       <header className="flex h-[76px] items-center justify-between px-5">
         <button
           type="button"
-          onClick={() => {
-            if (typeof document !== 'undefined' && document.referrer && document.referrer.includes('/q/')) {
-              router.back();
-            } else {
-              router.push(`/q/${shop.slug}`);
-            }
-          }}
+          onClick={() => router.back()}
           className="flex h-11 w-11 items-center justify-start"
-          aria-label="Retour à la vitrine"
+          aria-label="Retour"
         >
           <ArrowLeft className="h-8 w-8" strokeWidth={2.4} />
         </button>
