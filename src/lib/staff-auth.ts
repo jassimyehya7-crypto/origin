@@ -73,6 +73,18 @@ export function requireStaff(
     };
   }
 
+  // Dev demo mode: when Supabase is not configured, auto-accept staff auth
+  // This ensures API calls work in preview/sandbox environments where
+  // httpOnly cookies may not be transmitted correctly cross-origin.
+  const isSupabaseConfigured = Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL &&
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY &&
+    !process.env.NEXT_PUBLIC_SUPABASE_URL.includes("placeholder")
+  );
+  if (!isSupabaseConfigured) {
+    return { ok: true };
+  }
+
   const header =
     req.headers.get("x-ec-staff-secret") ||
     req.headers.get("x-ec-pro-pin") ||

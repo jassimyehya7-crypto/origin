@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import type { OfferType } from "@/lib/types";
-import { OFFER_TYPE_LABELS } from "@/lib/labels";
+import { OFFER_TYPE_LABELS, OFFER_TYPE_DESCRIPTIONS } from "@/lib/labels";
 
 export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
   const router = useRouter();
@@ -167,13 +167,13 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
         <label className="mb-1.5 block text-sm font-extrabold text-ec-ink">
           Photo produit
         </label>
-        <div className="relative mb-3 flex aspect-square w-full max-w-[220px] items-center justify-center overflow-hidden border border-ec-rule bg-ec-soft">
+        <div className="relative mx-auto mb-3 flex aspect-square w-full max-w-[220px] items-center justify-center overflow-hidden rounded-2xl border border-ec-rule bg-ec-soft">
           {imageUrl ? (
             <Image
               src={imageUrl}
               alt=""
               fill
-              className="object-cover"
+              className="object-contain p-2"
               sizes="220px"
               unoptimized
             />
@@ -325,23 +325,29 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
 
       <div>
         <label className="mb-1.5 block text-sm font-extrabold text-ec-ink">
-          Type
+          Type d&apos;offre
         </label>
-        <div className="grid grid-cols-2 gap-2">
-          {(Object.keys(OFFER_TYPE_LABELS) as OfferType[]).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setForm({ ...form, type: t })}
-              className={`min-h-12 rounded-[12px] border px-2 text-sm font-extrabold ${
-                form.type === t
-                  ? "border-ec-ink bg-ec-ink text-white"
-                  : "border-ec-rule bg-ec-surface text-ec-ink"
-              }`}
-            >
-              {OFFER_TYPE_LABELS[t]}
-            </button>
-          ))}
+        <div className="grid grid-cols-1 gap-2">
+          {(Object.keys(OFFER_TYPE_LABELS) as OfferType[]).map((t) => {
+            const selected = form.type === t;
+            return (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setForm({ ...form, type: t })}
+                className={`flex flex-col items-start rounded-xl border px-4 py-3 text-left transition-all ${
+                  selected
+                    ? "border-ec-ink bg-ec-ink text-white shadow-sm"
+                    : "border-ec-rule bg-white text-ec-ink hover:border-ec-muted"
+                }`}
+              >
+                <span className="text-sm font-extrabold">{OFFER_TYPE_LABELS[t]}</span>
+                <span className={`mt-0.5 text-[11px] font-semibold leading-snug ${selected ? "text-white/70" : "text-ec-muted"}`}>
+                  {OFFER_TYPE_DESCRIPTIONS[t]}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 

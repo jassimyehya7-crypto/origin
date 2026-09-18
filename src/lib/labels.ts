@@ -43,8 +43,16 @@ export const OFFER_TYPE_LABELS: Record<OfferType, string> = {
   FLASH: "Offre du jour",
   PROMO: "Réduction",
   ARRIVAGE: "Nouveauté",
-  EXCLUSIVITE: "Exclusivité",
+  EXCLUSIVITE: "Exclu",
   DERNIERE_MINUTE: "Dernière chance",
+};
+
+export const OFFER_TYPE_DESCRIPTIONS: Record<OfferType, string> = {
+  FLASH: "Un deal éphémère, valable aujourd'hui uniquement",
+  PROMO: "Prix réduit sur un produit existant",
+  ARRIVAGE: "Nouveau produit qui vient d'arriver",
+  EXCLUSIVITE: "Disponible uniquement chez vous, introuvable ailleurs",
+  DERNIERE_MINUTE: "Dernières unités avant fermeture ou péremption",
 };
 
 export const OFFER_STATUS_LABELS: Record<OfferStatus, string> = {
@@ -74,12 +82,12 @@ export const PRO_COPY = {
   tabOffers: "Offres",
   tabShop: "Magasin",
   sectionPending: "À confirmer",
-  sectionPickup: "À retirer",
-  emptyAll: "Rien à traiter",
-  emptyPending: "Rien à confirmer",
-  emptyPickup: "Rien à retirer",
+  sectionPickup: "À préparer",
+  emptyAll: "Rien à traiter pour le moment",
+  emptyPending: "Aucune demande en attente",
+  emptyPickup: "Aucune réservation à préparer",
   dayEnded: "Journée terminée · reprise demain",
-  endsAt: (hm: string) => `Se termine à ${hm}`,
+  endsAt: (hm: string) => `Ouvert jusqu'à ${hm.replace(":", "h")}`,
   autoClose: (hm: string) =>
     `Fin de journée automatique à ${hm}. À cette heure, les réservations non retirées passent en terminées et le stock revient.`,
 } as const;

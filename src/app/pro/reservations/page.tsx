@@ -13,10 +13,10 @@ export default async function ProReservationsPage() {
   );
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-4">
-      <h1 className="font-display text-[1.75rem] text-ec-ink">Réservations</h1>
+    <div className="mx-auto max-w-2xl px-5 py-5">
+      <h1 className="font-display text-[1.75rem] leading-tight text-ec-ink">Réservations</h1>
       <p className="mb-5 text-sm font-semibold text-ec-muted">
-        Gros boutons — Confirmer ou Refuser.
+        {enriched.length} au total · historique complet
       </p>
       <ReservationsInbox initial={enriched} />
     </div>

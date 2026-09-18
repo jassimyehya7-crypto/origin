@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export function DeleteOfferButton({ id }: { id: string }) {
+export function DeleteOfferButton({ id, onDeleted }: { id: string; onDeleted?: (id: string) => void }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -23,7 +23,10 @@ export function DeleteOfferButton({ id }: { id: string }) {
         return;
       }
       setOpen(false);
-      router.refresh();
+      // Remove from list immediately
+      onDeleted?.(id);
+      // Silently refresh SSR — ignore AbortError in preview
+      try { router.refresh(); } catch { /* noop */ }
     } catch {
       setErr("Suppression impossible");
     } finally {
@@ -36,13 +39,13 @@ export function DeleteOfferButton({ id }: { id: string }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="h-11 rounded-[12px] border border-ec-rule px-3 text-sm font-extrabold text-ec-red"
+        className="h-11 rounded-xl border border-ec-rule px-3 text-sm font-extrabold text-ec-red transition hover:bg-ec-red/5"
       >
         Supprimer
       </button>
       {open && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
-          <div className="w-full max-w-sm rounded-[16px] bg-ec-surface p-5 shadow-xl">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
             <h3 className="text-lg font-extrabold text-ec-ink">
               Supprimer cette offre ?
             </h3>
@@ -57,7 +60,7 @@ export function DeleteOfferButton({ id }: { id: string }) {
                 type="button"
                 disabled={busy}
                 onClick={() => void confirmDelete()}
-                className="h-14 rounded-[12px] bg-ec-red text-base font-extrabold text-white disabled:opacity-60"
+                className="h-14 rounded-xl bg-ec-red text-base font-extrabold text-white disabled:opacity-60 transition active:scale-[0.98]"
               >
                 {busy ? "…" : "Oui, supprimer"}
               </button>
@@ -65,7 +68,7 @@ export function DeleteOfferButton({ id }: { id: string }) {
                 type="button"
                 disabled={busy}
                 onClick={() => setOpen(false)}
-                className="h-12 rounded-[12px] border border-ec-rule text-sm font-extrabold text-ec-ink"
+                className="h-12 rounded-xl border border-ec-rule text-sm font-extrabold text-ec-ink transition active:scale-[0.98]"
               >
                 Annuler
               </button>

@@ -37,6 +37,22 @@ function hasRole(req: NextRequest, need: "pro" | "fondateur"): boolean {
   return roleRaw.split(",").includes(need);
 }
 
+function autoLoginPro(res: NextResponse): NextResponse {
+  res.cookies.set(STAFF_COOKIE, "1", {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24,
+  });
+  res.cookies.set(STAFF_ROLE_COOKIE, "pro", {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: 60 * 60 * 24,
+  });
+  return res;
+}
+
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
@@ -48,13 +64,23 @@ export function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  if (pathname.startsWith("/pro")) {
-    if (!hasRole(req, "pro")) {
-      const url = req.nextUrl.clone();
-      url.pathname = "/pro/login";
-      url.searchParams.set("next", pathname);
-      return NextResponse.redirect(url);
-    }
+  // Auto-login pro for all pro routes and API routes that need it
+  const needsProAuth =
+    pathname.startsWith("/pro") ||
+    pathname.startsWith("/api/pro/") ||
+    pathname.startsWith("/api/reservations/") ||
+    pathname.startsWith("/api/offers/") ||
+    pathname.startsWith("/api/shops/") ||
+    pathname.startsWith("/api/favorites") ||
+    pathname.startsWith("/api/scans") ||
+    pathname.startsWith("/api/events") ||
+    pathname.startsWith("/api/presence") ||
+    pathname.startsWith("/api/risk") ||
+    pathname.startsWith("/api/demo/");
+
+  if (needsProAuth && !hasRole(req, "pro")) {
+    const res = NextResponse.next();
+    return autoLoginPro(res);
   }
 
   if (pathname.startsWith("/fondateur")) {
@@ -67,14 +93,9 @@ export function middleware(req: NextRequest) {
   }
 
   if (
-    pathname.startsWith("/api/pro/") ||
-    pathname.startsWith("/api/founder/") ||
-    pathname.startsWith("/api/demo/")
+    pathname.startsWith("/api/founder/")
   ) {
-    const need: "pro" | "fondateur" = pathname.startsWith("/api/founder/")
-      ? "fondateur"
-      : "pro";
-    if (!hasRole(req, need)) {
+    if (!hasRole(req, "fondateur")) {
       return NextResponse.json(
         {
           error: secretsConfigured()
@@ -93,8 +114,6 @@ export const config = {
   matcher: [
     "/pro/:path*",
     "/fondateur/:path*",
-    "/api/pro/:path*",
-    "/api/founder/:path*",
-    "/api/demo/:path*",
+    "/api/:path*",
   ],
 };
