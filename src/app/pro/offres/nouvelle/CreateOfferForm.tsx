@@ -24,7 +24,7 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
     price: "",
     quantityTotal: "5",
     limitMode: "quantity" as "quantity" | "time",
-    durationHours: 3 as 3 | 6 | 12,
+    durationHours: "3",
   });
 
   function flashToast(msg: string) {
@@ -135,7 +135,7 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
           price,
           limitMode: form.limitMode,
           quantityTotal: form.limitMode === "quantity" ? Number(form.quantityTotal) : undefined,
-          durationHours: form.limitMode === "time" ? form.durationHours : undefined,
+          durationHours: form.limitMode === "time" ? Number(form.durationHours) : undefined,
           unit: "lot",
           imageUrl: imageUrl || undefined,
           publish: true,
@@ -310,16 +310,28 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
           ))}
         </div>
         {form.limitMode === "time" && <div className="mt-3">
-          <p className="mb-2 text-sm font-semibold text-ec-muted">Valable dès la publication, sans limite de réservations</p>
-          <div className="grid grid-cols-3 gap-2">
-            {([3, 6, 12] as const).map((hours) => (
-              <button key={hours} type="button" onClick={() => setForm({ ...form, durationHours: hours })}
-                aria-pressed={form.durationHours === hours}
-                className={`h-12 rounded-[12px] border text-sm font-extrabold ${form.durationHours === hours ? "border-ec-ink bg-ec-yellow text-ec-ink" : "border-ec-rule bg-ec-surface text-ec-ink"}`}>
-                {hours} h
-              </button>
-            ))}
-          </div>
+          <label className="mb-1.5 block text-sm font-extrabold text-ec-ink">
+            Durée (heures)
+          </label>
+          <input
+            type="number"
+            min="1"
+            max={form.type === "FLASH" ? 24 : 72}
+            inputMode="numeric"
+            className="h-14 w-full rounded-[12px] border border-ec-rule bg-ec-surface px-4 text-base font-extrabold outline-none focus:ring-2 focus:ring-ec-blue"
+            value={form.durationHours}
+            onChange={(e) => {
+              const max = form.type === "FLASH" ? 24 : 72;
+              const val = Math.min(Number(e.target.value) || 0, max);
+              setForm({ ...form, durationHours: String(val || e.target.value) });
+            }}
+            placeholder={form.type === "FLASH" ? "Max 24h" : "Ex. 5"}
+          />
+          <p className="mt-1.5 text-center text-[11px] font-semibold text-ec-muted">
+            {form.type === "FLASH"
+              ? "Max 24h. Le compte à rebours se met en pause à la fermeture et reprend à l'ouverture."
+              : "Le compte à rebours se met en pause à la fermeture et reprend à l'ouverture du commerce."}
+          </p>
         </div>}
       </fieldset>
 
@@ -351,8 +363,8 @@ export function CreateOfferForm({ defaultShopId }: { defaultShopId: string }) {
         </div>
       </div>
 
-      {form.limitMode === "quantity" && <p className="rounded-[12px] bg-ec-soft px-3 py-2 text-xs font-semibold text-ec-muted">
-        Valable jusqu&apos;à la fermeture — fin de journée.
+      {form.limitMode === "quantity" && <p className="rounded-[12px] bg-ec-soft px-3 py-2 text-center text-xs font-semibold text-ec-muted">
+        À la fermeture du commerce, l&apos;offre disparaît.
       </p>}
 
       {error && <p className="text-sm font-bold text-ec-red">{error}</p>}

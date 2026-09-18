@@ -59,8 +59,7 @@ export function OpenUntilEditor({
         </span>
       </label>
       <p className="text-sm font-semibold leading-relaxed text-ec-muted">
-        À {value}, les réservations non retirées se terminent et le stock
-        revient. Reprise demain.
+        Fermeture de la PME à {value}. Les offres en cours se mettent en pause et reprennent le lendemain à l'ouverture.
       </p>
       {dirty && (
         <Button

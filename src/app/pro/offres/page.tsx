@@ -20,11 +20,9 @@ function isTodayZurich(iso?: string): boolean {
 function proListOffers(all: Offer[]): Offer[] {
   return all
     .filter((o) => {
-      if (o.status === "PUBLIEE" || o.status === "BROUILLON") return true;
-      if (o.status === "EXPIREE") {
-        return isTodayZurich(o.publishedAt || o.createdAt);
-      }
-      return false;
+      // Seules les offres publiées et brouillons apparaissent
+      // Les offres terminées/expirées disparaissent complètement
+      return o.status === "PUBLIEE" || o.status === "BROUILLON";
     })
     .sort(
       (a, b) =>

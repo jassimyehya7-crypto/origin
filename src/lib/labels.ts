@@ -89,5 +89,5 @@ export const PRO_COPY = {
   dayEnded: "Journée terminée · reprise demain",
   endsAt: (hm: string) => `Ouvert jusqu'à ${hm.replace(":", "h")}`,
   autoClose: (hm: string) =>
-    `Fin de journée automatique à ${hm}. À cette heure, les réservations non retirées passent en terminées et le stock revient.`,
+    `Fermeture PME à ${hm}. Les offres en cours se mettent en pause et reprennent le lendemain.`,
 } as const;

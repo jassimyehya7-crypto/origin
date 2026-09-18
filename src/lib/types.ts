@@ -76,7 +76,7 @@ export interface Offer {
   quantityTotal: number;
   quantityLeft: number;
   /** Present for an offer limited by time rather than by stock. */
-  durationHours?: 3 | 6 | 12;
+  durationHours?: number;
   unit: string;
   emoji: string;
   /** Public product photo URL (Storage). */

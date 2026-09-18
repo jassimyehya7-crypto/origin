@@ -147,13 +147,31 @@ export function shouldExpirePending(
  * (do not expire brand-new offers created after today's close).
  */
 export function shouldExpirePublishedOffer(
-  offer: { validUntil: string; createdAt: string; publishedAt?: string; durationHours?: 3 | 6 | 12 },
+  offer: { validUntil: string; createdAt: string; publishedAt?: string; durationHours?: number },
   openUntil: string,
   now = new Date()
 ): boolean {
   const pastValid = new Date(offer.validUntil).getTime() < now.getTime();
+
+  // Time-limited offers: pause during shop closure
+  if (offer.durationHours) {
+    if (!pastValid) return false; // countdown still running
+    // validUntil is past — check if shop is currently closed
+    if (isPastShopClosing(openUntil, now)) {
+      // Shop is closed: calculate remaining time at closing
+      const close = closingInstantToday(openUntil, now);
+      const remainingAtClose = new Date(offer.validUntil).getTime() - close.getTime();
+      // If less than 1 hour remained at closing → expire
+      if (remainingAtClose < 3600_000) return true;
+      // Otherwise: offer is paused, will resume at opening
+      return false;
+    }
+    // Shop is open and validUntil past → expire
+    return true;
+  }
+
+  // Quantity-based offers: expire at closing time
   if (pastValid) return true;
-  if (offer.durationHours) return false;
   if (!isPastShopClosing(openUntil, now)) return false;
   const close = closingInstantToday(openUntil, now);
   const anchor = new Date(offer.publishedAt || offer.createdAt).getTime();

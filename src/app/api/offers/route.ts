@@ -31,8 +31,9 @@ export async function POST(req: NextRequest) {
   if (!body.shopId || !body.title?.trim() || !Number.isFinite(Number(body.price)) || Number(body.price) <= 0) {
     return NextResponse.json({ error: "Champs requis manquants" }, { status: 400 });
   }
-  if (timeLimited ? ![3, 6, 12].includes(durationHours) : !Number.isInteger(quantityTotal) || quantityTotal < 1) {
-    return NextResponse.json({ error: "Choisissez une durée de 3, 6 ou 12 h, ou une quantité valide" }, { status: 400 });
+  const maxDuration = body.type === "FLASH" ? 24 : 72;
+  if (timeLimited ? (!Number.isFinite(durationHours) || durationHours < 1 || durationHours > maxDuration) : !Number.isInteger(quantityTotal) || quantityTotal < 1) {
+    return NextResponse.json({ error: timeLimited ? `Durée entre 1 et ${maxDuration} heures` : "Quantité valide (min. 1)" }, { status: 400 });
   }
   const offer = await createOffer({
     shopId: body.shopId,
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
     price: Number(body.price),
     originalPrice: body.originalPrice ? Number(body.originalPrice) : undefined,
     quantityTotal,
-    durationHours: timeLimited ? durationHours as 3 | 6 | 12 : undefined,
+    durationHours: timeLimited ? durationHours : undefined,
     unit: body.unit || "lot",
     emoji: body.emoji,
     imageUrl: body.imageUrl || undefined,
