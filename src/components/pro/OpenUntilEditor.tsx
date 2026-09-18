@@ -58,8 +58,8 @@ export function OpenUntilEditor({
           />
         </span>
       </label>
-      <p className="text-sm font-semibold leading-relaxed text-ec-muted">
-        Fermeture de la PME à {value}. Les offres en cours se mettent en pause et reprennent le lendemain à l'ouverture.
+      <p className="text-center text-sm font-semibold text-ec-muted">
+        Fermeture de la PME à {value}.
       </p>
       {dirty && (
         <Button
