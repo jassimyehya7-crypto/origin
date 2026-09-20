@@ -1,3 +1,11 @@
+# OffresLocal
+
+> **AlphaBeta1** (version complète figée, 20 sept. 2026) : dossier [`AlphaBeta1/`](./AlphaBeta1/).
+> Ouvrir ce dossier pour retrouver l’interface actuelle (Explorer Google Maps, fiches commerces, réservations).
+> La racine ci-dessous est le projet Next.js d’origine.
+
+---
+
 # OffresLocal — MVP démo (Villeneuve VD)
 
 Marketplace locale de **réservation gratuite** + **code de retrait** pour les commerces alimentaires de proximité. Pas de paiement, pas de livraison, pas de chat libre client–commerçant.
