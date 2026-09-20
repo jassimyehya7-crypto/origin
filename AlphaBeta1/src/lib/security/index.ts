@@ -69,6 +69,44 @@ export {
 // Server validation
 export { validateSecuredRequest, generateSecurityReport } from "./server-v2";
 
+// Threat Intelligence & Active Defense
+export {
+  // Threat Database
+  recordThreat,
+  isThreatBanned,
+  getThreatDatabase,
+  getThreatStats,
+  type ThreatRecord,
+  type GeoLocation,
+  type DeviceInfo,
+  type AttackProfile,
+  type AttackType,
+  type AttackAction,
+  // IP & Geolocation
+  resolveClientIP,
+  geolocateIP,
+  detectProxyVPN,
+  collectDeviceInfo,
+  // Attack Classification
+  classifyAttack,
+  // Alert System
+  createAlert,
+  getAlerts,
+  onSecurityAlert,
+  type SecurityAlert,
+  // Deception
+  DECEPTION_ENDPOINTS,
+  FAKE_DATA,
+  isDeceptionEndpoint,
+  generateDeceptionResponse,
+  // Attacker Redirect
+  getAttackerRedirect,
+  tarpitResponse,
+  // Master Security Gate
+  securityGate,
+  type SecurityGateResult,
+} from "./threat-intel";
+
 // React hook
 // (useShieldV2 exported separately to avoid SSR issues)
 
