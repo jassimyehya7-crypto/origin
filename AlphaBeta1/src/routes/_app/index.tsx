@@ -44,7 +44,8 @@ function Home() {
   const fresh = offers.filter((o) => o.flags.includes("new"));
   const flash = offers.filter((o) => o.flags.includes("flash"));
   const fromFollowed = offers.filter((o) => followed.includes(o.merchantId));
-  const nearby = offers.slice(0, 8);
+  const isFiltered = category !== "all";
+  const nearby = isFiltered ? offers : offers.slice(0, 8);
 
   return (
     <div>
@@ -86,7 +87,7 @@ function Home() {
         />
       ) : (
         <div className="mt-6 space-y-8 pb-4">
-          {hot.length > 0 ? (
+          {!isFiltered && hot.length > 0 ? (
             <section className="px-5">
               <SectionHeader
                 title="À saisir près de vous"
@@ -106,13 +107,15 @@ function Home() {
                 title="Près de vous"
                 icon={<MapPin className="size-5" />}
                 action={
-                  <Link
-                    to="/explore"
-                    search={{ tab: "list" }}
-                    className="text-sm font-medium text-mute hover:text-ink"
-                  >
-                    Voir tout →
-                  </Link>
+                  isFiltered ? null : (
+                    <Link
+                      to="/explore"
+                      search={{ tab: "list" }}
+                      className="text-sm font-medium text-mute hover:text-ink"
+                    >
+                      Voir tout →
+                    </Link>
+                  )
                 }
               />
               <div className="grid grid-cols-2 gap-3">
@@ -123,7 +126,7 @@ function Home() {
             </section>
           ) : null}
 
-          {fresh.length > 0 ? (
+          {!isFiltered && fresh.length > 0 ? (
             <section className="px-5">
               <SectionHeader
                 title="Nouveau aujourd’hui"
@@ -137,7 +140,7 @@ function Home() {
             </section>
           ) : null}
 
-          {fromFollowed.length > 0 ? (
+          {!isFiltered && fromFollowed.length > 0 ? (
             <section className="px-5">
               <SectionHeader
                 title="Vos commerces"
@@ -149,7 +152,7 @@ function Home() {
                 ))}
               </div>
             </section>
-          ) : (
+          ) : !isFiltered ? (
             <section className="px-5">
               <SectionHeader title="Vos commerces" icon={<Heart className="size-5" />} />
               <div className="rounded-[var(--radius-lg)] bg-card px-4 py-5 shadow-[var(--shadow-card)]">
@@ -164,9 +167,9 @@ function Home() {
                 </Button>
               </div>
             </section>
-          )}
+          ) : null}
 
-          {flash.length > 0 ? (
+          {!isFiltered && flash.length > 0 ? (
             <section className="px-5">
               <SectionHeader title="Flash" icon={<Zap className="size-5" />} />
               <HorizontalRail>

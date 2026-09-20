@@ -63,7 +63,9 @@ export function GoogleRating({
         >
           Site
         </a>
-      ) : null}
+      ) : (
+        <span className="italic text-mute">Site</span>
+      )}
     </p>
   );
 }

@@ -3,10 +3,8 @@ import {
   ChevronRight,
   CircleHelp,
   Heart,
-  LayoutDashboard,
   Settings,
   SlidersHorizontal,
-  Store,
   Ticket,
   UserPlus,
 } from "lucide-react";
@@ -32,7 +30,7 @@ function Profile() {
 
   return (
     <div className="px-5 pb-8 pt-6 safe-top">
-      <Logo size="sm" />
+      <Logo size="lg" />
       <div className="mt-5">
         <h1 className="font-display text-2xl font-bold tracking-tight">Camille D.</h1>
         <p className="text-sm text-mute">Membre OffresLocal · Villeneuve</p>
@@ -72,14 +70,6 @@ function Profile() {
         <Row to="/settings" label="Paramètres" icon={Settings} />
       </ul>
 
-      <p className="mt-8 text-[11px] font-semibold uppercase tracking-wide text-mute">
-        Espaces démo
-      </p>
-      <ul className="mt-2 overflow-hidden rounded-[var(--radius-lg)] bg-card shadow-[var(--shadow-card)]">
-        <Row to="/pro" label="Espace commerçant" icon={Store} hint="Épicerie Da Silva" />
-        <Row to="/fondateur" label="Pilotage fondateur" icon={LayoutDashboard} hint="Villeneuve" />
-      </ul>
-      <p className="mt-3 text-[11px] leading-relaxed text-mute">{PRICING_NOTE}</p>
     </div>
   );
 }
