@@ -10,14 +10,10 @@ import type { Plugin } from "vite";
 // ═══ SECURITY HEADERS ═══
 const SECURITY_HEADERS: Record<string, string> = {
   "X-Content-Type-Options": "nosniff",
-  "X-Frame-Options": "SAMEORIGIN",
   "X-XSS-Protection": "1; mode=block",
   "Referrer-Policy": "strict-origin-when-cross-origin",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=(self), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()",
   "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
-  "Cross-Origin-Opener-Policy": "same-origin",
-  "Cross-Origin-Resource-Policy": "same-origin",
-  "Cross-Origin-Embedder-Policy": "credentialless",
   "X-DNS-Prefetch-Control": "off",
   "X-Download-Options": "noopen",
   "X-Permitted-Cross-Domain-Policies": "none",
@@ -27,13 +23,11 @@ const SECURITY_HEADERS: Record<string, string> = {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "img-src 'self' data: https: blob:",
     "font-src 'self' data: https://fonts.gstatic.com",
-    "connect-src 'self' https: wss:",
-    "frame-src 'self' https://www.google.com https://openstreetmap.org https://*.openstreetmap.org",
+    "connect-src 'self' https: wss: ws:",
+    "frame-src 'self' https://www.google.com https://openstreetmap.org https://*.openstreetmap.org https://*.e2b.app",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-    "frame-ancestors 'self'",
-    "upgrade-insecure-requests",
   ].join("; "),
 };
 

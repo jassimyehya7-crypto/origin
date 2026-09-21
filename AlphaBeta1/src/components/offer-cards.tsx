@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { Clock, MapPin } from "lucide-react";
+import { CountdownTimer } from "@/components/countdown-timer";
 import { DiscountBadge } from "@/components/discount-badge";
 import { HeartButton } from "@/components/heart-button";
 import { Photo } from "@/components/photo";
@@ -142,16 +143,21 @@ export function NewCard({ offer }: { offer: Offer }) {
 }
 
 export function FlashCard({ offer }: { offer: Offer }) {
-  const { merchant, stock, distance, pct } = useOfferMeta(offer);
+  const { merchant, stock } = useOfferMeta(offer);
   if (!merchant) return null;
   return (
     <article className="flex w-[20rem] shrink-0 overflow-hidden rounded-[var(--radius-lg)] bg-ink text-paper">
       <Photo src={offer.image} alt={offer.title} className="h-full w-[6.5rem] shrink-0" />
       <div className="flex flex-1 flex-col justify-between p-3">
         <div>
-          <p className="inline-flex items-center gap-1 rounded-full bg-lime px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-ink">
-            {OFFER_TYPE_LABELS[offer.type]}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="inline-flex items-center gap-1 rounded-full bg-lime px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-ink">
+              {OFFER_TYPE_LABELS[offer.type]}
+            </p>
+            {offer.until ? (
+              <CountdownTimer untilTime={offer.until} />
+            ) : null}
+          </div>
           <h3 className="mt-1.5 font-display text-base font-semibold leading-snug">{offer.title}</h3>
           <p className="text-xs text-white/60">{merchant.name}</p>
           <p className="mt-1 text-sm">
@@ -162,10 +168,6 @@ export function FlashCard({ offer }: { offer: Offer }) {
           </p>
           <p className="mt-1.5">
             <StockBadge stock={stock} className={stock < 1 ? "" : "bg-lime text-ink"} />
-          </p>
-          <p className="mt-1 text-[11px] text-white/55">
-            {distLabel(distance)} · Expire à {offer.until}
-            {pct ? ` · −${pct} %` : ""}
           </p>
         </div>
         {stock < 1 ? (

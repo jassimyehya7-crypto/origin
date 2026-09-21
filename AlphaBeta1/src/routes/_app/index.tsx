@@ -42,7 +42,7 @@ function Home() {
   });
   const hot = offers.filter((o) => o.flags.includes("hot"));
   const fresh = offers.filter((o) => o.flags.includes("new"));
-  const flash = offers.filter((o) => o.flags.includes("flash"));
+  const flash = offers.filter((o) => o.flags.includes("flash") && o.until);
   const fromFollowed = offers.filter((o) => followed.includes(o.merchantId));
   const isFiltered = category !== "all";
   const nearby = isFiltered ? offers : offers.slice(0, 8);
@@ -87,6 +87,17 @@ function Home() {
         />
       ) : (
         <div className="mt-6 space-y-8 pb-4">
+          {!isFiltered && flash.length > 0 ? (
+            <section className="px-5">
+              <SectionHeader title="Flash" icon={<Zap className="size-5" />} />
+              <HorizontalRail>
+                {flash.map((o) => (
+                  <FlashCard key={o.id} offer={o} />
+                ))}
+              </HorizontalRail>
+            </section>
+          ) : null}
+
           {!isFiltered && hot.length > 0 ? (
             <section className="px-5">
               <SectionHeader
@@ -166,17 +177,6 @@ function Home() {
                   </Link>
                 </Button>
               </div>
-            </section>
-          ) : null}
-
-          {!isFiltered && flash.length > 0 ? (
-            <section className="px-5">
-              <SectionHeader title="Flash" icon={<Zap className="size-5" />} />
-              <HorizontalRail>
-                {flash.map((o) => (
-                  <FlashCard key={o.id} offer={o} />
-                ))}
-              </HorizontalRail>
             </section>
           ) : null}
         </div>

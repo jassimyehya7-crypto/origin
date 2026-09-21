@@ -4,12 +4,12 @@ import { toast } from "sonner";
 import { BackCircle, IconCircle, PageShell } from "@/components/back-header";
 import { DiscountBadge } from "@/components/discount-badge";
 import { HeartButton } from "@/components/heart-button";
+import { ZoomableImage } from "@/components/image-lightbox";
 import { Photo } from "@/components/photo";
 import { StockBadge } from "@/components/stock-badge";
 import { Button } from "@/components/ui/button";
 import { findOffer, getMerchant, liveOffersForMerchant } from "@/lib/data/catalog";
 import { chf, discountPct, distLabel, walkMinutes } from "@/lib/format";
-import { OFFER_TYPE_LABELS } from "@/lib/labels";
 import { extraMeters } from "@/lib/selectors";
 import { useAppStore, useStock } from "@/lib/store";
 
@@ -46,7 +46,7 @@ function OfferDetail() {
   return (
     <PageShell>
       <div className="relative">
-        <Photo src={offer.image} alt={offer.title} className="h-[58vw] max-h-80 w-full min-h-56" />
+        <ZoomableImage src={offer.image} alt={offer.title} className="h-[58vw] max-h-80 w-full min-h-56" />
         <StockBadge stock={stock} className="absolute bottom-4 left-4" />
         <div className="absolute inset-x-0 top-0 flex items-start justify-between p-4 pt-[calc(1rem+env(safe-area-inset-top))]">
           <BackCircle />
@@ -77,10 +77,6 @@ function OfferDetail() {
       <div className="px-5 pb-36 pt-5">
         <div className="flex flex-wrap items-center gap-2">
           <DiscountBadge pct={pct} />
-          <StockBadge stock={stock} />
-          <span className="inline-flex h-6 items-center rounded-full bg-soft px-2 text-[11px] font-bold uppercase tracking-wide text-ink">
-            {OFFER_TYPE_LABELS[offer.type]}
-          </span>
         </div>
         <p className="mt-3 text-sm font-medium text-mute">{merchant.name}</p>
         <h1 className="mt-1 font-display text-3xl font-bold uppercase leading-none tracking-tight">
