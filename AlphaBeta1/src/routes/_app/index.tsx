@@ -178,7 +178,7 @@ function Home() {
             </section>
           ) : null}
 
-          {/* VOS COMMERCES — ouverts + fermés avec badge */}
+          {/* VOS COMMERCES — ouverts + fermés */}
           {!isFiltered && (fromFollowedOpen.length > 0 || fromFollowedClosed.length > 0) ? (
             <section className="px-5">
               <SectionHeader
@@ -193,7 +193,7 @@ function Home() {
                   ))}
                 </div>
               )}
-              {/* Offres des commerces fermés avec badge intégré */}
+              {/* Offres des commerces fermés */}
               {fromFollowedClosed.length > 0 && (
                 <>
                   {fromFollowedOpen.length > 0 && (
@@ -203,17 +203,16 @@ function Home() {
                     {fromFollowedClosed.map((o) => {
                       const merchant = getMerchant(o.merchantId);
                       const stock = stockByOffer[o.id] ?? o.stock;
-                      const isTerminated = stock < 1;
+                      const hasStock = stock > 0;
                       return (
-                        <div key={o.id} className="relative opacity-60">
+                        <div key={o.id} className="relative opacity-50">
                           <FeedCard offer={o} />
-                          {isTerminated ? (
-                            <div className="absolute inset-0 flex items-center justify-center rounded-[var(--radius-lg)] bg-black/40">
-                              <span className="rounded-full bg-red-600 px-4 py-1.5 text-xs font-bold text-white shadow-lg">
-                                Terminé
-                              </span>
-                            </div>
-                          ) : (
+                          <div className="absolute inset-0 flex items-center justify-center rounded-[var(--radius-lg)] bg-black/30">
+                            <span className="text-2xl font-bold italic text-red-500 drop-shadow-lg">
+                              Fermé
+                            </span>
+                          </div>
+                          {hasStock && (
                             <div className="absolute bottom-0 inset-x-0 flex items-center justify-center gap-1.5 rounded-b-[var(--radius-lg)] bg-ink/90 px-2 py-1.5">
                               <Moon className="size-3 text-indigo-300" />
                               <span className="text-[10px] font-bold text-white">
@@ -232,9 +231,9 @@ function Home() {
             <section className="px-5">
               <SectionHeader title="Vos commerces" icon={<Heart className="size-5" />} />
               <div className="rounded-[var(--radius-lg)] bg-card px-4 py-5 shadow-[var(--shadow-card)]">
-                <p className="font-display text-base font-semibold">Suivez un commerce</p>
+                <p className="font-display text-base font-semibold">Aucune offre chez vos commerçants</p>
                 <p className="mt-1 text-sm text-mute">
-                  Les nouvelles offres de vos commerces apparaîtront ici.
+                  Suivez un commerce pour recevoir ses nouvelles offres ici.
                 </p>
                 <Button asChild size="sm" className="mt-3" variant="outline">
                   <Link to="/explore" search={{ tab: "shops" }}>
@@ -260,30 +259,16 @@ function Home() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                {closedOffers.slice(0, 6).map((o) => {
-                  const merchant = getMerchant(o.merchantId);
-                  const stock = stockByOffer[o.id] ?? o.stock;
-                  const isTerminated = stock < 1;
-                  return (
-                    <div key={o.id} className="relative opacity-60">
-                      <FeedCard offer={o} />
-                      {isTerminated ? (
-                        <div className="absolute inset-0 flex items-center justify-center rounded-[var(--radius-lg)] bg-black/40">
-                          <span className="rounded-full bg-red-600 px-4 py-1.5 text-xs font-bold text-white shadow-lg">
-                            Terminé
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="absolute bottom-0 inset-x-0 flex items-center justify-center gap-1.5 rounded-b-[var(--radius-lg)] bg-ink/90 px-2 py-1.5">
-                          <Moon className="size-3 text-indigo-300" />
-                          <span className="text-[10px] font-bold text-white">
-                            Ouvre à {merchant?.openFrom || "—"}
-                          </span>
-                        </div>
-                      )}
+                {closedOffers.slice(0, 6).map((o) => (
+                  <div key={o.id} className="relative opacity-50">
+                    <FeedCard offer={o} />
+                    <div className="absolute inset-0 flex items-center justify-center rounded-[var(--radius-lg)] bg-black/30">
+                      <span className="text-2xl font-bold italic text-red-500 drop-shadow-lg">
+                        Fermé
+                      </span>
                     </div>
-                  );
-                })}
+                  </div>
+                ))}
               </div>
             </section>
           ) : null}
