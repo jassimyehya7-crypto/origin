@@ -192,7 +192,7 @@ function MerchantPage() {
                           <span className="text-sm font-bold italic text-white drop-shadow-lg">
                             À venir
                           </span>
-                          <CountdownTimer offer={o} merchantId={o.merchantId} />
+                          <CountdownTimer untilTime={o.until} merchantId={o.merchantId} />
                         </div>
                       </div>
                     );
