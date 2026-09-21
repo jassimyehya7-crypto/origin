@@ -1,6 +1,6 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { MapPin, Search } from "lucide-react";
+import { MapPin, Moon, Search } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { GoogleTownMap, LockedCityCard } from "@/components/google-map";
 import { MerchantCard } from "@/components/merchant-card";
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { MAP_CITIES, type MapCity } from "@/lib/data/cities";
 import { EXPLORE_FILTERS, exploreMatches, getMerchant } from "@/lib/data/catalog";
 import { chf, discountPct, distLabel } from "@/lib/format";
-import { extraMeters, visibleMerchants, visibleOffers } from "@/lib/selectors";
+import { extraMeters, isMerchantOpen, visibleMerchants, visibleOffers } from "@/lib/selectors";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +37,8 @@ function Explore() {
     zoom: 16,
   });
   const [focusTick, setFocusTick] = useState(0);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const locationId = useAppStore((s) => s.locationId);
   const radiusKm = useAppStore((s) => s.radiusKm);
   const setRadiusKm = useAppStore((s) => s.setRadiusKm);
@@ -53,7 +55,7 @@ function Explore() {
     );
   }, []);
 
-  const offers = visibleOffers({
+  const allOffers = visibleOffers({
     locationId,
     radiusKm,
     category: "all",
@@ -64,6 +66,17 @@ function Explore() {
     const m = getMerchant(o.merchantId);
     if (!m) return false;
     return exploreMatches(m.category, filter);
+  });
+
+  // Filtrer les offres flash des commerces fermés (elles disparaissent)
+  const offers = allOffers.filter((o) => {
+    if (!mounted) return true; // SSR: afficher tout
+    const m = getMerchant(o.merchantId);
+    if (!m) return false;
+    const open = isMerchantOpen(m, new Date());
+    // Si commerce fermé + offre flash → masquer
+    if (!open && o.flags.includes("flash")) return false;
+    return true;
   });
 
   const merchants = visibleMerchants({ locationId, radiusKm, query: shopQuery }).filter((m) =>
@@ -117,6 +130,11 @@ function Explore() {
   );
 
   if (tab === "map") {
+    // Vérifier si la majorité des commerces sont fermés
+    const now = mounted ? new Date() : null;
+    const merchantsOpen = merchants.filter((m) => now && isMerchantOpen(m, now)).length;
+    const allClosed = mounted && merchants.length > 0 && merchantsOpen === 0;
+
     return (
       <div className="relative h-[calc(100dvh-5.75rem-env(safe-area-inset-bottom))] overflow-hidden">
         <GoogleTownMap
@@ -126,6 +144,14 @@ function Explore() {
           onZoneChange={onZoneChange}
           focusTick={focusTick}
         />
+        {/* Overlay carte en veille */}
+        {allClosed && (
+          <div className="absolute inset-0 z-[400] flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm">
+            <Moon className="size-12 text-white/80 mb-3" />
+            <p className="text-lg font-bold text-white">Carte en veille</p>
+            <p className="text-sm text-white/80 mt-1">Les commerces sont fermés</p>
+          </div>
+        )}
         <header className="absolute inset-x-0 top-0 z-[500] bg-paper/90 px-5 pb-3 pt-4 backdrop-blur-md safe-top">
           {chrome}
         </header>
@@ -171,7 +197,25 @@ function Explore() {
               }}
             />
           ) : (
-            offers.map((o) => <ListRow key={o.id} offer={o} />)
+            offers.map((o) => {
+              const m = getMerchant(o.merchantId);
+              const open = m && mounted ? isMerchantOpen(m, new Date()) : true;
+              // Si commerce fermé → afficher avec badge "Reprend demain"
+              if (!open) {
+                return (
+                  <div key={o.id} className="relative opacity-60">
+                    <ListRow offer={o} />
+                    <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-ink/80 px-2 py-0.5">
+                      <Moon className="size-2.5 text-indigo-300" />
+                      <span className="text-[9px] font-bold text-white">
+                        Reprend demain {m?.openFrom || ""}
+                      </span>
+                    </div>
+                  </div>
+                );
+              }
+              return <ListRow key={o.id} offer={o} />;
+            })
           )}
         </div>
       ) : null}

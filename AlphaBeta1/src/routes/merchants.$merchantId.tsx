@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { Clock, Heart, MapPin, Navigation, Phone } from "lucide-react";
+import { Clock, Heart, MapPin, Moon, Navigation, Phone } from "lucide-react";
 import { toast } from "sonner";
 import { BackCircle, PageShell } from "@/components/back-header";
+import { CountdownTimer } from "@/components/countdown-timer";
 import { GoogleRating } from "@/components/google-rating";
 import { FeedCard } from "@/components/offer-cards";
 import { Photo } from "@/components/photo";
@@ -10,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { getMerchant, liveOffersForMerchant } from "@/lib/data/catalog";
 import { distLabel } from "@/lib/format";
 import { CATEGORY_LABELS } from "@/lib/labels";
-import { extraMeters } from "@/lib/selectors";
+import { extraMeters, isMerchantOpen } from "@/lib/selectors";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +38,8 @@ function MerchantPage() {
   const extraOffers = useAppStore((s) => s.extraOffers);
   const hiddenOfferIds = useAppStore((s) => s.hiddenOfferIds);
   const [tab, setTab] = useState<"offers" | "about">("offers");
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   if (!merchant) {
     return (
@@ -50,7 +53,20 @@ function MerchantPage() {
   }
 
   const distance = merchant.distanceM + extraMeters(locationId);
-  const offers = liveOffersForMerchant(merchant.id, extraOffers, hiddenOfferIds);
+  const allOffers = liveOffersForMerchant(merchant.id, extraOffers, hiddenOfferIds);
+  const isOpen = mounted ? isMerchantOpen(merchant, new Date()) : false;
+
+  // Filtrer les offres selon le statut du commerce
+  const offers = allOffers.filter((o) => {
+    // Si commerce ouvert → afficher toutes les offres
+    if (isOpen) return true;
+    // Si commerce fermé :
+    // - Flash : disparaissent (expirent complètement)
+    if (o.flags.includes("flash")) return false;
+    // - Promo/hot/new : restent mais affichent "(à venir)"
+    return true;
+  });
+
   const maps = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(merchant.address)}`;
   const tel = `tel:${merchant.phone.replace(/\s/g, "")}`;
   const category =
@@ -151,15 +167,45 @@ function MerchantPage() {
         </div>
 
         {tab === "offers" ? (
-          offers.length > 0 ? (
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              {offers.map((o) => (
-                <FeedCard key={o.id} offer={o} />
-              ))}
-            </div>
-          ) : (
-            <p className="mt-8 text-center text-sm text-mute">Aucune offre en ce moment.</p>
-          )
+          <>
+            {/* Bandeau fermé */}
+            {mounted && !isOpen && (
+              <div className="mt-4 flex items-center gap-2 rounded-[var(--radius-lg)] bg-ink/5 px-4 py-3">
+                <Moon className="size-5 text-mute" />
+                <div>
+                  <p className="text-sm font-semibold">Fermé</p>
+                  <p className="text-xs text-mute">
+                    Nous ouvrirons à {merchant.openFrom}
+                  </p>
+                </div>
+              </div>
+            )}
+            {offers.length > 0 ? (
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                {offers.map((o) => {
+                  // Si commerce fermé → afficher "(à venir)" avec countdown
+                  if (!isOpen) {
+                    return (
+                      <div key={o.id} className="relative opacity-60">
+                        <FeedCard offer={o} />
+                        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-[var(--radius-lg)] bg-black/30">
+                          <span className="text-sm font-bold italic text-white drop-shadow-lg">
+                            À venir
+                          </span>
+                          <CountdownTimer offer={o} merchantId={o.merchantId} />
+                        </div>
+                      </div>
+                    );
+                  }
+                  return <FeedCard key={o.id} offer={o} />;
+                })}
+              </div>
+            ) : (
+              <p className="mt-8 text-center text-sm text-mute">
+                {mounted && !isOpen ? "Les offres reprendront à l'ouverture." : "Aucune offre en ce moment."}
+              </p>
+            )}
+          </>
         ) : (
           <AboutPanel
             phone={merchant.phone}
