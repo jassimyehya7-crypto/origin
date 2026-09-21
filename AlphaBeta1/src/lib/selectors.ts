@@ -83,9 +83,13 @@ export function visibleOffers(opts: {
   query?: string;
   extraOffers?: Offer[];
   hiddenOfferIds?: string[];
+  now?: Date;
 }) {
   const q = (opts.query ?? "").trim().toLowerCase();
   const pool = mergeOffers(opts.extraOffers ?? [], opts.hiddenOfferIds ?? []);
+  const now = opts.now ?? new Date();
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
   return pool
     .filter((offer) => {
       const merchant = getMerchant(offer.merchantId);
@@ -93,6 +97,18 @@ export function visibleOffers(opts: {
       if (!matchesCategory(offer, opts.category)) return false;
       const d = offerDistance(offer, opts.locationId);
       if (!inRadius(d, opts.radiusKm)) return false;
+
+      // Filtrer les offres expirées (heure until dépassée pour les commerces ouverts)
+      if (offer.until && isMerchantOpen(merchant, now)) {
+        const [h, m] = offer.until.split(":").map(Number);
+        const untilMinutes = h * 60 + m;
+        if (currentMinutes >= untilMinutes) return false; // Offre expirée
+      }
+
+      // Filtrer les offres sans stock
+      const stock = opts.stockByOffer[offer.id] ?? offer.stock;
+      if (stock < 1 && !isMerchantOpen(merchant, now)) return false; // Épuisé + fermé = masqué
+
       if (q) {
         const hay = `${offer.title} ${merchant.name}`.toLowerCase();
         if (!hay.includes(q)) return false;

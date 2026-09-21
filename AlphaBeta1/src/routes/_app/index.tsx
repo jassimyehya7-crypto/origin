@@ -186,23 +186,39 @@ function Home() {
                   ))}
                 </div>
               )}
-              {/* Offres des commerces fermés avec badge "Reprend à l'ouverture" */}
+              {/* Offres des commerces fermés avec badge intégré */}
               {fromFollowedClosed.length > 0 && (
-                <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3">
-                  {fromFollowedClosed.map((o) => {
-                    const merchant = getMerchant(o.merchantId);
-                    return (
-                      <div key={o.id} className="relative">
-                        <FeedCard offer={o} />
-                        <div className="absolute inset-0 flex items-center justify-center rounded-[var(--radius-lg)] bg-paper/60 backdrop-blur-[1px]">
-                          <span className="rounded-full bg-ink/80 px-3 py-1.5 text-[10px] font-bold text-white text-center leading-tight">
-                            Reprend à<br />{merchant?.openFrom || "—"}
-                          </span>
+                <>
+                  {fromFollowedOpen.length > 0 && (
+                    <p className="mt-3 mb-2 text-xs font-semibold text-mute">En pause jusqu'à demain</p>
+                  )}
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                    {fromFollowedClosed.map((o) => {
+                      const merchant = getMerchant(o.merchantId);
+                      const stock = stockByOffer[o.id] ?? o.stock;
+                      const isTerminated = stock < 1;
+                      return (
+                        <div key={o.id} className="relative opacity-60">
+                          <FeedCard offer={o} />
+                          {isTerminated ? (
+                            <div className="absolute inset-0 flex items-center justify-center rounded-[var(--radius-lg)] bg-black/40">
+                              <span className="rounded-full bg-red-600 px-4 py-1.5 text-xs font-bold text-white shadow-lg">
+                                Terminé
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="absolute bottom-0 inset-x-0 flex items-center justify-center gap-1.5 rounded-b-[var(--radius-lg)] bg-ink/90 px-2 py-1.5">
+                              <Moon className="size-3 text-indigo-300" />
+                              <span className="text-[10px] font-bold text-white">
+                                Reprend à {merchant?.openFrom || "—"}
+                              </span>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
             </section>
           ) : !isFiltered ? (
@@ -232,21 +248,32 @@ function Home() {
                     On se revoit demain !
                   </h2>
                   <p className="text-xs text-mute">
-                    Ces commerces sont fermés — leurs offres reviennent à l'ouverture
+                    Ces commerces sont fermés — leurs offres reprennent à l'ouverture
                   </p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3 opacity-60">
+              <div className="grid grid-cols-2 gap-3">
                 {closedOffers.slice(0, 6).map((o) => {
                   const merchant = getMerchant(o.merchantId);
+                  const stock = stockByOffer[o.id] ?? o.stock;
+                  const isTerminated = stock < 1;
                   return (
-                    <div key={o.id} className="relative">
+                    <div key={o.id} className="relative opacity-60">
                       <FeedCard offer={o} />
-                      <div className="absolute inset-0 flex items-center justify-center rounded-[var(--radius-lg)] bg-paper/50 backdrop-blur-[1px]">
-                        <span className="rounded-full bg-ink/80 px-3 py-1 text-[10px] font-bold text-white">
-                          Fermé · Ouvre à {merchant?.openFrom || "—"}
-                        </span>
-                      </div>
+                      {isTerminated ? (
+                        <div className="absolute inset-0 flex items-center justify-center rounded-[var(--radius-lg)] bg-black/40">
+                          <span className="rounded-full bg-red-600 px-4 py-1.5 text-xs font-bold text-white shadow-lg">
+                            Terminé
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="absolute bottom-0 inset-x-0 flex items-center justify-center gap-1.5 rounded-b-[var(--radius-lg)] bg-ink/90 px-2 py-1.5">
+                          <Moon className="size-3 text-indigo-300" />
+                          <span className="text-[10px] font-bold text-white">
+                            Ouvre à {merchant?.openFrom || "—"}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
