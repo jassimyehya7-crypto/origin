@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Flame, Heart, MapPin, Moon, Search, Sparkles, Zap } from "lucide-react";
+import { useEffect, useState } from "react";
 import { CategoryPills } from "@/components/category-pills";
 import { EmptyState } from "@/components/empty-state";
 import { LocationButton } from "@/components/location-picker";
@@ -33,6 +34,12 @@ function Home() {
   const extraOffers = useAppStore((s) => s.extraOffers);
   const hiddenOfferIds = useAppStore((s) => s.hiddenOfferIds);
 
+  // Force client-side rendering to avoid SSR hydration mismatch with timezones
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const allOffers = visibleOffers({
     locationId,
     radiusKm,
@@ -42,8 +49,8 @@ function Home() {
     hiddenOfferIds,
   });
 
-  // Séparer les offres par statut du commerce
-  const now = new Date();
+  // Only compute open/closed on the client (after mount)
+  const now = mounted ? new Date() : new Date(2026, 0, 1, 3, 0); // SSR: 3am = all closed
   const openOffers = allOffers.filter((o) => {
     const merchant = getMerchant(o.merchantId);
     return merchant ? isMerchantOpen(merchant, now) : false;
