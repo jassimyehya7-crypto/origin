@@ -58,6 +58,7 @@ export type Merchant = {
   hours: string;
   hoursToday: string;
   openUntil: string;
+  openFrom: string;
   rating: number;
   reviewCount: number;
   distanceM: number;

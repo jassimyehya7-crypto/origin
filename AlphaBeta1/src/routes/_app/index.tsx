@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { Flame, Heart, MapPin, Search, Sparkles, Zap } from "lucide-react";
+import { Flame, Heart, MapPin, Moon, Search, Sparkles, Zap } from "lucide-react";
 import { CategoryPills } from "@/components/category-pills";
 import { EmptyState } from "@/components/empty-state";
 import { LocationButton } from "@/components/location-picker";
@@ -13,8 +13,9 @@ import {
   SectionHeader,
 } from "@/components/offer-cards";
 import { Button } from "@/components/ui/button";
+import { getMerchant } from "@/lib/data/catalog";
+import { isMerchantOpen, visibleOffers } from "@/lib/selectors";
 import { useAppStore } from "@/lib/store";
-import { visibleOffers } from "@/lib/selectors";
 
 export const Route = createFileRoute("/_app/")({
   component: Home,
@@ -32,7 +33,7 @@ function Home() {
   const extraOffers = useAppStore((s) => s.extraOffers);
   const hiddenOfferIds = useAppStore((s) => s.hiddenOfferIds);
 
-  const offers = visibleOffers({
+  const allOffers = visibleOffers({
     locationId,
     radiusKm,
     category,
@@ -40,12 +41,25 @@ function Home() {
     extraOffers,
     hiddenOfferIds,
   });
-  const hot = offers.filter((o) => o.flags.includes("hot"));
-  const fresh = offers.filter((o) => o.flags.includes("new"));
-  const flash = offers.filter((o) => o.flags.includes("flash") && o.until);
-  const fromFollowed = offers.filter((o) => followed.includes(o.merchantId));
+
+  // Séparer les offres par statut du commerce
+  const now = new Date();
+  const openOffers = allOffers.filter((o) => {
+    const merchant = getMerchant(o.merchantId);
+    return merchant ? isMerchantOpen(merchant, now) : false;
+  });
+  const closedOffers = allOffers.filter((o) => {
+    const merchant = getMerchant(o.merchantId);
+    return merchant ? !isMerchantOpen(merchant, now) : true;
+  });
+
+  // Sections basées sur les offres OUVERTES uniquement
+  const hot = openOffers.filter((o) => o.flags.includes("hot"));
+  const fresh = openOffers.filter((o) => o.flags.includes("new"));
+  const flash = openOffers.filter((o) => o.flags.includes("flash") && o.until);
+  const fromFollowed = openOffers.filter((o) => followed.includes(o.merchantId));
   const isFiltered = category !== "all";
-  const nearby = isFiltered ? offers : offers.slice(0, 8);
+  const nearby = isFiltered ? openOffers : openOffers.slice(0, 8);
 
   return (
     <div>
@@ -75,7 +89,7 @@ function Home() {
         <CategoryPills value={category} onChange={setCategory} />
       </div>
 
-      {offers.length === 0 ? (
+      {openOffers.length === 0 && closedOffers.length === 0 ? (
         <EmptyState
           icon={MapPin}
           title="Rien juste à côté pour le moment."
@@ -87,6 +101,7 @@ function Home() {
         />
       ) : (
         <div className="mt-6 space-y-8 pb-4">
+          {/* FLASH — uniquement commerces ouverts */}
           {!isFiltered && flash.length > 0 ? (
             <section className="px-5">
               <SectionHeader title="Flash" icon={<Zap className="size-5" />} />
@@ -98,6 +113,7 @@ function Home() {
             </section>
           ) : null}
 
+          {/* À SAISIR — uniquement commerces ouverts */}
           {!isFiltered && hot.length > 0 ? (
             <section className="px-5">
               <SectionHeader
@@ -112,6 +128,7 @@ function Home() {
             </section>
           ) : null}
 
+          {/* PRÈS DE VOUS — uniquement commerces ouverts */}
           {nearby.length > 0 ? (
             <section className="px-5">
               <SectionHeader
@@ -137,10 +154,11 @@ function Home() {
             </section>
           ) : null}
 
+          {/* NOUVEAU — uniquement commerces ouverts */}
           {!isFiltered && fresh.length > 0 ? (
             <section className="px-5">
               <SectionHeader
-                title="Nouveau aujourd’hui"
+                title="Nouveau aujourd'hui"
                 icon={<Sparkles className="size-5" />}
               />
               <HorizontalRail>
@@ -151,6 +169,7 @@ function Home() {
             </section>
           ) : null}
 
+          {/* VOS COMMERCES — uniquement commerces ouverts */}
           {!isFiltered && fromFollowed.length > 0 ? (
             <section className="px-5">
               <SectionHeader
@@ -176,6 +195,38 @@ function Home() {
                     Explorer les commerces
                   </Link>
                 </Button>
+              </div>
+            </section>
+          ) : null}
+
+          {/* ON SE REVOIT DEMAIN — commerces fermés */}
+          {!isFiltered && closedOffers.length > 0 ? (
+            <section className="px-5">
+              <div className="mb-4 flex items-center gap-2 rounded-[var(--radius-lg)] bg-ink/5 px-4 py-3">
+                <Moon className="size-5 text-mute" />
+                <div>
+                  <h2 className="font-display text-lg font-semibold tracking-tight">
+                    On se revoit demain !
+                  </h2>
+                  <p className="text-xs text-mute">
+                    Ces commerces sont fermés — leurs offres reviennent à l'ouverture
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 opacity-60">
+                {closedOffers.slice(0, 6).map((o) => {
+                  const merchant = getMerchant(o.merchantId);
+                  return (
+                    <div key={o.id} className="relative">
+                      <FeedCard offer={o} />
+                      <div className="absolute inset-0 flex items-center justify-center rounded-[var(--radius-lg)] bg-paper/50 backdrop-blur-[1px]">
+                        <span className="rounded-full bg-ink/80 px-3 py-1 text-[10px] font-bold text-white">
+                          Fermé · Ouvre à {merchant?.openFrom || "—"}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </section>
           ) : null}
