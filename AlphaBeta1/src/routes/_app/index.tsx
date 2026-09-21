@@ -259,16 +259,29 @@ function Home() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                {closedOffers.slice(0, 6).map((o) => (
-                  <div key={o.id} className="relative opacity-50">
-                    <FeedCard offer={o} />
-                    <div className="absolute inset-0 flex items-center justify-center rounded-[var(--radius-lg)] bg-black/30">
-                      <span className="text-2xl font-bold italic text-red-500 drop-shadow-lg">
-                        Fermé
-                      </span>
+                {closedOffers.slice(0, 6).map((o) => {
+                  const merchant = getMerchant(o.merchantId);
+                  const stock = stockByOffer[o.id] ?? o.stock;
+                  const hasStock = stock > 0;
+                  return (
+                    <div key={o.id} className="rounded-[var(--radius-lg)] bg-card p-4 shadow-[var(--shadow-card)] opacity-60">
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-sm font-semibold">{merchant?.name || "Commerce"}</span>
+                        <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-600">
+                          Fermé
+                        </span>
+                      </div>
+                      {hasStock ? (
+                        <div className="flex items-center gap-1.5 text-xs text-mute">
+                          <Moon className="size-3 text-indigo-400" />
+                          <span>Ouvre à {merchant?.openFrom || "—"}</span>
+                        </div>
+                      ) : (
+                        <div className="text-xs text-mute">Aucune offre disponible</div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
           ) : null}
