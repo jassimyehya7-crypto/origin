@@ -19,6 +19,9 @@ export const Route = createFileRoute("/merchants/$merchantId")({
   component: MerchantPage,
 });
 
+/** Date fixe pour le SSR : 3h du matin → tous les commerces sont fermés */
+const SSR_DATE = new Date(2026, 0, 1, 3, 0);
+
 function hourRows(hours: string) {
   return hours.split(" · ").map((part) => {
     const closed = part.match(/^(.*?)\s+(fermé)$/i);
@@ -38,8 +41,10 @@ function MerchantPage() {
   const extraOffers = useAppStore((s) => s.extraOffers);
   const hiddenOfferIds = useAppStore((s) => s.hiddenOfferIds);
   const [tab, setTab] = useState<"offers" | "about">("offers");
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+
+  // SSR et premier rendu client = même date fixe → pas de mismatch
+  const [now, setNow] = useState(SSR_DATE);
+  useEffect(() => { setNow(new Date()); }, []);
 
   if (!merchant) {
     return (
@@ -54,16 +59,15 @@ function MerchantPage() {
 
   const distance = merchant.distanceM + extraMeters(locationId);
   const allOffers = liveOffersForMerchant(merchant.id, extraOffers, hiddenOfferIds);
-  const isOpen = mounted ? isMerchantOpen(merchant, new Date()) : false;
+  const isOpen = isMerchantOpen(merchant, now);
 
   // Filtrer les offres selon le statut du commerce
   const offers = allOffers.filter((o) => {
-    // Si commerce ouvert → afficher toutes les offres
-    if (isOpen) return true;
-    // Si commerce fermé :
-    // - Flash : disparaissent (expirent complètement)
+    if (isOpen) return true; // Commerce ouvert → toutes les offres
+    // Commerce fermé :
+    // - Flash : disparaissent complètement
     if (o.flags.includes("flash")) return false;
-    // - Promo/hot/new : restent mais affichent "(à venir)"
+    // - Promo/hot/new : restent (pause nuit)
     return true;
   });
 
@@ -169,7 +173,7 @@ function MerchantPage() {
         {tab === "offers" ? (
           <>
             {/* Bandeau fermé */}
-            {mounted && !isOpen && (
+            {!isOpen && (
               <div className="mt-4 flex items-center gap-2 rounded-[var(--radius-lg)] bg-ink/5 px-4 py-3">
                 <Moon className="size-5 text-mute" />
                 <div>
@@ -183,7 +187,7 @@ function MerchantPage() {
             {offers.length > 0 ? (
               <div className="mt-4 grid grid-cols-2 gap-3">
                 {offers.map((o) => {
-                  // Si commerce fermé → afficher "(à venir)" avec countdown
+                  // Commerce fermé → overlay "À venir" + countdown
                   if (!isOpen) {
                     return (
                       <div key={o.id} className="relative opacity-60">
@@ -192,7 +196,9 @@ function MerchantPage() {
                           <span className="text-sm font-bold italic text-white drop-shadow-lg">
                             À venir
                           </span>
-                          <CountdownTimer untilTime={o.until} merchantId={o.merchantId} />
+                          {o.until && (
+                            <CountdownTimer untilTime={o.until} merchantId={o.merchantId} />
+                          )}
                         </div>
                       </div>
                     );
@@ -202,7 +208,7 @@ function MerchantPage() {
               </div>
             ) : (
               <p className="mt-8 text-center text-sm text-mute">
-                {mounted && !isOpen ? "Les offres reprendront à l'ouverture." : "Aucune offre en ce moment."}
+                {!isOpen ? "Les offres reprendront à l'ouverture." : "Aucune offre en ce moment."}
               </p>
             )}
           </>

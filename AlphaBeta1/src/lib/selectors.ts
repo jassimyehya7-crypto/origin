@@ -7,7 +7,7 @@ export const FLASH_MAX_HOURS = 6;
 export const PROMO_MAX_HOURS = 12;
 
 /** Convertit "HH:MM" en minutes depuis minuit */
-function timeToMinutes(time: string): number {
+export function timeToMinutes(time: string): number {
   const [h, m] = time.split(":").map(Number);
   return h * 60 + m;
 }
@@ -31,14 +31,16 @@ export function isMerchantOpen(merchant: Merchant, now: Date = new Date()): bool
 export function isFlashOfferValid(offer: Offer, now: Date = new Date()): boolean {
   const merchant = getMerchant(offer.merchantId);
   if (!merchant) return false;
+
+  // Flash = disparaît complètement quand le commerce ferme
   if (!isMerchantOpen(merchant, now)) return false;
 
-  // L'offre expire à merchant.openUntil ou après FLASH_MAX_HOURS
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
-  const openMinutes = timeToMinutes(merchant.openFrom);
-  const maxEndMinutes = openMinutes + FLASH_MAX_HOURS * 60;
+  const untilMinutes = timeToMinutes(offer.until);
+
+  // Flash expire à l'heure until ou à la fermeture du commerce (le plus tôt)
   const closeMinutes = timeToMinutes(merchant.openUntil);
-  const effectiveEnd = Math.min(maxEndMinutes, closeMinutes);
+  const effectiveEnd = Math.min(untilMinutes, closeMinutes);
 
   return currentMinutes < effectiveEnd;
 }
@@ -47,8 +49,13 @@ export function isFlashOfferValid(offer: Offer, now: Date = new Date()): boolean
 export function isOfferPaused(offer: Offer, now: Date = new Date()): boolean {
   const merchant = getMerchant(offer.merchantId);
   if (!merchant) return false;
-  // Commerce fermé mais l'offre n'est pas expirée
-  return !isMerchantOpen(merchant, now);
+  if (isMerchantOpen(merchant, now)) return false; // Commerce ouvert → pas en pause
+
+  // Les offres flash ne se mettent pas en pause — elles disparaissent
+  if (offer.flags.includes("flash")) return false;
+
+  // Les autres offres (promo, hot, new) se mettent en pause
+  return true;
 }
 
 export function extraMeters(locationId: LocationId) {
@@ -88,7 +95,6 @@ export function visibleOffers(opts: {
   const q = (opts.query ?? "").trim().toLowerCase();
   const pool = mergeOffers(opts.extraOffers ?? [], opts.hiddenOfferIds ?? []);
   const now = opts.now ?? new Date();
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
 
   return pool
     .filter((offer) => {
@@ -98,16 +104,36 @@ export function visibleOffers(opts: {
       const d = offerDistance(offer, opts.locationId);
       if (!inRadius(d, opts.radiusKm)) return false;
 
-      // Filtrer les offres expirées (heure until dépassée pour les commerces ouverts)
-      if (offer.until && isMerchantOpen(merchant, now)) {
-        const [h, m] = offer.until.split(":").map(Number);
-        const untilMinutes = h * 60 + m;
-        if (currentMinutes >= untilMinutes) return false; // Offre expirée
+      const open = isMerchantOpen(merchant, now);
+
+      // --- OFFRES FLASH ---
+      // Flash = éphémère. Si commerce fermé OU heure until dépassée → disparaît.
+      if (offer.flags.includes("flash")) {
+        if (!open) return false; // Commerce fermé → flash disparaît
+        if (offer.until) {
+          const untilMin = timeToMinutes(offer.until);
+          const currentMin = now.getHours() * 60 + now.getMinutes();
+          if (currentMin >= untilMin) return false; // Heure dépassée → flash disparaît
+        }
+        // Vérifier le stock
+        const stock = opts.stockByOffer[offer.id] ?? offer.stock;
+        if (stock < 1) return false;
+        return true;
       }
 
-      // Filtrer les offres sans stock
+      // --- OFFRES PROMO / HOT / NEW ---
+      // Ces offres survivent à la fermeture du commerce (pause nuit).
+      // Elles disparaissent uniquement si :
+      // 1. Stock épuisé
+      // 2. Commerce ouvert ET heure until dépassée (expirée en journée)
       const stock = opts.stockByOffer[offer.id] ?? offer.stock;
-      if (stock < 1 && !isMerchantOpen(merchant, now)) return false; // Épuisé + fermé = masqué
+      if (stock < 1) return false; // Stock épuisé → disparaît
+
+      if (open && offer.until) {
+        const untilMin = timeToMinutes(offer.until);
+        const currentMin = now.getHours() * 60 + now.getMinutes();
+        if (currentMin >= untilMin) return false; // Expirée en journée → disparaît
+      }
 
       if (q) {
         const hay = `${offer.title} ${merchant.name}`.toLowerCase();

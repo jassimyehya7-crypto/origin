@@ -10,12 +10,15 @@ import { Button } from "@/components/ui/button";
 import { MAP_CITIES, type MapCity } from "@/lib/data/cities";
 import { EXPLORE_FILTERS, exploreMatches, getMerchant } from "@/lib/data/catalog";
 import { chf, discountPct, distLabel } from "@/lib/format";
-import { extraMeters, isMerchantOpen, visibleMerchants, visibleOffers } from "@/lib/selectors";
+import { extraMeters, isMerchantOpen, isOfferPaused, visibleMerchants, visibleOffers } from "@/lib/selectors";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 type Tab = "map" | "list" | "shops";
 type ShopSort = "all" | "near" | "rated" | "new";
+
+/** Date fixe pour le SSR : 3h du matin → tous les commerces sont fermés */
+const SSR_DATE = new Date(2026, 0, 1, 3, 0);
 
 export const Route = createFileRoute("/_app/explore")({
   validateSearch: (s: Record<string, unknown>) => ({
@@ -37,8 +40,11 @@ function Explore() {
     zoom: 16,
   });
   const [focusTick, setFocusTick] = useState(0);
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+
+  // SSR et premier rendu client = même date fixe → pas de mismatch
+  const [now, setNow] = useState(SSR_DATE);
+  useEffect(() => { setNow(new Date()); }, []);
+
   const locationId = useAppStore((s) => s.locationId);
   const radiusKm = useAppStore((s) => s.radiusKm);
   const setRadiusKm = useAppStore((s) => s.setRadiusKm);
@@ -55,6 +61,8 @@ function Explore() {
     );
   }, []);
 
+  // visibleOffers reçoit now → cohérent SSR/client
+  // Le filtrage flash/commerces fermés est fait DANS visibleOffers
   const allOffers = visibleOffers({
     locationId,
     radiusKm,
@@ -62,21 +70,11 @@ function Explore() {
     stockByOffer,
     extraOffers,
     hiddenOfferIds,
+    now,
   }).filter((o) => {
     const m = getMerchant(o.merchantId);
     if (!m) return false;
     return exploreMatches(m.category, filter);
-  });
-
-  // Filtrer les offres flash des commerces fermés (elles disparaissent)
-  const offers = allOffers.filter((o) => {
-    if (!mounted) return true; // SSR: afficher tout
-    const m = getMerchant(o.merchantId);
-    if (!m) return false;
-    const open = isMerchantOpen(m, new Date());
-    // Si commerce fermé + offre flash → masquer
-    if (!open && o.flags.includes("flash")) return false;
-    return true;
   });
 
   const merchants = visibleMerchants({ locationId, radiusKm, query: shopQuery }).filter((m) =>
@@ -89,7 +87,7 @@ function Explore() {
     return a.distanceM - b.distanceM;
   });
 
-  const selected = offers.find((o) => o.id === selectedId) ?? offers[0];
+  const selected = allOffers.find((o) => o.id === selectedId) ?? allOffers[0];
 
   const chrome = (
     <>
@@ -130,21 +128,20 @@ function Explore() {
   );
 
   if (tab === "map") {
-    // Vérifier si la majorité des commerces sont fermés
-    const now = mounted ? new Date() : null;
-    const merchantsOpen = merchants.filter((m) => now && isMerchantOpen(m, now)).length;
-    const allClosed = mounted && merchants.length > 0 && merchantsOpen === 0;
+    // Vérifier si TOUS les commerces sont fermés
+    const merchantsOpen = merchants.filter((m) => isMerchantOpen(m, now)).length;
+    const allClosed = merchants.length > 0 && merchantsOpen === 0;
 
     return (
       <div className="relative h-[calc(100dvh-5.75rem-env(safe-area-inset-bottom))] overflow-hidden">
         <GoogleTownMap
-          offers={offers}
+          offers={allOffers}
           selectedId={selected?.id ?? null}
           onSelect={onSelect}
           onZoneChange={onZoneChange}
           focusTick={focusTick}
         />
-        {/* Overlay carte en veille */}
+        {/* Overlay carte en veille quand tous les commerces sont fermés */}
         {allClosed && (
           <div className="absolute inset-0 z-[400] flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm">
             <Moon className="size-12 text-white/80 mb-3" />
@@ -158,7 +155,7 @@ function Explore() {
         {zone.unlocked ? (
           selected && zone.zoom >= 14 ? (
             <MiniCard offerId={selected.id} />
-          ) : offers.length === 0 && zone.zoom >= 14 ? (
+          ) : allOffers.length === 0 && zone.zoom >= 14 ? (
             <div className="absolute inset-x-0 bottom-0 z-[500] bg-paper">
               <EmptyState
                 icon={MapPin}
@@ -186,7 +183,7 @@ function Explore() {
 
       {tab === "list" ? (
         <div className="space-y-3 px-5 py-4">
-          {offers.length === 0 ? (
+          {allOffers.length === 0 ? (
             <EmptyState
               icon={MapPin}
               title="Rien juste à côté pour le moment."
@@ -197,18 +194,18 @@ function Explore() {
               }}
             />
           ) : (
-            offers.map((o) => {
+            allOffers.map((o) => {
               const m = getMerchant(o.merchantId);
-              const open = m && mounted ? isMerchantOpen(m, new Date()) : true;
-              // Si commerce fermé → afficher avec badge "Reprend demain"
-              if (!open) {
+              const open = m ? isMerchantOpen(m, now) : false;
+              const paused = m ? isOfferPaused(o, now) : false;
+              if (paused) {
                 return (
                   <div key={o.id} className="relative opacity-60">
                     <ListRow offer={o} />
                     <div className="absolute top-3 right-3 flex items-center gap-1 rounded-full bg-ink/80 px-2 py-0.5">
                       <Moon className="size-2.5 text-indigo-300" />
                       <span className="text-[9px] font-bold text-white">
-                        Reprend demain {m?.openFrom || ""}
+                        Reprend {m?.openFrom || "demain"}
                       </span>
                     </div>
                   </div>
@@ -296,13 +293,13 @@ function MiniCard({ offerId }: { offerId: string }) {
             <span className="ml-2 font-bold tabular text-deal">{chf(offer.price)}</span>
           </p>
           <p className="text-xs text-mute">
-            Jusqu’à {offer.until} · {distLabel(distance)}
+            Jusqu'à {offer.until} · {distLabel(distance)}
           </p>
         </div>
       </div>
       <Button asChild size="md" className="mt-3 w-full">
         <Link to="/offers/$offerId" params={{ offerId: offer.id }}>
-          Voir l’offre
+          Voir l'offre
         </Link>
       </Button>
     </div>

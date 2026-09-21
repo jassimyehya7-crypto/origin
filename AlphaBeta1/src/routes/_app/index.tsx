@@ -15,12 +15,15 @@ import {
 } from "@/components/offer-cards";
 import { Button } from "@/components/ui/button";
 import { getMerchant } from "@/lib/data/catalog";
-import { isMerchantOpen, visibleOffers } from "@/lib/selectors";
+import { isMerchantOpen, isOfferPaused, visibleOffers } from "@/lib/selectors";
 import { useAppStore } from "@/lib/store";
 
 export const Route = createFileRoute("/_app/")({
   component: Home,
 });
+
+/** Date fixe pour le SSR : 3h du matin → tous les commerces sont fermés */
+const SSR_DATE = new Date(2026, 0, 1, 3, 0);
 
 function Home() {
   const navigate = useNavigate();
@@ -34,12 +37,12 @@ function Home() {
   const extraOffers = useAppStore((s) => s.extraOffers);
   const hiddenOfferIds = useAppStore((s) => s.hiddenOfferIds);
 
-  // Force client-side rendering to avoid SSR hydration mismatch with timezones
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // SSR et premier rendu client utilisent la même date fixe (3am = tous fermés)
+  // Après le montage, on met à jour avec l'heure locale du navigateur
+  const [now, setNow] = useState(SSR_DATE);
+  useEffect(() => { setNow(new Date()); }, []);
 
+  // visibleOffers reçoit now explicitement → cohérent SSR/client
   const allOffers = visibleOffers({
     locationId,
     radiusKm,
@@ -47,10 +50,10 @@ function Home() {
     stockByOffer,
     extraOffers,
     hiddenOfferIds,
+    now,
   });
 
-  // Only compute open/closed on the client (after mount)
-  const now = mounted ? new Date() : new Date(2026, 0, 1, 3, 0); // SSR: 3am = all closed
+  // Séparer les offres par statut du commerce
   const openOffers = allOffers.filter((o) => {
     const merchant = getMerchant(o.merchantId);
     return merchant ? isMerchantOpen(merchant, now) : false;
@@ -64,7 +67,6 @@ function Home() {
   const hot = openOffers.filter((o) => o.flags.includes("hot"));
   const fresh = openOffers.filter((o) => o.flags.includes("new"));
   const flash = openOffers.filter((o) => o.flags.includes("flash") && o.until);
-  // "Vos commerces" : ouverts ET fermés (avec badge "Reprend à l'ouverture")
   const fromFollowedOpen = openOffers.filter((o) => followed.includes(o.merchantId));
   const fromFollowedClosed = closedOffers.filter((o) => followed.includes(o.merchantId));
   const isFiltered = category !== "all";
@@ -98,7 +100,7 @@ function Home() {
         <CategoryPills value={category} onChange={setCategory} />
       </div>
 
-      {openOffers.length === 0 && closedOffers.length === 0 ? (
+      {allOffers.length === 0 ? (
         <EmptyState
           icon={MapPin}
           title="Rien juste à côté pour le moment."
@@ -185,7 +187,6 @@ function Home() {
                 title="Vos commerces"
                 icon={<Heart className="size-5" />}
               />
-              {/* Offres des commerces ouverts */}
               {fromFollowedOpen.length > 0 && (
                 <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                   {fromFollowedOpen.map((o) => (
@@ -193,7 +194,6 @@ function Home() {
                   ))}
                 </div>
               )}
-              {/* Commerces fermés — cartes simplifiées */}
               {fromFollowedClosed.length > 0 && (
                 <>
                   {fromFollowedOpen.length > 0 && (
@@ -202,8 +202,6 @@ function Home() {
                   <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                     {fromFollowedClosed.map((o) => {
                       const merchant = getMerchant(o.merchantId);
-                      const stock = stockByOffer[o.id] ?? o.stock;
-                      const hasStock = stock > 0;
                       return (
                         <div key={o.id} className="rounded-[var(--radius-lg)] bg-card p-4 shadow-[var(--shadow-card)] opacity-60">
                           <div className="mb-2 flex items-center justify-between">
@@ -212,14 +210,10 @@ function Home() {
                               Fermé
                             </span>
                           </div>
-                          {hasStock ? (
-                            <div className="flex items-center gap-1.5 text-xs text-mute">
-                              <Moon className="size-3 text-indigo-400" />
-                              <span>Reprend à {merchant?.openFrom || "—"}</span>
-                            </div>
-                          ) : (
-                            <div className="text-xs text-mute">Aucune offre disponible</div>
-                          )}
+                          <div className="flex items-center gap-1.5 text-xs text-mute">
+                            <Moon className="size-3 text-indigo-400" />
+                            <span>Reprend à {merchant?.openFrom || "—"}</span>
+                          </div>
                         </div>
                       );
                     })}
@@ -261,8 +255,6 @@ function Home() {
               <div className="grid grid-cols-2 gap-3">
                 {closedOffers.slice(0, 6).map((o) => {
                   const merchant = getMerchant(o.merchantId);
-                  const stock = stockByOffer[o.id] ?? o.stock;
-                  const hasStock = stock > 0;
                   return (
                     <div key={o.id} className="rounded-[var(--radius-lg)] bg-card p-4 shadow-[var(--shadow-card)] opacity-60">
                       <div className="mb-2 flex items-center justify-between">
@@ -271,14 +263,10 @@ function Home() {
                           Fermé
                         </span>
                       </div>
-                      {hasStock ? (
-                        <div className="flex items-center gap-1.5 text-xs text-mute">
-                          <Moon className="size-3 text-indigo-400" />
-                          <span>Ouvre à {merchant?.openFrom || "—"}</span>
-                        </div>
-                      ) : (
-                        <div className="text-xs text-mute">Aucune offre disponible</div>
-                      )}
+                      <div className="flex items-center gap-1.5 text-xs text-mute">
+                        <Moon className="size-3 text-indigo-400" />
+                        <span>Ouvre à {merchant?.openFrom || "—"}</span>
+                      </div>
                     </div>
                   );
                 })}
