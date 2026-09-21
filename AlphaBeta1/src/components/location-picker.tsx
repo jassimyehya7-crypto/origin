@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react";
 import { MapPin } from "lucide-react";
 
+/** Ville par défaut si aucune géolocalisation n'est possible */
+const DEFAULT_CITY = "Villeneuve";
+
 export function LocationButton() {
-  const [cityName, setCityName] = useState<string>("Localisation...");
+  const [cityName, setCityName] = useState<string>("Localisation…");
 
   useEffect(() => {
     let cancelled = false;
 
     async function detectCity() {
-      // Méthode 1: Géolocalisation GPS du téléphone
+      // Méthode 1: Géolocalisation GPS du téléphone (plus précis)
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           async (position) => {
@@ -33,42 +36,27 @@ export function LocationButton() {
                 }
               }
             } catch {
-              // fallback to IP
+              // GPS réussi mais géocodage échoué → fallback IP
             }
-            // Si GPS échoue, on essaie l'IP
             if (!cancelled) await fallbackToIP();
           },
           async () => {
-            // Permission refusée ou erreur → fallback IP
+            // Permission refusée ou erreur GPS → fallback IP
             if (!cancelled) await fallbackToIP();
           },
           { enableHighAccuracy: true, timeout: 5000, maximumAge: 300000 }
         );
       } else {
-        // Pas de géolocalisation → fallback IP
+        // Pas de support géolocalisation → fallback IP
         await fallbackToIP();
       }
     }
 
-    // Méthode 2: Géolocalisation par IP (fonctionne toujours, sans permission)
+    // Méthode 2: Géolocalisation par IP (HTTPS uniquement)
     async function fallbackToIP() {
       if (cancelled) return;
-      try {
-        // Essayer ip-api.com (gratuit, pas de clé nécessaire)
-        const res = await fetch("http://ip-api.com/json/?lang=fr", {
-          signal: AbortSignal.timeout(5000),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (!cancelled && data.city) {
-            setCityName(data.city);
-            return;
-          }
-        }
-      } catch {
-        // ip-api peut être bloqué en HTTPS, essayer ipapi.co
-      }
 
+      // Essayer ipapi.co (HTTPS, gratuit, 1000 req/jour)
       try {
         const res = await fetch("https://ipapi.co/json/", {
           signal: AbortSignal.timeout(5000),
@@ -81,11 +69,27 @@ export function LocationButton() {
           }
         }
       } catch {
-        // ignore
+        // ipapi.co échoué
       }
 
-      // Dernier recours
-      if (!cancelled) setCityName("Villeneuve");
+      // Essayer ipwho.is (HTTPS, gratuit, pas de clé)
+      try {
+        const res = await fetch("https://ipwho.is/", {
+          signal: AbortSignal.timeout(5000),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled && data.city) {
+            setCityName(data.city);
+            return;
+          }
+        }
+      } catch {
+        // ipwho.is échoué
+      }
+
+      // Dernier recours : ville par défaut
+      if (!cancelled) setCityName(DEFAULT_CITY);
     }
 
     detectCity();

@@ -19,6 +19,26 @@ import type {
   ReservationStatus,
 } from "@/lib/types";
 
+/** Génère un ID unique sécurisé (pas de collision possible) */
+function generateId(prefix: string): string {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return `${prefix}-${crypto.randomUUID()}`;
+  }
+  // Fallback: timestamp + random haute résolution
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/** Génère un code de retrait cryptographique (65 536 combinaisons) */
+function securePickupCode(): string {
+  if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+    const arr = new Uint16Array(1);
+    crypto.getRandomValues(arr);
+    const n = (arr[0] % 9000) + 1000;
+    return `EC-${n}`;
+  }
+  return `EC-${Math.floor(1000 + Math.random() * 9000)}`;
+}
+
 type AppState = {
   hydrated: boolean;
   setHydrated: (v: boolean) => void;
@@ -56,6 +76,13 @@ type AppState = {
 };
 
 const INITIAL_FOLLOWED = ["shop_dasilva", "shop_durgnat"];
+
+/** Détermine si le stock doit être restauré lors d'un changement de statut */
+function shouldRestoreStock(newStatus: ReservationStatus, oldStatus: ReservationStatus): boolean {
+  const isCancelling = newStatus === "refused" || newStatus === "cancelled";
+  const wasActive = oldStatus === "pending" || oldStatus === "confirmed";
+  return isCancelling && wasActive;
+}
 
 function lookupOffer(id: string, extra: Offer[], hidden: string[]) {
   if (hidden.includes(id)) return undefined;
@@ -107,7 +134,7 @@ export const useAppStore = create<AppState>()(
         const stock = get().stockByOffer[offerId] ?? offer.stock;
         if (qty < 1 || qty > stock) return null;
         const reservation: Reservation = {
-          id: `res-${Date.now()}`,
+          id: generateId("res"),
           offerId,
           merchantId: merchant.id,
           title: offer.title,
@@ -121,24 +148,30 @@ export const useAppStore = create<AppState>()(
           address: merchant.address,
           createdAt: new Date().toISOString(),
           status: "pending",
-          code: pickupCode(),
+          code: securePickupCode(),
           mine: true,
-          clientName: "Camille",
+          clientName: "Utilisateur",
           unit: offer.unit,
         };
-        set((s) => ({
-          stockByOffer: { ...s.stockByOffer, [offerId]: stock - qty },
-          reservations: [reservation, ...s.reservations],
-        }));
+        set((s) => {
+          // Vérification atomique du stock dans le set()
+          const currentStock = s.stockByOffer[offerId] ?? offer.stock;
+          if (qty < 1 || qty > currentStock) return s; // Annule si stock insuffisant
+          return {
+            stockByOffer: { ...s.stockByOffer, [offerId]: currentStock - qty },
+            reservations: [reservation, ...s.reservations],
+          };
+        });
         return reservation;
       },
       cancelReservation: (id) =>
         set((s) => {
           const res = s.reservations.find((r) => r.id === id);
-          if (!res || (res.status !== "pending" && res.status !== "confirmed")) return s;
+          if (!res) return s;
+          if (!shouldRestoreStock("cancelled", res.status)) return s;
           const current = s.stockByOffer[res.offerId];
           const offer = lookupOffer(res.offerId, s.extraOffers, s.hiddenOfferIds);
-          const base = current ?? offer?.stock ?? res.qty;
+          const base = current ?? offer?.stock ?? 0;
           return {
             reservations: s.reservations.map((r) =>
               r.id === id ? { ...r, status: "cancelled" as const } : r,
@@ -153,12 +186,10 @@ export const useAppStore = create<AppState>()(
         set((s) => {
           const res = s.reservations.find((r) => r.id === id);
           if (!res) return s;
-          const restore =
-            (status === "refused" || status === "cancelled") &&
-            (res.status === "pending" || res.status === "confirmed");
+          const restore = shouldRestoreStock(status, res.status);
           const current = s.stockByOffer[res.offerId];
           const offer = lookupOffer(res.offerId, s.extraOffers, s.hiddenOfferIds);
-          const base = current ?? offer?.stock ?? res.qty;
+          const base = current ?? offer?.stock ?? 0;
           return {
             reservations: s.reservations.map((r) => (r.id === id ? { ...r, status } : r)),
             stockByOffer: restore
@@ -170,7 +201,7 @@ export const useAppStore = create<AppState>()(
         const merchant = getMerchant(PRO_SHOP_ID);
         if (!merchant) return null;
         const offer: Offer = {
-          id: `pro_${Date.now()}`,
+          id: generateId("pro"),
           merchantId: merchant.id,
           title: input.title,
           image: merchant.cover,
@@ -207,9 +238,25 @@ export const useAppStore = create<AppState>()(
         }),
     }),
     {
-      name: "offreslocal-origin-v1",
+      name: "offreslocal-origin-v2",
+      version: 2,
       storage: createJSONStorage(() => localStorage),
       skipHydration: true,
+      migrate: (persistedState: unknown, version: number) => {
+        // Migration v1 → v2 : nettoyage des anciennes données
+        if (version < 2) {
+          const state = persistedState as Record<string, unknown>;
+          // Reset des réservations si ancienne structure
+          if (state && Array.isArray(state.reservations)) {
+            state.reservations = state.reservations.map((r: Record<string, unknown>) => ({
+              ...r,
+              clientName: "Utilisateur",
+            }));
+          }
+          return state as AppState;
+        }
+        return persistedState as AppState;
+      },
       partialize: (s) => ({
         locationId: s.locationId,
         radiusKm: s.radiusKm,

@@ -11,7 +11,6 @@ import {
 import { toast } from "sonner";
 import { Logo } from "@/components/logo";
 import { chf } from "@/lib/format";
-import { PRICING_NOTE } from "@/lib/labels";
 import { useAppStore } from "@/lib/store";
 
 export const Route = createFileRoute("/_app/profile")({

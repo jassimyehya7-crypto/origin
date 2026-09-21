@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Minus, Plus } from "lucide-react";
+import { Loader2, Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { BackCircle, PageShell } from "@/components/back-header";
 import { Photo } from "@/components/photo";
@@ -21,6 +21,8 @@ function Reserve() {
   const stock = useStock(offerId, offer?.stock ?? 0);
   const reserve = useAppStore((s) => s.reserve);
   const [qty, setQty] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitLock = useRef(false);
 
   if (!offer || !merchant) {
     return (
@@ -90,11 +92,18 @@ function Reserve() {
         <Button
           size="lg"
           className="mt-8"
-          disabled={stock < 1}
+          disabled={stock < 1 || isSubmitting}
           onClick={() => {
+            // Protection anti-double-clic
+            if (submitLock.current) return;
+            submitLock.current = true;
+            setIsSubmitting(true);
+
             const res = reserve(offer.id, safeQty);
             if (!res) {
               toast("Stock insuffisant");
+              submitLock.current = false;
+              setIsSubmitting(false);
               return;
             }
             void navigate({
@@ -103,7 +112,14 @@ function Reserve() {
             });
           }}
         >
-          Envoyer la demande
+          {isSubmitting ? (
+            <span className="inline-flex items-center gap-2">
+              <Loader2 className="size-4 animate-spin" />
+              Envoi en cours…
+            </span>
+          ) : (
+            "Envoyer la demande"
+          )}
         </Button>
         <p className="mt-3 text-center text-xs text-mute">
           Aucun paiement en ligne · Code de retrait EC · Annulation simple
