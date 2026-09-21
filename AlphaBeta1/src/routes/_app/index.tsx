@@ -193,11 +193,11 @@ function Home() {
                   ))}
                 </div>
               )}
-              {/* Offres des commerces fermés */}
+              {/* Commerces fermés — cartes simplifiées */}
               {fromFollowedClosed.length > 0 && (
                 <>
                   {fromFollowedOpen.length > 0 && (
-                    <p className="mt-3 mb-2 text-xs font-semibold text-mute">En pause jusqu'à demain</p>
+                    <p className="mt-3 mb-2 text-xs font-semibold text-mute">Commerces fermés</p>
                   )}
                   <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
                     {fromFollowedClosed.map((o) => {
@@ -205,20 +205,20 @@ function Home() {
                       const stock = stockByOffer[o.id] ?? o.stock;
                       const hasStock = stock > 0;
                       return (
-                        <div key={o.id} className="relative opacity-50">
-                          <FeedCard offer={o} />
-                          <div className="absolute inset-0 flex items-center justify-center rounded-[var(--radius-lg)] bg-black/30">
-                            <span className="text-2xl font-bold italic text-red-500 drop-shadow-lg">
+                        <div key={o.id} className="rounded-[var(--radius-lg)] bg-card p-4 shadow-[var(--shadow-card)] opacity-60">
+                          <div className="mb-2 flex items-center justify-between">
+                            <span className="text-sm font-semibold">{merchant?.name || "Commerce"}</span>
+                            <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-600">
                               Fermé
                             </span>
                           </div>
-                          {hasStock && (
-                            <div className="absolute bottom-0 inset-x-0 flex items-center justify-center gap-1.5 rounded-b-[var(--radius-lg)] bg-ink/90 px-2 py-1.5">
-                              <Moon className="size-3 text-indigo-300" />
-                              <span className="text-[10px] font-bold text-white">
-                                Reprend à {merchant?.openFrom || "—"}
-                              </span>
+                          {hasStock ? (
+                            <div className="flex items-center gap-1.5 text-xs text-mute">
+                              <Moon className="size-3 text-indigo-400" />
+                              <span>Reprend à {merchant?.openFrom || "—"}</span>
                             </div>
+                          ) : (
+                            <div className="text-xs text-mute">Aucune offre disponible</div>
                           )}
                         </div>
                       );
