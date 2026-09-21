@@ -57,7 +57,9 @@ function Home() {
   const hot = openOffers.filter((o) => o.flags.includes("hot"));
   const fresh = openOffers.filter((o) => o.flags.includes("new"));
   const flash = openOffers.filter((o) => o.flags.includes("flash") && o.until);
-  const fromFollowed = openOffers.filter((o) => followed.includes(o.merchantId));
+  // "Vos commerces" : ouverts ET fermés (avec badge "Reprend à l'ouverture")
+  const fromFollowedOpen = openOffers.filter((o) => followed.includes(o.merchantId));
+  const fromFollowedClosed = closedOffers.filter((o) => followed.includes(o.merchantId));
   const isFiltered = category !== "all";
   const nearby = isFiltered ? openOffers : openOffers.slice(0, 8);
 
@@ -169,18 +171,39 @@ function Home() {
             </section>
           ) : null}
 
-          {/* VOS COMMERCES — uniquement commerces ouverts */}
-          {!isFiltered && fromFollowed.length > 0 ? (
+          {/* VOS COMMERCES — ouverts + fermés avec badge */}
+          {!isFiltered && (fromFollowedOpen.length > 0 || fromFollowedClosed.length > 0) ? (
             <section className="px-5">
               <SectionHeader
                 title="Vos commerces"
                 icon={<Heart className="size-5" />}
               />
-              <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                {fromFollowed.map((o) => (
-                  <FeedCard key={o.id} offer={o} />
-                ))}
-              </div>
+              {/* Offres des commerces ouverts */}
+              {fromFollowedOpen.length > 0 && (
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                  {fromFollowedOpen.map((o) => (
+                    <FeedCard key={o.id} offer={o} />
+                  ))}
+                </div>
+              )}
+              {/* Offres des commerces fermés avec badge "Reprend à l'ouverture" */}
+              {fromFollowedClosed.length > 0 && (
+                <div className="mt-3 grid grid-cols-2 gap-3 md:grid-cols-3">
+                  {fromFollowedClosed.map((o) => {
+                    const merchant = getMerchant(o.merchantId);
+                    return (
+                      <div key={o.id} className="relative">
+                        <FeedCard offer={o} />
+                        <div className="absolute inset-0 flex items-center justify-center rounded-[var(--radius-lg)] bg-paper/60 backdrop-blur-[1px]">
+                          <span className="rounded-full bg-ink/80 px-3 py-1.5 text-[10px] font-bold text-white text-center leading-tight">
+                            Reprend à<br />{merchant?.openFrom || "—"}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </section>
           ) : !isFiltered ? (
             <section className="px-5">

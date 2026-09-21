@@ -155,7 +155,7 @@ export function FlashCard({ offer }: { offer: Offer }) {
               {OFFER_TYPE_LABELS[offer.type]}
             </p>
             {offer.until ? (
-              <CountdownTimer untilTime={offer.until} />
+              <CountdownTimer untilTime={offer.until} merchantId={offer.merchantId} />
             ) : null}
           </div>
           <h3 className="mt-1.5 font-display text-base font-semibold leading-snug">{offer.title}</h3>
