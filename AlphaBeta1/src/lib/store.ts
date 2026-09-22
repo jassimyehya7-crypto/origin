@@ -6,6 +6,7 @@ import {
   getMerchant,
   getOffer,
 } from "@/lib/data/catalog";
+import { createReservation as supabaseCreateReservation, decrementStock } from "@/lib/data/supabase-catalog";
 import { pickupCode } from "@/lib/format";
 import { PRO_SHOP_ID } from "@/lib/labels";
 import type {
@@ -162,6 +163,15 @@ export const useAppStore = create<AppState>()(
             reservations: [reservation, ...s.reservations],
           };
         });
+        // Créer la réservation dans Supabase (async, ne bloque pas l'UI)
+        supabaseCreateReservation({
+          offerId,
+          shopId: merchant.id,
+          quantity: qty,
+          clientName: "Utilisateur",
+        }).catch((err) => console.error("[Supabase] Erreur réservation:", err));
+        // Décrémenter le stock dans Supabase
+        decrementStock(offerId, qty).catch((err) => console.error("[Supabase] Erreur stock:", err));
         return reservation;
       },
       cancelReservation: (id) =>

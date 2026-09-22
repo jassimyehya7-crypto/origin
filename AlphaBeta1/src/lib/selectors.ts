@@ -1,4 +1,4 @@
-import { LOCATIONS, MERCHANTS, mergeOffers, getMerchant } from "@/lib/data/catalog";
+import { LOCATIONS, getActiveMerchants, mergeOffers, getMerchant } from "@/lib/data/catalog";
 import type { CategoryId, LocationId, Merchant, Offer } from "@/lib/types";
 
 /** Durée max des offres Flash en heures */
@@ -151,7 +151,7 @@ export function visibleMerchants(opts: {
 }) {
   const extra = extraMeters(opts.locationId);
   const q = (opts.query ?? "").trim().toLowerCase();
-  return MERCHANTS.filter((m) => {
+  return getActiveMerchants().filter((m) => {
     if (!inRadius(m.distanceM + extra, opts.radiusKm)) return false;
     if (q && !`${m.name} ${m.about} ${m.address}`.toLowerCase().includes(q)) return false;
     return true;

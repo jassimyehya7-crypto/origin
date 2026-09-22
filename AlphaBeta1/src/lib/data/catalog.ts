@@ -652,16 +652,44 @@ export const OFFERS: Offer[] = [
   },
 ];
 
+// === SUPABASE LIVE DATA ===
+// Variables mutables qui stockent les données Supabase (mises à jour au runtime)
+let _supabaseMerchants: Merchant[] | null = null;
+let _supabaseOffers: Offer[] | null = null;
+
+/** Met à jour les merchants depuis Supabase (appelé par SupabaseLoader) */
+export function setSupabaseMerchants(merchants: Merchant[]) {
+  _supabaseMerchants = merchants;
+}
+
+/** Met à jour les offres depuis Supabase (appelé par SupabaseLoader) */
+export function setSupabaseOffers(offers: Offer[]) {
+  _supabaseOffers = offers;
+}
+
+/** Retourne la liste active des merchants (Supabase si chargé, sinon statique) */
+export function getActiveMerchants(): Merchant[] {
+  return _supabaseMerchants ?? MERCHANTS;
+}
+
+/** Retourne la liste active des offres (Supabase si chargé, sinon statique) */
+export function getActiveOffers(): Offer[] {
+  return _supabaseOffers ?? OFFERS;
+}
+
 export function getMerchant(id: string) {
-  return MERCHANTS.find((m) => m.id === id);
+  const source = _supabaseMerchants ?? MERCHANTS;
+  return source.find((m) => m.id === id) ?? MERCHANTS.find((m) => m.id === id);
 }
 
 export function getOffer(id: string) {
-  return OFFERS.find((o) => o.id === id);
+  const source = _supabaseOffers ?? OFFERS;
+  return source.find((o) => o.id === id) ?? OFFERS.find((o) => o.id === id);
 }
 
 export function offersForMerchant(merchantId: string) {
-  return OFFERS.filter((o) => o.merchantId === merchantId);
+  const source = _supabaseOffers ?? OFFERS;
+  return source.filter((o) => o.merchantId === merchantId);
 }
 
 export function exploreMatches(merchantCategory: CategoryId, filter: string) {
@@ -673,7 +701,8 @@ export function exploreMatches(merchantCategory: CategoryId, filter: string) {
 }
 
 export function mergeOffers(extra: Offer[], hidden: string[]): Offer[] {
-  return [...OFFERS.filter((o) => !hidden.includes(o.id)), ...extra];
+  const source = _supabaseOffers ?? OFFERS;
+  return [...source.filter((o) => !hidden.includes(o.id)), ...extra];
 }
 
 export function findOffer(id: string, extra: Offer[], hidden: string[]) {
