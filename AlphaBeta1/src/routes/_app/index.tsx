@@ -112,7 +112,7 @@ function Home() {
         />
       ) : (
         <div className="mt-6 space-y-8 pb-4">
-          {/* FLASH — uniquement commerces ouverts */}
+          {/* 1. FLASH — uniquement commerces ouverts */}
           {!isFiltered && flash.length > 0 ? (
             <section className="px-5">
               <SectionHeader title="Flash" icon={<Zap className="size-5" />} />
@@ -124,27 +124,27 @@ function Home() {
             </section>
           ) : null}
 
-          {/* À SAISIR — uniquement commerces ouverts */}
-          {!isFiltered && hot.length > 0 ? (
+          {/* 2. NOUVEAU — uniquement commerces ouverts */}
+          {!isFiltered && fresh.length > 0 ? (
             <section className="px-5">
               <SectionHeader
-                title="À saisir près de vous"
-                icon={<Flame className="size-5" />}
+                title="Nouveau aujourd'hui"
+                icon={<Sparkles className="size-5" />}
               />
               <HorizontalRail>
-                {hot.map((o) => (
-                  <HotCard key={o.id} offer={o} />
+                {fresh.map((o) => (
+                  <NewCard key={o.id} offer={o} />
                 ))}
               </HorizontalRail>
             </section>
           ) : null}
 
-          {/* PRÈS DE VOUS — uniquement commerces ouverts */}
+          {/* 3. À SAISIR PRÈS DE VOUS — toutes les offres ouvertes proches */}
           {nearby.length > 0 ? (
             <section className="px-5">
               <SectionHeader
-                title="Près de vous"
-                icon={<MapPin className="size-5" />}
+                title="À saisir près de vous"
+                icon={<Flame className="size-5" />}
                 action={
                   isFiltered ? null : (
                     <Link
@@ -165,22 +165,7 @@ function Home() {
             </section>
           ) : null}
 
-          {/* NOUVEAU — uniquement commerces ouverts */}
-          {!isFiltered && fresh.length > 0 ? (
-            <section className="px-5">
-              <SectionHeader
-                title="Nouveau aujourd'hui"
-                icon={<Sparkles className="size-5" />}
-              />
-              <HorizontalRail>
-                {fresh.map((o) => (
-                  <NewCard key={o.id} offer={o} />
-                ))}
-              </HorizontalRail>
-            </section>
-          ) : null}
-
-          {/* VOS COMMERCES — ouverts + fermés */}
+          {/* 4. VOS COMMERCES — ouverts + fermés */}
           {!isFiltered && (fromFollowedOpen.length > 0 || fromFollowedClosed.length > 0) ? (
             <section className="px-5">
               <SectionHeader
