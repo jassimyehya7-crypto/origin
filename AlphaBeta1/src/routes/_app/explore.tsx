@@ -51,6 +51,8 @@ function Explore() {
   const stockByOffer = useAppStore((s) => s.stockByOffer);
   const extraOffers = useAppStore((s) => s.extraOffers);
   const hiddenOfferIds = useAppStore((s) => s.hiddenOfferIds);
+  const userLat = useAppStore((s) => s.userLat);
+  const userLng = useAppStore((s) => s.userLng);
 
   const onSelect = useCallback((id: string) => setSelectedId(id), []);
   const onZoneChange = useCallback((unlocked: boolean, city: MapCity, zoom: number) => {
@@ -71,13 +73,15 @@ function Explore() {
     extraOffers,
     hiddenOfferIds,
     now,
+    userLat,
+    userLng,
   }).filter((o) => {
     const m = getMerchant(o.merchantId);
     if (!m) return false;
     return exploreMatches(m.category, filter);
   });
 
-  const merchants = visibleMerchants({ locationId, radiusKm, query: shopQuery }).filter((m) =>
+  const merchants = visibleMerchants({ locationId, radiusKm, query: shopQuery, userLat, userLng }).filter((m) =>
     exploreMatches(m.category, filter),
   );
 

@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { MapPin } from "lucide-react";
+import { useAppStore } from "@/lib/store";
 
 /** Ville par défaut si aucune géolocalisation n'est possible */
 const DEFAULT_CITY = "Villeneuve";
 
 export function LocationButton() {
   const [cityName, setCityName] = useState<string>("Localisation…");
+  const setUserLocation = useAppStore((s) => s.setUserLocation);
 
   useEffect(() => {
     let cancelled = false;
@@ -17,6 +19,8 @@ export function LocationButton() {
           async (position) => {
             if (cancelled) return;
             const { latitude, longitude } = position.coords;
+            // Mettre à jour la position GPS dans le store
+            setUserLocation(latitude, longitude);
             try {
               const res = await fetch(
                 `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10&addressdetails=1`,
@@ -65,6 +69,10 @@ export function LocationButton() {
           const data = await res.json();
           if (!cancelled && data.city) {
             setCityName(data.city);
+            // Mettre à jour la position GPS approximative dans le store
+            if (data.latitude && data.longitude) {
+              setUserLocation(data.latitude, data.longitude);
+            }
             return;
           }
         }
@@ -81,6 +89,10 @@ export function LocationButton() {
           const data = await res.json();
           if (!cancelled && data.city) {
             setCityName(data.city);
+            // Mettre à jour la position GPS approximative dans le store
+            if (data.latitude && data.longitude) {
+              setUserLocation(data.latitude, data.longitude);
+            }
             return;
           }
         }
@@ -97,7 +109,7 @@ export function LocationButton() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [setUserLocation]);
 
   return (
     <div className="inline-flex h-11 shrink-0 items-center gap-1.5 text-sm font-medium text-ink">

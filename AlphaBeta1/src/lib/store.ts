@@ -45,6 +45,9 @@ type AppState = {
   setHydrated: (v: boolean) => void;
   locationId: LocationId;
   setLocationId: (id: LocationId) => void;
+  userLat: number | null;
+  userLng: number | null;
+  setUserLocation: (lat: number, lng: number) => void;
   radiusKm: number;
   setRadiusKm: (km: number) => void;
   category: CategoryId;
@@ -97,6 +100,9 @@ export const useAppStore = create<AppState>()(
       setHydrated: (v) => set({ hydrated: v }),
       locationId: "villeneuve",
       setLocationId: (id) => set({ locationId: id }),
+      userLat: null,
+      userLng: null,
+      setUserLocation: (lat, lng) => set({ userLat: lat, userLng: lng }),
       radiusKm: 5,
       setRadiusKm: (km) => set({ radiusKm: km }),
       category: "all",
@@ -269,6 +275,8 @@ export const useAppStore = create<AppState>()(
       },
       partialize: (s) => ({
         locationId: s.locationId,
+        userLat: s.userLat,
+        userLng: s.userLng,
         radiusKm: s.radiusKm,
         favoriteOfferIds: s.favoriteOfferIds,
         followedMerchantIds: s.followedMerchantIds,

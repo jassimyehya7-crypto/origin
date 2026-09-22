@@ -36,6 +36,8 @@ function Home() {
   const stockByOffer = useAppStore((s) => s.stockByOffer);
   const extraOffers = useAppStore((s) => s.extraOffers);
   const hiddenOfferIds = useAppStore((s) => s.hiddenOfferIds);
+  const userLat = useAppStore((s) => s.userLat);
+  const userLng = useAppStore((s) => s.userLng);
 
   // SSR et premier rendu client utilisent la même date fixe (3am = tous fermés)
   // Après le montage, on met à jour avec l'heure locale du navigateur
@@ -51,6 +53,8 @@ function Home() {
     extraOffers,
     hiddenOfferIds,
     now,
+    userLat,
+    userLng,
   });
 
   // Séparer les offres par statut du commerce

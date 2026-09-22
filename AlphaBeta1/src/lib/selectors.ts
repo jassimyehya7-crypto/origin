@@ -62,9 +62,29 @@ export function extraMeters(locationId: LocationId) {
   return LOCATIONS.find((l) => l.id === locationId)?.extraM ?? 0;
 }
 
-export function offerDistance(offer: Offer, locationId: LocationId) {
+/** Calcule la distance en mètres entre deux points GPS (Haversine) */
+export function haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371000;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+
+export function offerDistance(offer: Offer, locationId: LocationId, userLat?: number | null, userLng?: number | null) {
   const merchant = getMerchant(offer.merchantId);
-  return (merchant?.distanceM ?? 0) + extraMeters(locationId);
+  if (!merchant) return 99999;
+  // Si position GPS utilisateur disponible → distance réelle
+  if (userLat != null && userLng != null) {
+    return haversineMeters(userLat, userLng, merchant.lat, merchant.lng);
+  }
+  // Sinon → distance pré-calculée + extra
+  return merchant.distanceM + extraMeters(locationId);
 }
 
 export function merchantDistance(merchantId: string, locationId: LocationId) {
@@ -91,6 +111,8 @@ export function visibleOffers(opts: {
   extraOffers?: Offer[];
   hiddenOfferIds?: string[];
   now?: Date;
+  userLat?: number | null;
+  userLng?: number | null;
 }) {
   const q = (opts.query ?? "").trim().toLowerCase();
   const pool = mergeOffers(opts.extraOffers ?? [], opts.hiddenOfferIds ?? []);
@@ -101,7 +123,7 @@ export function visibleOffers(opts: {
       const merchant = getMerchant(offer.merchantId);
       if (!merchant) return false;
       if (!matchesCategory(offer, opts.category)) return false;
-      const d = offerDistance(offer, opts.locationId);
+      const d = offerDistance(offer, opts.locationId, opts.userLat, opts.userLng);
       if (!inRadius(d, opts.radiusKm)) return false;
 
       const open = isMerchantOpen(merchant, now);
@@ -141,19 +163,29 @@ export function visibleOffers(opts: {
       }
       return true;
     })
-    .sort((a, b) => offerDistance(a, opts.locationId) - offerDistance(b, opts.locationId));
+    .sort((a, b) => offerDistance(a, opts.locationId, opts.userLat, opts.userLng) - offerDistance(b, opts.locationId, opts.userLat, opts.userLng));
 }
 
 export function visibleMerchants(opts: {
   locationId: LocationId;
   radiusKm: number;
   query?: string;
+  userLat?: number | null;
+  userLng?: number | null;
 }) {
   const extra = extraMeters(opts.locationId);
   const q = (opts.query ?? "").trim().toLowerCase();
   return getActiveMerchants().filter((m) => {
-    if (!inRadius(m.distanceM + extra, opts.radiusKm)) return false;
+    const dist = opts.userLat != null && opts.userLng != null
+      ? haversineMeters(opts.userLat, opts.userLng, m.lat, m.lng)
+      : m.distanceM + extra;
+    if (!inRadius(dist, opts.radiusKm)) return false;
     if (q && !`${m.name} ${m.about} ${m.address}`.toLowerCase().includes(q)) return false;
     return true;
-  }).sort((a, b) => a.distanceM - b.distanceM);
+  }).sort((a, b) => {
+    if (opts.userLat != null && opts.userLng != null) {
+      return haversineMeters(opts.userLat, opts.userLng, a.lat, a.lng) - haversineMeters(opts.userLat, opts.userLng, b.lat, b.lng);
+    }
+    return a.distanceM - b.distanceM;
+  });
 }
