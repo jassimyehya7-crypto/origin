@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { MapPin, Moon, Search } from "lucide-react";
+import { MapPin, Moon, Search, X } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { GoogleTownMap, LockedCityCard } from "@/components/google-map";
 import { MerchantCard } from "@/components/merchant-card";
@@ -8,10 +8,11 @@ import { ListRow } from "@/components/offer-cards";
 import { Photo } from "@/components/photo";
 import { Button } from "@/components/ui/button";
 import { MAP_CITIES, type MapCity } from "@/lib/data/cities";
-import { EXPLORE_FILTERS, exploreMatches, getMerchant } from "@/lib/data/catalog";
-import { chf, discountPct, distLabel } from "@/lib/format";
-import { extraMeters, isMerchantOpen, isOfferPaused, visibleMerchants, visibleOffers } from "@/lib/selectors";
+import { EXPLORE_FILTERS, exploreMatches, getActiveMerchants, getMerchant } from "@/lib/data/catalog";
+import { chf } from "@/lib/format";
+import { isMerchantOpen, isOfferPaused, visibleMerchants, visibleOffers } from "@/lib/selectors";
 import { useAppStore } from "@/lib/store";
+import type { Merchant, Offer } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 type Tab = "map" | "list" | "shops";
@@ -43,7 +44,12 @@ function Explore() {
 
   // SSR et premier rendu client = même date fixe → pas de mismatch
   const [now, setNow] = useState(SSR_DATE);
-  useEffect(() => { setNow(new Date()); }, []);
+  useEffect(() => {
+    const refresh = () => setNow(new Date());
+    refresh();
+    const timer = window.setInterval(refresh, 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const locationId = useAppStore((s) => s.locationId);
   const radiusKm = useAppStore((s) => s.radiusKm);
@@ -84,6 +90,17 @@ function Explore() {
   const merchants = visibleMerchants({ locationId, radiusKm, query: shopQuery, userLat, userLng }).filter((m) =>
     exploreMatches(m.category, filter),
   );
+  // La carte montre chaque commerce de la plateforme, même sans offre ou hors du rayon de la liste.
+  const mapMerchants = getActiveMerchants().filter((m) => exploreMatches(m.category, filter));
+  const mapOffers = visibleOffers({
+    locationId,
+    radiusKm: 1000,
+    category: "all",
+    stockByOffer,
+    extraOffers,
+    hiddenOfferIds,
+    now,
+  });
 
   const sortedShops = [...merchants].sort((a, b) => {
     if (shopSort === "rated") return b.rating - a.rating;
@@ -91,7 +108,7 @@ function Explore() {
     return a.distanceM - b.distanceM;
   });
 
-  const selected = allOffers.find((o) => o.id === selectedId) ?? allOffers[0];
+  const selected = mapMerchants.find((m) => m.id === selectedId);
 
   const chrome = (
     <>
@@ -132,43 +149,33 @@ function Explore() {
   );
 
   if (tab === "map") {
-    // Vérifier si TOUS les commerces sont fermés
-    const merchantsOpen = merchants.filter((m) => isMerchantOpen(m, now)).length;
-    const allClosed = merchants.length > 0 && merchantsOpen === 0;
-
     return (
       <div className="relative h-[calc(100dvh-5.75rem-env(safe-area-inset-bottom))] overflow-hidden">
         <GoogleTownMap
-          offers={allOffers}
+          merchants={mapMerchants}
+          now={now}
           selectedId={selected?.id ?? null}
           onSelect={onSelect}
           onZoneChange={onZoneChange}
           focusTick={focusTick}
         />
-        {/* Overlay carte en veille quand tous les commerces sont fermés */}
-        {allClosed && (
-          <div className="absolute inset-0 z-[400] flex flex-col items-center justify-center bg-black/50 backdrop-blur-sm">
-            <Moon className="size-12 text-white/80 mb-3" />
-            <p className="text-lg font-bold text-white">Carte en veille</p>
-            <p className="text-sm text-white/80 mt-1">Les commerces sont fermés</p>
-          </div>
-        )}
         <header className="absolute inset-x-0 top-0 z-[500] bg-paper/90 px-5 pb-3 pt-4 backdrop-blur-md safe-top">
           {chrome}
         </header>
         {zone.unlocked ? (
           selected && zone.zoom >= 14 ? (
-            <MiniCard offerId={selected.id} />
-          ) : allOffers.length === 0 && zone.zoom >= 14 ? (
+            <MerchantMapCard
+              merchant={selected}
+              offers={mapOffers.filter((o) => o.merchantId === selected.id)}
+              open={isMerchantOpen(selected, now)}
+              onClose={() => setSelectedId(null)}
+            />
+          ) : mapMerchants.length === 0 && zone.zoom >= 14 ? (
             <div className="absolute inset-x-0 bottom-0 z-[500] bg-paper">
               <EmptyState
                 icon={MapPin}
-                title="Rien dans cette zone"
-                body="Élargissez le rayon pour voir plus de commerces."
-                action={{
-                  label: "Élargir à 10 km",
-                  onClick: () => setRadiusKm(Math.max(10, radiusKm)),
-                }}
+                title="Aucun commerce dans cette catégorie"
+                body="Essayez une autre catégorie pour voir les commerces de Villeneuve."
               />
             </div>
           ) : null
@@ -265,45 +272,60 @@ function Explore() {
   );
 }
 
-function MiniCard({ offerId }: { offerId: string }) {
-  const extraOffers = useAppStore((s) => s.extraOffers);
-  const hiddenOfferIds = useAppStore((s) => s.hiddenOfferIds);
-  const stockByOffer = useAppStore((s) => s.stockByOffer);
-  const offer = visibleOffers({
-    locationId: useAppStore.getState().locationId,
-    radiusKm: 25,
-    category: "all",
-    stockByOffer,
-    extraOffers,
-    hiddenOfferIds,
-  }).find((o) => o.id === offerId);
-  const merchant = offer ? getMerchant(offer.merchantId) : undefined;
-  const locationId = useAppStore((s) => s.locationId);
-  if (!offer || !merchant) return null;
-  const distance = merchant.distanceM + extraMeters(locationId);
-  const original = offer.originalPrice;
-
+function MerchantMapCard({
+  merchant,
+  offers,
+  open,
+  onClose,
+}: {
+  merchant: Merchant;
+  offers: Offer[];
+  open: boolean;
+  onClose: () => void;
+}) {
   return (
-    <div className="absolute inset-x-3 bottom-3 z-[500] rounded-[var(--radius-lg)] bg-card p-3 shadow-[var(--shadow-float)]">
+    <div className="absolute inset-x-3 bottom-3 z-[500] max-h-[55%] overflow-y-auto rounded-[var(--radius-lg)] bg-card p-3 shadow-[var(--shadow-float)]">
       <div className="flex gap-3">
-        <Photo src={offer.image} alt={offer.title} className="size-16 rounded-[var(--radius-sm)]" />
+        <Photo src={merchant.banner} alt={merchant.name} className="size-16 shrink-0 rounded-[var(--radius-sm)]" />
         <div className="min-w-0 flex-1">
-          <p className="text-xs text-mute">{merchant.name}</p>
-          <h3 className="font-display text-base font-semibold leading-snug">{offer.title}</h3>
-          <p className="text-sm">
-            {original && original > offer.price ? (
-              <span className="text-faint line-through tabular">{chf(original)}</span>
-            ) : null}
-            <span className="ml-2 font-bold tabular text-deal">{chf(offer.price)}</span>
-          </p>
-          <p className="text-xs text-mute">
-            Jusqu'à {offer.until} · {distLabel(distance)}
+          <h3 className="font-display text-base font-semibold leading-snug">{merchant.name}</h3>
+          <p className="mt-0.5 text-xs text-mute">{merchant.address}</p>
+          <p className={cn("mt-1 text-xs font-semibold", open ? "text-ink" : "text-deal")}>
+            {open ? `Ouvert jusqu’à ${merchant.openUntil}` : `Fermé · Ouvre à ${merchant.openFrom}`}
           </p>
         </div>
+        <button
+          type="button"
+          aria-label="Fermer la fiche du commerce"
+          onClick={onClose}
+          className="grid size-8 shrink-0 place-items-center rounded-full bg-soft press"
+        >
+          <X className="size-4" />
+        </button>
+      </div>
+      <div className="mt-3 border-t border-line pt-2">
+        <p className="text-xs font-semibold text-mute">Offres du commerce</p>
+        {offers.length > 0 ? (
+          <div className="mt-1 space-y-1">
+            {offers.slice(0, 2).map((offer) => (
+              <div key={offer.id} className="flex items-center justify-between gap-2 text-sm">
+                <span className="truncate">{offer.title}</span>
+                <span className="shrink-0 font-semibold text-deal">{chf(offer.price)}</span>
+              </div>
+            ))}
+            {offers.length > 2 ? (
+              <p className="text-xs text-mute">+ {offers.length - 2} autre{offers.length > 3 ? "s" : ""} offre{offers.length > 3 ? "s" : ""}</p>
+            ) : null}
+          </div>
+        ) : (
+          <p className="mt-1 text-sm text-mute">
+            {open ? "Aucune offre en ce moment." : "Les offres reprendront à l’ouverture."}
+          </p>
+        )}
       </div>
       <Button asChild size="md" className="mt-3 w-full">
-        <Link to="/offers/$offerId" params={{ offerId: offer.id }}>
-          Voir l'offre
+        <Link to="/merchants/$merchantId" params={{ merchantId: merchant.id }}>
+          Voir le commerce et ses offres
         </Link>
       </Button>
     </div>

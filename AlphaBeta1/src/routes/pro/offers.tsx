@@ -47,15 +47,17 @@ function ProOffers() {
                   <h2 className="font-display text-[15px] font-semibold">{o.title}</h2>
                   <p className="text-sm font-bold tabular">{chf(o.price)}</p>
                   <p className="text-xs text-mute">
-                    {stock} {o.unit} · jusqu’à {o.until}
+                    {o.availabilityMode === "duration" && o.durationMinutes
+                      ? `Valable ${o.durationMinutes < 60 ? `${o.durationMinutes} min` : `${o.durationMinutes / 60} h`} · pause à la fermeture`
+                      : `${stock} ${o.unit}${stock > 1 ? "s" : ""} disponible${stock > 1 ? "s" : ""}`}
                   </p>
                 </div>
                 <Button
                   size="sm"
                   variant="soft"
-                  onClick={() => {
-                    hideOffer(o.id);
-                    toast("Offre retirée");
+                  onClick={async () => {
+                    const hidden = await hideOffer(o.id);
+                    toast(hidden ? "Offre retirée" : "Impossible de retirer cette offre");
                   }}
                 >
                   Retirer

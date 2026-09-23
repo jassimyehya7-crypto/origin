@@ -91,10 +91,15 @@ export type Offer = {
   flags: OfferFlag[];
   type: OfferType;
   unit: string;
+  availabilityMode?: "lots" | "duration";
+  durationMinutes?: number;
+  createdAt?: string;
+  endsAt?: string;
 };
 
 export type Reservation = {
   id: string;
+  requestId?: string;
   offerId: string;
   merchantId: string;
   title: string;

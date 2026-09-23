@@ -1,7 +1,8 @@
-import { useEffect, useRef } from "react";
-import { fetchMerchants, fetchOffers } from "@/lib/data/supabase-catalog";
+import { useEffect } from "react";
+import { fetchMerchants, fetchOffers, fetchClientReservations } from "@/lib/data/supabase-catalog";
 import { setSupabaseMerchants, setSupabaseOffers } from "@/lib/data/catalog";
 import { useAppStore } from "@/lib/store";
+import { supabase } from "@/lib/supabase";
 
 /**
  * Composant invisible qui charge les données Supabase au démarrage
@@ -9,37 +10,73 @@ import { useAppStore } from "@/lib/store";
  * Doit être monté une seule fois dans le layout principal.
  */
 export function SupabaseLoader() {
-  const loaded = useRef(false);
   const setHydrated = useAppStore((s) => s.setHydrated);
+  const setSyncStatus = useAppStore((s) => s.setSyncStatus);
+  const syncRemoteStocks = useAppStore((s) => s.syncRemoteStocks);
+  const syncRemoteReservations = useAppStore((s) => s.syncRemoteReservations);
 
   useEffect(() => {
-    if (loaded.current) return;
-    loaded.current = true;
+    let active = true;
+    let refreshTimer: number | undefined;
 
-    async function load() {
+    async function load(showSyncing = false) {
+      if (showSyncing) setSyncStatus("syncing");
       try {
-        const [merchants, offers] = await Promise.all([
+        const requestIds = useAppStore.getState().reservations
+          .filter((reservation) => reservation.mine && reservation.requestId)
+          .map((reservation) => reservation.requestId!);
+        const [merchants, offers, reservations] = await Promise.all([
           fetchMerchants(),
           fetchOffers(),
+          fetchClientReservations(requestIds),
         ]);
 
-        if (merchants.length > 0) {
+        if (!active) return;
+        if (supabase) {
           setSupabaseMerchants(merchants);
-          console.log(`[Supabase] ${merchants.length} commerces chargés`);
-        }
-        if (offers.length > 0) {
           setSupabaseOffers(offers);
-          console.log(`[Supabase] ${offers.length} offres chargées`);
+          syncRemoteStocks(offers);
         }
+        if (supabase) syncRemoteReservations(reservations);
+        setSyncStatus(supabase ? "live" : "offline");
       } catch (err) {
         console.error("[Supabase] Erreur chargement:", err);
+        if (active) setSyncStatus("offline");
       } finally {
-        setHydrated(true);
+        if (active) setHydrated(true);
       }
     }
 
-    load();
-  }, [setHydrated]);
+    const scheduleRefresh = () => {
+      window.clearTimeout(refreshTimer);
+      refreshTimer = window.setTimeout(() => void load(), 120);
+    };
+
+    void load(true);
+    const poll = window.setInterval(() => void load(), 5000);
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") void load(true);
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
+    const channel = supabase
+      ?.channel("offreslocal-live-sync")
+      .on("postgres_changes", { event: "*", schema: "public", table: "ec_offers" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "ec_shops" }, scheduleRefresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "ec_reservations" }, scheduleRefresh)
+      .subscribe((status) => {
+        // Une connexion Realtime seule ne prouve pas que le catalogue a été lu.
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") setSyncStatus("offline");
+      });
+
+    return () => {
+      active = false;
+      window.clearTimeout(refreshTimer);
+      window.clearInterval(poll);
+      document.removeEventListener("visibilitychange", onVisibility);
+      if (channel && supabase) void supabase.removeChannel(channel);
+    };
+  }, [setHydrated, setSyncStatus, syncRemoteReservations, syncRemoteStocks]);
 
   return null;
 }

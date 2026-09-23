@@ -67,12 +67,10 @@ function Home() {
     return merchant ? !isMerchantOpen(merchant, now) : true;
   });
 
-  // Sections basées sur les offres OUVERTES uniquement
-  const hot = openOffers.filter((o) => o.flags.includes("hot"));
-  const fresh = openOffers.filter((o) => o.flags.includes("new"));
+  // Les nouveautés restent visibles quand un commerce ferme, en pause jusqu'à sa réouverture.
+  const fresh = allOffers.filter((o) => o.flags.includes("new"));
   const flash = openOffers.filter((o) => o.flags.includes("flash") && o.until);
   const fromFollowedOpen = openOffers.filter((o) => followed.includes(o.merchantId));
-  const fromFollowedClosed = closedOffers.filter((o) => followed.includes(o.merchantId));
   const isFiltered = category !== "all";
   const nearby = isFiltered ? openOffers : openOffers.slice(0, 8);
 
@@ -128,7 +126,7 @@ function Home() {
             </section>
           ) : null}
 
-          {/* 2. NOUVEAU — uniquement commerces ouverts */}
+          {/* 2. NOUVEAU — offres ouvertes et en pause */}
           {!isFiltered && fresh.length > 0 ? (
             <section className="px-5">
               <SectionHeader
@@ -137,7 +135,7 @@ function Home() {
               />
               <HorizontalRail>
                 {fresh.map((o) => (
-                  <NewCard key={o.id} offer={o} />
+                  <NewCard key={o.id} offer={o} paused={isOfferPaused(o, now)} />
                 ))}
               </HorizontalRail>
             </section>
@@ -169,48 +167,20 @@ function Home() {
             </section>
           ) : null}
 
-          {/* 4. VOS COMMERCES — ouverts + fermés */}
-          {!isFiltered && (fromFollowedOpen.length > 0 || fromFollowedClosed.length > 0) ? (
+          {/* 4. VOS COMMERCES — offres ouvertes des commerces suivis */}
+          {!isFiltered && fromFollowedOpen.length > 0 ? (
             <section className="px-5">
               <SectionHeader
                 title="Vos commerces"
                 icon={<Heart className="size-5" />}
               />
-              {fromFollowedOpen.length > 0 && (
-                <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                  {fromFollowedOpen.map((o) => (
-                    <FeedCard key={o.id} offer={o} />
-                  ))}
-                </div>
-              )}
-              {fromFollowedClosed.length > 0 && (
-                <>
-                  {fromFollowedOpen.length > 0 && (
-                    <p className="mt-3 mb-2 text-xs font-semibold text-mute">Commerces fermés</p>
-                  )}
-                  <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-                    {fromFollowedClosed.map((o) => {
-                      const merchant = getMerchant(o.merchantId);
-                      return (
-                        <div key={o.id} className="rounded-[var(--radius-lg)] bg-card p-4 shadow-[var(--shadow-card)] opacity-60">
-                          <div className="mb-2 flex items-center justify-between">
-                            <span className="text-sm font-semibold">{merchant?.name || "Commerce"}</span>
-                            <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-600">
-                              Fermé
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-xs text-mute">
-                            <Moon className="size-3 text-indigo-400" />
-                            <span>Reprend à {merchant?.openFrom || "—"}</span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                {fromFollowedOpen.map((o) => (
+                  <FeedCard key={o.id} offer={o} />
+                ))}
+              </div>
             </section>
-          ) : !isFiltered ? (
+          ) : !isFiltered && followed.length === 0 ? (
             <section className="px-5">
               <SectionHeader title="Vos commerces" icon={<Heart className="size-5" />} />
               <div className="rounded-[var(--radius-lg)] bg-card px-4 py-5 shadow-[var(--shadow-card)]">

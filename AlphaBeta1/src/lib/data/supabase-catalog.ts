@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase";
-import type { Merchant, Offer, OfferFlag, OfferType, CategoryId } from "@/lib/types";
+import type { Merchant, Offer, OfferFlag, OfferType, CategoryId, Reservation, ReservationStatus } from "@/lib/types";
 
 // Coordonnées de référence pour le calcul de distance (Villeneuve centre)
 const REF_LAT = 46.3972;
@@ -37,6 +37,19 @@ function flagsForOfferType(type: string, originalPrice?: number | null, price?: 
     flags.push("hot");
   }
   return flags;
+}
+
+function mapReservationStatus(status: unknown): ReservationStatus {
+  switch (String(status || "").toUpperCase()) {
+    case "EN_ATTENTE": return "pending";
+    case "CONFIRMEE": return "confirmed";
+    case "RECUPEREE": return "picked";
+    case "REFUSEE": return "refused";
+    case "ANNULEE": return "cancelled";
+    case "NON_RECUPEREE":
+    case "EXPIREE": return "cancelled";
+    default: return "pending";
+  }
 }
 
 /** Mappe un shop Supabase vers le type Merchant */
@@ -97,6 +110,10 @@ function mapOffer(row: Record<string, unknown>): Offer {
     flags: flagsForOfferType(type, row.original_price as number | null, row.price as number),
     type: type as OfferType,
     unit: (row.unit as string) || "pièce",
+    availabilityMode: row.availability_mode === "duration" ? "duration" : "lots",
+    durationMinutes: row.duration_minutes == null ? undefined : Number(row.duration_minutes),
+    createdAt: (row.created_at as string) || undefined,
+    endsAt: (row.ends_at as string) || undefined,
   };
 }
 
@@ -108,8 +125,7 @@ export async function fetchMerchants(): Promise<Merchant[]> {
     .select("*")
     .eq("active", true);
   if (error) {
-    console.error("Erreur fetchMerchants:", error);
-    return [];
+    throw error;
   }
   return (data || []).map(mapShop);
 }
@@ -122,54 +138,167 @@ export async function fetchOffers(): Promise<Offer[]> {
     .select("*")
     .eq("status", "PUBLIEE");
   if (error) {
-    console.error("Erreur fetchOffers:", error);
-    return [];
+    throw error;
   }
   return (data || []).map(mapOffer);
 }
 
-/** Crée une réservation dans Supabase */
-export async function createReservation(input: {
+/** Charge les réservations partagées pour la synchronisation client/commerçant. */
+function mapReservation(row: Record<string, unknown>): Reservation {
+    const offer = (row.ec_offers || {}) as Record<string, unknown>;
+    const shop = (row.ec_shops || {}) as Record<string, unknown>;
+    return {
+      id: row.id as string,
+      requestId: row.request_id as string | undefined,
+      offerId: row.offer_id as string,
+      merchantId: row.shop_id as string,
+      title: (offer.title as string) || "Offre",
+      merchantName: (shop.name as string) || "Commerce",
+      image: (offer.image_url as string) || "/offers/a1/epicerie-da-silva.webp",
+      qty: Number(row.quantity) || 1,
+      unitPrice: Number(offer.price) || 0,
+      originalPrice: offer.original_price == null ? undefined : Number(offer.original_price),
+      until: isoToHHMM(offer.ends_at as string | null),
+      distanceM: 0,
+      address: [shop.address, shop.city].filter(Boolean).join(", "),
+      createdAt: (row.created_at as string) || new Date().toISOString(),
+      status: mapReservationStatus(row.status),
+      code: (row.pickup_code as string) || "",
+      clientName: (row.client_name as string) || "Client",
+      unit: (offer.unit as string) || "lot",
+      mine: false,
+    };
+}
+
+/** Un client ne lit que les réservations dont il garde la clé de requête. */
+export async function fetchClientReservations(requestIds: string[]): Promise<Reservation[]> {
+  if (!supabase || requestIds.length === 0) return [];
+  const client = supabase;
+  const results = await Promise.all(requestIds.map(async (requestId) => {
+    const { data, error } = await client.rpc("client_reservation_by_request", { p_request_id: requestId });
+    if (error) throw error;
+    return data ? mapReservation(data as Record<string, unknown>) : null;
+  }));
+  return results.filter((reservation): reservation is Reservation => reservation !== null);
+}
+
+export async function fetchMerchantReservations(): Promise<Reservation[]> {
+  if (!supabase) return [];
+  const { data, error } = await supabase.rpc("merchant_reservations");
+  if (error) throw error;
+  return (Array.isArray(data) ? data : []).map((row) => mapReservation(row as Record<string, unknown>));
+}
+
+export async function cancelClientReservation(requestId: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { data, error } = await supabase.rpc("cancel_client_reservation", { p_request_id: requestId });
+  if (error) throw error;
+  return data === true;
+}
+
+export async function merchantCreateOffer(input: {
+  shopId: string;
+  title: string;
+  image?: string;
+  price: number;
+  originalPrice?: number;
+  stock: number;
+  type: OfferType;
+  unit: string;
+  availabilityMode: "lots" | "duration";
+  durationMinutes?: number;
+}): Promise<string | null> {
+  if (!supabase) return null;
+  let imageUrl: string | null = null;
+  if (input.image) {
+    if (input.image.startsWith("data:image/")) {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData.user) throw new Error("Connexion commerçant requise");
+      const imageBlob = await (await fetch(input.image)).blob();
+      const extension = imageBlob.type === "image/png" ? "png" : imageBlob.type === "image/jpeg" ? "jpg" : "webp";
+      const path = `${input.shopId}/${userData.user.id}/${crypto.randomUUID()}.${extension}`;
+      const uploaded = await supabase.storage.from("offer-photos").upload(path, imageBlob, {
+        contentType: imageBlob.type,
+        cacheControl: "3600",
+      });
+      if (uploaded.error) throw uploaded.error;
+      imageUrl = supabase.storage.from("offer-photos").getPublicUrl(path).data.publicUrl;
+    } else {
+      imageUrl = input.image;
+    }
+  }
+  const { data, error } = await supabase.rpc("merchant_create_offer", {
+    p_payload: {
+      shop_id: input.shopId,
+      title: input.title,
+      image_url: imageUrl,
+      price: input.price,
+      original_price: input.originalPrice ?? null,
+      stock: input.stock,
+      offer_type: input.type,
+      unit: input.unit,
+      availability_mode: input.availabilityMode,
+      duration_minutes: input.durationMinutes ?? null,
+    },
+  });
+  if (error) throw error;
+  return typeof data === "string" ? data : null;
+}
+
+export async function merchantHideOffer(offerId: string): Promise<boolean> {
+  if (!supabase) return false;
+  const { data, error } = await supabase.rpc("merchant_hide_offer", { p_offer_id: offerId });
+  if (error) throw error;
+  return data === true;
+}
+
+/** Réserve et décrémente le stock dans une seule transaction SQL. */
+export async function reserveOfferAtomic(input: {
   offerId: string;
   shopId: string;
   quantity: number;
   clientName: string;
   clientPhone?: string;
-}): Promise<{ id: string; pickup_code: string } | null> {
+  requestId: string;
+}): Promise<{ id: string; pickupCode: string; remainingStock: number } | null> {
   if (!supabase) return null;
-  const pickupCode = `EC-${Math.floor(1000 + Math.random() * 9000)}`;
   const { data, error } = await supabase
-    .from("ec_reservations")
-    .insert({
-      offer_id: input.offerId,
-      shop_id: input.shopId,
-      quantity: input.quantity,
-      status: "pending",
-      pickup_code: pickupCode,
-      client_name: input.clientName,
-      client_phone: input.clientPhone || null,
-    })
-    .select("id, pickup_code")
-    .single();
+    .rpc("reserve_offer_atomic", {
+      p_offer_id: input.offerId,
+      p_quantity: input.quantity,
+      p_client_name: input.clientName,
+      p_client_phone: input.clientPhone || null,
+      p_request_id: input.requestId,
+    });
   if (error) {
-    console.error("Erreur createReservation:", error);
+    console.error("Erreur reserveOfferAtomic:", error);
     return null;
   }
-  return { id: data.id, pickup_code: data.pickup_code };
+  const result = Array.isArray(data) ? data[0] : data;
+  if (!result?.success) return null;
+  return {
+    id: result.reservation_id as string,
+    pickupCode: result.pickup_code as string,
+    remainingStock: result.remaining_stock as number,
+  };
 }
 
-/** Décrémente le stock d'une offre dans Supabase */
-export async function decrementStock(offerId: string, qty: number): Promise<boolean> {
+export async function transitionReservationAtomic(
+  reservationId: string,
+  status: ReservationStatus,
+  pickupCode?: string,
+): Promise<boolean> {
   if (!supabase) return false;
-  const { error } = await supabase.rpc("decrement_offer_stock", {
-    offer_id: offerId,
-    qty,
+  const { data, error } = await supabase.rpc("transition_reservation_atomic", {
+    p_reservation_id: reservationId,
+    p_new_status: status,
+    p_pickup_code: pickupCode || null,
   });
   if (error) {
-    console.error("Erreur decrementStock:", error);
+    console.error("Erreur transitionReservationAtomic:", error);
     return false;
   }
-  return true;
+  return data === true;
 }
 
 /** Ajoute/retire un favori dans Supabase */

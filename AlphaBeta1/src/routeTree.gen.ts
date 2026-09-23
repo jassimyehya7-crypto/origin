@@ -26,7 +26,9 @@ import { Route as MerchantsMerchantIdRouteImport } from './routes/merchants.$mer
 import { Route as OffersOfferIdRouteImport } from './routes/offers.$offerId'
 import { Route as ProIndexRouteImport } from './routes/pro/index'
 import { Route as ProNewRouteImport } from './routes/pro/new'
+import { Route as ProNotificationsRouteImport } from './routes/pro/notifications'
 import { Route as ProOffersRouteImport } from './routes/pro/offers'
+import { Route as ProOrdersRouteImport } from './routes/pro/orders'
 import { Route as ReservationsReservationIdRouteImport } from './routes/reservations.$reservationId'
 import { Route as ReserveOfferIdRouteImport } from './routes/reserve.$offerId'
 
@@ -115,9 +117,19 @@ const ProNewRoute = ProNewRouteImport.update({
   path: '/new',
   getParentRoute: () => ProRoute,
 } as any)
+const ProNotificationsRoute = ProNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => ProRoute,
+} as any)
 const ProOffersRoute = ProOffersRouteImport.update({
   id: '/offers',
   path: '/offers',
+  getParentRoute: () => ProRoute,
+} as any)
+const ProOrdersRoute = ProOrdersRouteImport.update({
+  id: '/orders',
+  path: '/orders',
   getParentRoute: () => ProRoute,
 } as any)
 const ReservationsReservationIdRoute =
@@ -148,7 +160,9 @@ export interface FileRoutesByFullPath {
   '/merchants/$merchantId': typeof MerchantsMerchantIdRoute
   '/offers/$offerId': typeof OffersOfferIdRoute
   '/pro/new': typeof ProNewRoute
+  '/pro/notifications': typeof ProNotificationsRoute
   '/pro/offers': typeof ProOffersRoute
+  '/pro/orders': typeof ProOrdersRoute
   '/reservations/$reservationId': typeof ReservationsReservationIdRoute
   '/reserve/$offerId': typeof ReserveOfferIdRoute
   '/pro/': typeof ProIndexRoute
@@ -167,7 +181,9 @@ export interface FileRoutesByTo {
   '/merchants/$merchantId': typeof MerchantsMerchantIdRoute
   '/offers/$offerId': typeof OffersOfferIdRoute
   '/pro/new': typeof ProNewRoute
+  '/pro/notifications': typeof ProNotificationsRoute
   '/pro/offers': typeof ProOffersRoute
+  '/pro/orders': typeof ProOrdersRoute
   '/reservations/$reservationId': typeof ReservationsReservationIdRoute
   '/reserve/$offerId': typeof ReserveOfferIdRoute
   '/': typeof AppIndexRoute
@@ -190,7 +206,9 @@ export interface FileRoutesById {
   '/merchants/$merchantId': typeof MerchantsMerchantIdRoute
   '/offers/$offerId': typeof OffersOfferIdRoute
   '/pro/new': typeof ProNewRoute
+  '/pro/notifications': typeof ProNotificationsRoute
   '/pro/offers': typeof ProOffersRoute
+  '/pro/orders': typeof ProOrdersRoute
   '/reservations/$reservationId': typeof ReservationsReservationIdRoute
   '/reserve/$offerId': typeof ReserveOfferIdRoute
   '/_app/': typeof AppIndexRoute
@@ -214,7 +232,9 @@ export interface FileRouteTypes {
     | '/merchants/$merchantId'
     | '/offers/$offerId'
     | '/pro/new'
+    | '/pro/notifications'
     | '/pro/offers'
+    | '/pro/orders'
     | '/reservations/$reservationId'
     | '/reserve/$offerId'
     | '/pro/'
@@ -233,7 +253,9 @@ export interface FileRouteTypes {
     | '/merchants/$merchantId'
     | '/offers/$offerId'
     | '/pro/new'
+    | '/pro/notifications'
     | '/pro/offers'
+    | '/pro/orders'
     | '/reservations/$reservationId'
     | '/reserve/$offerId'
     | '/'
@@ -255,7 +277,9 @@ export interface FileRouteTypes {
     | '/merchants/$merchantId'
     | '/offers/$offerId'
     | '/pro/new'
+    | '/pro/notifications'
     | '/pro/offers'
+    | '/pro/orders'
     | '/reservations/$reservationId'
     | '/reserve/$offerId'
     | '/_app/'
@@ -395,11 +419,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProNewRouteImport
       parentRoute: typeof ProRoute
     }
+    '/pro/notifications': {
+      id: '/pro/notifications'
+      path: '/notifications'
+      fullPath: '/pro/notifications'
+      preLoaderRoute: typeof ProNotificationsRouteImport
+      parentRoute: typeof ProRoute
+    }
     '/pro/offers': {
       id: '/pro/offers'
       path: '/offers'
       fullPath: '/pro/offers'
       preLoaderRoute: typeof ProOffersRouteImport
+      parentRoute: typeof ProRoute
+    }
+    '/pro/orders': {
+      id: '/pro/orders'
+      path: '/orders'
+      fullPath: '/pro/orders'
+      preLoaderRoute: typeof ProOrdersRouteImport
       parentRoute: typeof ProRoute
     }
     '/reservations/$reservationId': {
@@ -445,13 +483,17 @@ const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 interface ProRouteChildren {
   ProNewRoute: typeof ProNewRoute
+  ProNotificationsRoute: typeof ProNotificationsRoute
   ProOffersRoute: typeof ProOffersRoute
+  ProOrdersRoute: typeof ProOrdersRoute
   ProIndexRoute: typeof ProIndexRoute
 }
 
 const ProRouteChildren: ProRouteChildren = {
   ProNewRoute: ProNewRoute,
+  ProNotificationsRoute: ProNotificationsRoute,
   ProOffersRoute: ProOffersRoute,
+  ProOrdersRoute: ProOrdersRoute,
   ProIndexRoute: ProIndexRoute,
 }
 

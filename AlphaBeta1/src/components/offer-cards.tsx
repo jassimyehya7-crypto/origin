@@ -117,15 +117,11 @@ export function FeedCard({ offer }: { offer: Offer }) {
   );
 }
 
-export function NewCard({ offer }: { offer: Offer }) {
+export function NewCard({ offer, paused = false }: { offer: Offer; paused?: boolean }) {
   const { merchant, distance, pct } = useOfferMeta(offer);
   if (!merchant) return null;
-  return (
-    <Link
-      to="/offers/$offerId"
-      params={{ offerId: offer.id }}
-      className="flex w-[15.5rem] shrink-0 gap-3 rounded-[var(--radius-lg)] bg-card p-2 shadow-[var(--shadow-card)] press"
-    >
+  const content = (
+    <>
       <Photo
         src={offer.image}
         alt={offer.title}
@@ -137,7 +133,24 @@ export function NewCard({ offer }: { offer: Offer }) {
         <p className="truncate text-xs text-mute">{merchant.name}</p>
         <p className="mt-1 text-sm font-bold tabular text-deal">{chf(offer.price)}</p>
         <p className="text-[11px] text-faint">{distLabel(distance)}</p>
+        {paused ? (
+          <p className="mt-1 text-[11px] font-semibold text-mute">
+            Fermé · Reprend à {merchant.openFrom}
+          </p>
+        ) : null}
       </div>
+    </>
+  );
+  const className = "flex w-[15.5rem] shrink-0 gap-3 rounded-[var(--radius-lg)] bg-card p-2 shadow-[var(--shadow-card)]";
+  return paused ? (
+    <article className={cn(className, "opacity-65")}>{content}</article>
+  ) : (
+    <Link
+      to="/offers/$offerId"
+      params={{ offerId: offer.id }}
+      className={cn(className, "press")}
+    >
+      {content}
     </Link>
   );
 }

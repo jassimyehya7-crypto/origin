@@ -7,6 +7,7 @@ import { Photo } from "@/components/photo";
 import { Button } from "@/components/ui/button";
 import { getMerchant } from "@/lib/data/catalog";
 import { chf } from "@/lib/format";
+import { isOfferReservable } from "@/lib/selectors";
 import { useAppStore, useLiveOffer, useStock } from "@/lib/store";
 
 export const Route = createFileRoute("/reserve/$offerId")({
@@ -20,22 +21,32 @@ function Reserve() {
   const merchant = offer ? getMerchant(offer.merchantId) : undefined;
   const stock = useStock(offerId, offer?.stock ?? 0);
   const reserve = useAppStore((s) => s.reserve);
+  const syncStatus = useAppStore((s) => s.syncStatus);
+  const catalogRevision = useAppStore((s) => s.catalogRevision);
+  const hydrated = useAppStore((s) => s.hydrated);
   const [qty, setQty] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submitLock = useRef(false);
+  // Conservé après une erreur réseau : une nouvelle tentative renvoie le même
+  // identifiant et Supabase retourne la réservation existante sans redébiter le stock.
+  const requestRef = useRef<{ id: string; qty: number } | null>(null);
 
   if (!offer || !merchant) {
     return (
       <PageShell>
         <div className="p-6">
           <BackCircle />
-          <p className="mt-8 text-sm text-mute">Offre introuvable.</p>
+          <p className="mt-8 text-sm text-mute">
+            {catalogRevision === 0 && syncStatus !== "live" ? "Chargement de l’offre…" : "Offre introuvable."}
+          </p>
         </div>
       </PageShell>
     );
   }
 
   const safeQty = Math.min(qty, Math.max(1, stock));
+  const bookable = hydrated && syncStatus === "live" && isOfferReservable(offer, stock);
+  const canSubmit = bookable || (requestRef.current !== null && syncStatus === "live");
 
   return (
     <PageShell>
@@ -92,16 +103,17 @@ function Reserve() {
         <Button
           size="lg"
           className="mt-8"
-          disabled={stock < 1 || isSubmitting}
-          onClick={() => {
+          disabled={!canSubmit || isSubmitting}
+          onClick={async () => {
             // Protection anti-double-clic
-            if (submitLock.current) return;
+            if (submitLock.current || !canSubmit) return;
             submitLock.current = true;
             setIsSubmitting(true);
 
-            const res = reserve(offer.id, safeQty);
+            requestRef.current ??= { id: crypto.randomUUID(), qty: safeQty };
+            const res = await reserve(offer.id, requestRef.current.qty, requestRef.current.id);
             if (!res) {
-              toast("Stock insuffisant");
+              toast(syncStatus === "live" ? "Stock insuffisant" : "Connexion en cours, réessayez dans un instant");
               submitLock.current = false;
               setIsSubmitting(false);
               return;
@@ -118,11 +130,13 @@ function Reserve() {
               Envoi en cours…
             </span>
           ) : (
-            "Envoyer la demande"
+            !canSubmit && syncStatus === "live" ? "Réservation indisponible" : "Envoyer la demande"
           )}
         </Button>
         <p className="mt-3 text-center text-xs text-mute">
-          Aucun paiement en ligne · Code de retrait EC · Annulation simple
+          {syncStatus === "live"
+            ? bookable ? "Stock vérifié en direct · Code de retrait EC · Annulation simple" : "Commerce fermé ou offre expirée · Revenez à l’ouverture"
+            : "Synchronisation du stock en cours…"}
         </p>
       </div>
     </PageShell>

@@ -79,7 +79,7 @@
   }
 
   .leaflet-container img,
-  .ol-pin img {
+  .ol-shop-pin img {
     outline: none;
   }
 
@@ -133,50 +133,53 @@
   background: rgb(255 255 255 / 0.72) !important;
 }
 
-.ol-pin-wrap,
+.ol-shop-pin-wrap,
 .ol-city-wrap {
   background: none !important;
   border: none !important;
 }
 
-.ol-pin {
+.ol-shop-pin {
   position: relative;
-  display: grid;
-  width: 48px;
-  height: 48px;
-  place-items: center;
-  overflow: hidden;
+  display: block;
+  width: 34px;
+  height: 34px;
   border-radius: 999px;
   background: var(--color-card);
   box-shadow: var(--shadow-float);
   border: 2px solid var(--color-card);
 }
 
-.ol-pin.is-active {
-  border-color: var(--color-lime);
-  transform: scale(1.08);
+.ol-shop-pin::after {
+  position: absolute;
+  bottom: -5px;
+  left: 11px;
+  width: 8px;
+  height: 8px;
+  transform: rotate(45deg);
+  background: var(--color-card);
+  content: "";
 }
 
-.ol-pin img {
+.ol-shop-pin.is-active {
+  border-color: var(--color-lime);
+  transform: scale(1.15);
+}
+
+.ol-shop-pin.is-active::after {
+  background: var(--color-lime);
+}
+
+.ol-shop-pin.is-closed {
+  filter: grayscale(1);
+  opacity: 0.75;
+}
+
+.ol-shop-pin img {
   width: 100%;
   height: 100%;
+  border-radius: inherit;
   object-fit: cover;
-}
-
-.ol-pin-pct {
-  position: absolute;
-  bottom: -4px;
-  left: 50%;
-  transform: translateX(-50%);
-  height: 18px;
-  padding: 0 6px;
-  border-radius: 999px;
-  background: var(--color-deal);
-  color: white;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 18px;
-  white-space: nowrap;
 }
 
 .ol-city {
@@ -263,4 +266,14 @@
     opacity: 1;
     transform: translateY(0);
   }
+}
+/* La traduction est pilotée par le sélecteur intégré à l’espace commerçant. */
+.goog-te-banner-frame,
+.goog-te-balloon-frame,
+body > .skiptranslate {
+  display: none !important;
+}
+
+body {
+  top: 0 !important;
 }

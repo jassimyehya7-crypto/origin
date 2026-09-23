@@ -110,6 +110,8 @@ function r(
   return { id, author, rating, text, date };
 }
 
+// Adresses numérotées géocodées via le registre fédéral geo.admin.ch (WGS84).
+// Le Poulet d’Enfer n'a pas de numéro de rue connu : sa position reste indicative.
 export const MERCHANTS: Merchant[] = [
   {
     id: "shop_dasilva",
@@ -125,9 +127,9 @@ export const MERCHANTS: Merchant[] = [
     openFrom: "08:00",
     rating: 4.7,
     reviewCount: 86,
-    distanceM: 28,
-    lat: 46.3972,
-    lng: 6.9265,
+    distanceM: 257,
+    lat: 46.396969,
+    lng: 6.929547,
     x: 47,
     y: 36,
     cover: "/offers/a1/epicerie-da-silva.webp",
@@ -157,9 +159,9 @@ export const MERCHANTS: Merchant[] = [
     openFrom: "06:30",
     rating: 4.4,
     reviewCount: 516,
-    distanceM: 60,
-    lat: 46.3967,
-    lng: 6.9256,
+    distanceM: 218,
+    lat: 46.395813,
+    lng: 6.923746,
     x: 35,
     y: 46,
     cover: "/offers/a1/boulangerie-durgnat.webp",
@@ -189,9 +191,9 @@ export const MERCHANTS: Merchant[] = [
     openFrom: "07:30",
     rating: 4.9,
     reviewCount: 67,
-    distanceM: 118,
-    lat: 46.3975,
-    lng: 6.9248,
+    distanceM: 88,
+    lat: 46.397297,
+    lng: 6.925299,
     x: 24,
     y: 30,
     cover: "/offers/a1/macheret-fromage.webp",
@@ -221,9 +223,9 @@ export const MERCHANTS: Merchant[] = [
     openFrom: "07:30",
     rating: 4.6,
     reviewCount: 54,
-    distanceM: 95,
-    lat: 46.3979,
-    lng: 6.9262,
+    distanceM: 138,
+    lat: 46.398041,
+    lng: 6.926322,
     x: 43,
     y: 23,
     cover: "/offers/a1/boucherie-fontaine.webp",
@@ -253,9 +255,9 @@ export const MERCHANTS: Merchant[] = [
     openFrom: "07:30",
     rating: 4.5,
     reviewCount: 71,
-    distanceM: 126,
-    lat: 46.3973,
-    lng: 6.9246,
+    distanceM: 76,
+    lat: 46.397125,
+    lng: 6.925327,
     x: 22,
     y: 34,
     cover: "/offers/a1/boucherie-2-freres.webp",
@@ -316,9 +318,9 @@ export const MERCHANTS: Merchant[] = [
     openFrom: "06:00",
     rating: 4.3,
     reviewCount: 39,
-    distanceM: 159,
-    lat: 46.3958,
-    lng: 6.9272,
+    distanceM: 157,
+    lat: 46.398190,
+    lng: 6.926538,
     x: 57,
     y: 64,
     cover: "/offers/a1/kiosque-gare.webp",
@@ -347,9 +349,9 @@ export const MERCHANTS: Merchant[] = [
     openFrom: "08:00",
     rating: 4.4,
     reviewCount: 28,
-    distanceM: 78,
-    lat: 46.3969,
-    lng: 6.9252,
+    distanceM: 112,
+    lat: 46.396568,
+    lng: 6.924782,
     x: 30,
     y: 42,
     cover: "/offers/a1/kiosque-leman.webp",
@@ -378,9 +380,9 @@ export const MERCHANTS: Merchant[] = [
     openFrom: "06:30",
     rating: 4.8,
     reviewCount: 45,
-    distanceM: 140,
-    lat: 46.3975,
-    lng: 6.9245,
+    distanceM: 78,
+    lat: 46.397320,
+    lng: 6.925514,
     x: 20,
     y: 30,
     cover: "/offers/a1/the-house-fortune.webp",
@@ -409,9 +411,9 @@ export const MERCHANTS: Merchant[] = [
     openFrom: "06:30",
     rating: 4.7,
     reviewCount: 33,
-    distanceM: 65,
-    lat: 46.3965,
-    lng: 6.9259,
+    distanceM: 179,
+    lat: 46.395958,
+    lng: 6.924207,
     x: 39,
     y: 50,
     cover: "/offers/a1/by-hani.webp",
@@ -441,9 +443,9 @@ export const MERCHANTS: Merchant[] = [
     openFrom: "08:00",
     rating: 4.7,
     reviewCount: 156,
-    distanceM: 130,
-    lat: 46.3976,
-    lng: 6.9247,
+    distanceM: 91,
+    lat: 46.397411,
+    lng: 6.925406,
     x: 23,
     y: 29,
     cover: "/offers/a1/elegance-barber.webp",
@@ -473,9 +475,9 @@ export const MERCHANTS: Merchant[] = [
     openFrom: "06:30",
     rating: 4.5,
     reviewCount: 22,
-    distanceM: 193,
-    lat: 46.398,
-    lng: 6.9241,
+    distanceM: 115,
+    lat: 46.397823,
+    lng: 6.925981,
     x: 15,
     y: 21,
     cover: "/offers/a1/sos-lessive.webp",
@@ -656,6 +658,9 @@ export const OFFERS: Offer[] = [
 // Variables mutables qui stockent les données Supabase (mises à jour au runtime)
 let _supabaseMerchants: Merchant[] | null = null;
 let _supabaseOffers: Offer[] | null = null;
+const remoteCatalog = Boolean(import.meta.env.VITE_SUPABASE_URL && import.meta.env.VITE_SUPABASE_ANON_KEY);
+const fallbackMerchants = remoteCatalog ? [] : MERCHANTS;
+const fallbackOffers = remoteCatalog ? [] : OFFERS;
 
 /** Met à jour les merchants depuis Supabase (appelé par SupabaseLoader) */
 export function setSupabaseMerchants(merchants: Merchant[]) {
@@ -669,26 +674,24 @@ export function setSupabaseOffers(offers: Offer[]) {
 
 /** Retourne la liste active des merchants (Supabase si chargé, sinon statique) */
 export function getActiveMerchants(): Merchant[] {
-  return _supabaseMerchants ?? MERCHANTS;
+  return _supabaseMerchants ?? fallbackMerchants;
 }
 
 /** Retourne la liste active des offres (Supabase si chargé, sinon statique) */
 export function getActiveOffers(): Offer[] {
-  return _supabaseOffers ?? OFFERS;
+  return _supabaseOffers ?? fallbackOffers;
 }
 
 export function getMerchant(id: string) {
-  const source = _supabaseMerchants ?? MERCHANTS;
-  return source.find((m) => m.id === id) ?? MERCHANTS.find((m) => m.id === id);
+  return getActiveMerchants().find((m) => m.id === id);
 }
 
 export function getOffer(id: string) {
-  const source = _supabaseOffers ?? OFFERS;
-  return source.find((o) => o.id === id) ?? OFFERS.find((o) => o.id === id);
+  return getActiveOffers().find((o) => o.id === id);
 }
 
 export function offersForMerchant(merchantId: string) {
-  const source = _supabaseOffers ?? OFFERS;
+  const source = getActiveOffers();
   return source.filter((o) => o.merchantId === merchantId);
 }
 
@@ -701,8 +704,12 @@ export function exploreMatches(merchantCategory: CategoryId, filter: string) {
 }
 
 export function mergeOffers(extra: Offer[], hidden: string[]): Offer[] {
-  const source = _supabaseOffers ?? OFFERS;
-  return [...source.filter((o) => !hidden.includes(o.id)), ...extra];
+  const source = getActiveOffers();
+  const remoteIds = new Set(source.map((offer) => offer.id));
+  return [
+    ...source.filter((offer) => !hidden.includes(offer.id)),
+    ...extra.filter((offer) => !hidden.includes(offer.id) && !remoteIds.has(offer.id)),
+  ];
 }
 
 export function findOffer(id: string, extra: Offer[], hidden: string[]) {

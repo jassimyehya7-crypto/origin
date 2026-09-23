@@ -1,62 +1,57 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Plus } from "lucide-react";
+import { Bell, Home, ListChecks, Plus, Tag } from "lucide-react";
 import { Logo } from "@/components/logo";
-import { PRO_SHOP_NAME } from "@/lib/labels";
+import { ProLanguageSelector } from "@/components/pro-language-selector";
+import { ProAccessGate } from "@/components/pro-access-gate";
+import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/pro")({
-  component: ProLayout,
-});
+export const Route = createFileRoute("/pro")({ component: () => <ProAccessGate><ProLayout /></ProAccessGate> });
 
 function ProLayout() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const reservations = useAppStore((s) => s.reservations);
+  const pending = reservations.filter((r) => r.merchantId === "shop_dasilva" && r.status === "pending").length;
   const tabs = [
-    { to: "/pro", label: "Aujourd’hui", exact: true },
-    { to: "/pro/offers", label: "Offres", exact: false },
-    { to: "/pro/new", label: "Créer", exact: false },
+    { to: "/pro", label: "Aujourd’hui", icon: Home, exact: true },
+    { to: "/pro/orders", label: "Commandes", icon: ListChecks, exact: false },
+    { to: "/pro/offers", label: "Offres", icon: Tag, exact: false },
   ];
 
   return (
     <div className="min-h-dvh bg-paper">
-      <div className="mx-auto min-h-dvh w-full max-w-lg bg-paper pb-10">
+      <div className="mx-auto min-h-dvh w-full max-w-lg bg-paper pb-24">
         <header className="sticky top-0 z-20 border-b border-line bg-paper/95 px-5 pb-3 pt-4 backdrop-blur-md safe-top">
-          <div className="flex items-center justify-between gap-3">
-            <Logo to="/profile" size="sm" />
-            <Link
-              to="/profile"
-              className="text-xs font-semibold text-mute hover:text-ink"
-            >
-              Quitter
-            </Link>
-          </div>
-          <p className="mt-3 font-display text-xl font-bold tracking-tight">Espace commerçant</p>
-          <p className="text-xs font-medium text-mute">{PRO_SHOP_NAME} · Villeneuve · démo</p>
-          <div className="mt-3 flex items-center gap-2">
-            {tabs.map((t) => {
-              const active = t.exact ? pathname === t.to : pathname.startsWith(t.to);
-              return (
-                <Link
-                  key={t.to}
-                  to={t.to}
-                  className={cn(
-                    "h-9 rounded-full px-3.5 text-sm font-semibold press",
-                    active ? "bg-lime text-ink" : "bg-card shadow-[var(--shadow-card)] text-mute",
-                  )}
-                >
-                  {t.label}
-                </Link>
-              );
-            })}
-            <Link
-              to="/pro/new"
-              className="ml-auto grid size-9 place-items-center rounded-full bg-lime text-ink press"
-              aria-label="Nouvelle offre"
-            >
-              <Plus className="size-4" strokeWidth={2.6} />
+          <div className="flex items-center gap-3">
+            <Logo to="/pro" size="sm" />
+            <div className="flex-1" />
+            <ProLanguageSelector />
+            <Link to="/pro/notifications" className="relative grid size-10 place-items-center rounded-full hover:bg-soft" aria-label="Notifications">
+              <Bell className="size-5" />
+              {pending > 0 ? <span className="absolute right-0.5 top-0.5 grid size-4 place-items-center rounded-full bg-deal text-[9px] font-bold text-white">{pending}</span> : null}
             </Link>
           </div>
         </header>
+
         <Outlet />
+
+        <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-lg border-t border-line bg-card/95 px-3 pt-2 backdrop-blur-md" style={{ paddingBottom: "calc(0.45rem + env(safe-area-inset-bottom))" }} aria-label="Navigation commerçant">
+          {tabs.map(({ to, label, icon: Icon, exact }) => {
+            const active = exact ? pathname === to : pathname.startsWith(to);
+            return (
+              <Link key={to} to={to} className={cn("relative flex min-h-12 flex-1 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold", active ? "text-ink" : "text-mute")}>
+                {active ? <span className="absolute top-0 h-1 w-12 rounded-b-full bg-lime" /> : null}
+                <Icon className="size-5" strokeWidth={active ? 2.5 : 1.8} />
+                <span>{label}</span>
+                {label === "Commandes" && pending > 0 ? <span className="absolute right-1/4 top-1 grid size-4 place-items-center rounded-full bg-deal text-[9px] font-bold text-white">{pending}</span> : null}
+              </Link>
+            );
+          })}
+          <Link to="/pro/new" className="flex min-h-12 flex-1 flex-col items-center justify-center gap-1 rounded-xl text-[10px] font-semibold text-ink" aria-label="Créer une offre">
+            <span className="grid size-8 place-items-center rounded-full bg-lime"><Plus className="size-4" strokeWidth={2.6} /></span>
+            <span>Créer</span>
+          </Link>
+        </nav>
       </div>
     </div>
   );

@@ -71,7 +71,7 @@ function Reservations() {
               <Photo src={r.image} alt={r.title} className="size-20 rounded-[var(--radius-sm)]" />
               <div className="min-w-0 flex-1">
                 <p className="text-[11px] font-semibold uppercase tracking-wide text-mute">
-                  {RESERVATION_STATUS_LABELS[r.status]} · {r.code}
+                  {RESERVATION_STATUS_LABELS[r.status]}{r.status === "pending" ? "" : ` · ${r.code}`}
                 </p>
                 <h2 className="font-display text-[15px] font-semibold">{r.title}</h2>
                 <p className="text-xs text-mute">{r.merchantName}</p>

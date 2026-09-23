@@ -1,8 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { LayerGroup, Map as LeafletMap, TileLayer } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { LocateFixed, Lock, Minus, Plus } from "lucide-react";
-import { getMerchant } from "@/lib/data/catalog";
 import {
   inVilleneuve,
   MAP_CITIES,
@@ -10,8 +9,8 @@ import {
   VILLENEUVE_CENTER,
   type MapCity,
 } from "@/lib/data/cities";
-import { discountPct } from "@/lib/format";
-import type { Offer } from "@/lib/types";
+import { isMerchantOpen } from "@/lib/selectors";
+import type { Merchant } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const HYBRID =
@@ -20,31 +19,62 @@ const ROAD =
   "https://mt{s}.google.com/vt/lyrs=m&hl=fr&gl=CH&scale=2&x={x}&y={y}&z={z}";
 
 type Props = {
-  offers: Offer[];
+  merchants: Merchant[];
+  now: Date;
   selectedId: string | null;
   onSelect: (id: string) => void;
   onZoneChange: (unlocked: boolean, city: MapCity, zoom: number) => void;
   focusTick: number;
 };
 
-export function GoogleTownMap({ offers, selectedId, onSelect, onZoneChange, focusTick }: Props) {
+export function GoogleTownMap({ merchants, now, selectedId, onSelect, onZoneChange, focusTick }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
   const hybridRef = useRef<TileLayer | null>(null);
   const roadRef = useRef<TileLayer | null>(null);
-  const offersLayer = useRef<LayerGroup | null>(null);
+  const merchantsLayer = useRef<LayerGroup | null>(null);
   const citiesLayer = useRef<LayerGroup | null>(null);
   const selectedRef = useRef(selectedId);
-  const offersRef = useRef(offers);
+  const merchantsRef = useRef(merchants);
+  const nowRef = useRef(now);
   const onSelectRef = useRef(onSelect);
   const onZoneRef = useRef(onZoneChange);
   const [mode, setMode] = useState<"hybrid" | "road">("hybrid");
 
   selectedRef.current = selectedId;
-  offersRef.current = offers;
+  merchantsRef.current = merchants;
+  nowRef.current = now;
   onSelectRef.current = onSelect;
   onZoneRef.current = onZoneChange;
+
+  const paintMerchants = useCallback(() => {
+    const map = mapRef.current;
+    const L = leafletRef.current;
+    const layer = merchantsLayer.current;
+    if (!map || !L || !layer) return;
+    layer.clearLayers();
+    if (map.getZoom() < 14) return;
+
+    for (const merchant of merchantsRef.current) {
+      const active = selectedRef.current === merchant.id;
+      const open = isMerchantOpen(merchant, nowRef.current);
+      const marker = L.marker([merchant.lat, merchant.lng], {
+        title: merchant.name,
+        icon: L.divIcon({
+          className: "ol-shop-pin-wrap",
+          html: `<span class="ol-shop-pin${active ? " is-active" : ""}${open ? "" : " is-closed"}">
+            <img src="${merchant.banner}" alt="" />
+          </span>`,
+          iconSize: [34, 42],
+          iconAnchor: [17, 42],
+        }),
+        zIndexOffset: active ? 800 : 500,
+      });
+      marker.on("click", () => onSelectRef.current(merchant.id));
+      marker.addTo(layer);
+    }
+  }, []);
 
   useEffect(() => {
     const el = hostRef.current;
@@ -84,7 +114,7 @@ export function GoogleTownMap({ offers, selectedId, onSelect, onZoneChange, focu
 
       hybridRef.current = hybrid;
       roadRef.current = road;
-      offersLayer.current = L.layerGroup().addTo(map);
+      merchantsLayer.current = L.layerGroup().addTo(map);
       citiesLayer.current = L.layerGroup().addTo(map);
       mapRef.current = map;
 
@@ -117,36 +147,6 @@ export function GoogleTownMap({ offers, selectedId, onSelect, onZoneChange, focu
         }
       };
 
-      const paintOffers = () => {
-        const layer = offersLayer.current;
-        if (!layer || !map) return;
-        layer.clearLayers();
-        const z = map.getZoom();
-        const center = map.getCenter();
-        if (z < 14 || !inVilleneuve(center.lat, center.lng)) return;
-        for (const offer of offersRef.current) {
-          const merchant = getMerchant(offer.merchantId);
-          if (!merchant) continue;
-          const pct = discountPct(offer.originalPrice, offer.price);
-          const active = selectedRef.current === offer.id;
-          const html = `<button type="button" class="ol-pin${active ? " is-active" : ""}">
-            <img src="${offer.image}" alt="" />
-            ${pct ? `<span class="ol-pin-pct">−${pct} %</span>` : ""}
-          </button>`;
-          const marker = L.marker([merchant.lat, merchant.lng], {
-            icon: L.divIcon({
-              className: "ol-pin-wrap",
-              html,
-              iconSize: [48, 56],
-              iconAnchor: [24, 28],
-            }),
-            zIndexOffset: active ? 800 : 500,
-          });
-          marker.on("click", () => onSelectRef.current(offer.id));
-          marker.addTo(layer);
-        }
-      };
-
       const syncZone = () => {
         if (!map) return;
         const c = map.getCenter();
@@ -157,7 +157,7 @@ export function GoogleTownMap({ offers, selectedId, onSelect, onZoneChange, focu
           map.getZoom(),
         );
         paintCities();
-        paintOffers();
+        paintMerchants();
       };
 
       map.on("moveend", syncZone);
@@ -175,37 +175,11 @@ export function GoogleTownMap({ offers, selectedId, onSelect, onZoneChange, focu
       map?.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [paintMerchants]);
 
   useEffect(() => {
-    const map = mapRef.current;
-    const L = leafletRef.current;
-    if (!map || !L || !offersLayer.current) return;
-    offersLayer.current.clearLayers();
-    const z = map.getZoom();
-    const center = map.getCenter();
-    if (z < 14 || !inVilleneuve(center.lat, center.lng)) return;
-    for (const offer of offers) {
-      const merchant = getMerchant(offer.merchantId);
-      if (!merchant) continue;
-      const pct = discountPct(offer.originalPrice, offer.price);
-      const active = selectedId === offer.id;
-      const marker = L.marker([merchant.lat, merchant.lng], {
-        icon: L.divIcon({
-          className: "ol-pin-wrap",
-          html: `<button type="button" class="ol-pin${active ? " is-active" : ""}">
-              <img src="${offer.image}" alt="" />
-              ${pct ? `<span class="ol-pin-pct">−${pct} %</span>` : ""}
-            </button>`,
-          iconSize: [48, 56],
-          iconAnchor: [24, 28],
-        }),
-        zIndexOffset: active ? 800 : 500,
-      });
-      marker.on("click", () => onSelect(offer.id));
-      marker.addTo(offersLayer.current);
-    }
-  }, [offers, selectedId, onSelect]);
+    paintMerchants();
+  }, [merchants, now, selectedId, paintMerchants]);
 
   useEffect(() => {
     if (!focusTick) return;

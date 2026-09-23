@@ -10,7 +10,7 @@ import { StockBadge } from "@/components/stock-badge";
 import { Button } from "@/components/ui/button";
 import { findOffer, getMerchant, liveOffersForMerchant } from "@/lib/data/catalog";
 import { chf, discountPct, distLabel, walkMinutes } from "@/lib/format";
-import { extraMeters } from "@/lib/selectors";
+import { extraMeters, isOfferReservable } from "@/lib/selectors";
 import { useAppStore, useStock } from "@/lib/store";
 
 export const Route = createFileRoute("/offers/$offerId")({
@@ -19,6 +19,9 @@ export const Route = createFileRoute("/offers/$offerId")({
 
 function OfferDetail() {
   const { offerId } = Route.useParams();
+  const catalogRevision = useAppStore((s) => s.catalogRevision);
+  const syncStatus = useAppStore((s) => s.syncStatus);
+  const hydrated = useAppStore((s) => s.hydrated);
   const extraOffers = useAppStore((s) => s.extraOffers);
   const hiddenOfferIds = useAppStore((s) => s.hiddenOfferIds);
   const offer = findOffer(offerId, extraOffers, hiddenOfferIds);
@@ -31,7 +34,9 @@ function OfferDetail() {
       <PageShell>
         <div className="p-6">
           <BackCircle />
-          <p className="mt-8 text-sm text-mute">Cette offre n’est plus disponible.</p>
+          <p className="mt-8 text-sm text-mute">
+            {catalogRevision === 0 && syncStatus !== "live" ? "Chargement de l’offre…" : "Cette offre n’est plus disponible."}
+          </p>
         </div>
       </PageShell>
     );
@@ -42,6 +47,7 @@ function OfferDetail() {
     (o) => o.id !== offer.id,
   );
   const pct = discountPct(offer.originalPrice, offer.price);
+  const bookable = hydrated && syncStatus === "live" && isOfferReservable(offer, stock);
 
   return (
     <PageShell>
@@ -130,9 +136,9 @@ function OfferDetail() {
         style={{ paddingBottom: "calc(0.85rem + env(safe-area-inset-bottom))" }}
       >
         <div className="mx-auto max-w-lg">
-          {stock < 1 ? (
+          {!bookable ? (
             <Button size="lg" disabled>
-              Épuisée
+              {stock < 1 ? "Épuisée" : syncStatus !== "live" ? "Vérification en cours…" : "Réservation indisponible"}
             </Button>
           ) : (
             <Button asChild size="lg">

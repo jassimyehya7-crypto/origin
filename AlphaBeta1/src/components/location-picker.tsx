@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { MapPin, RefreshCw, X } from "lucide-react";
 import { useAppStore } from "@/lib/store";
+import { inVilleneuve, VILLENEUVE_CENTER } from "@/lib/data/cities";
 
 /** Coordonnées approximatives des villes suisses */
 const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
@@ -29,17 +30,20 @@ const CITY_COORDS: Record<string, { lat: number; lng: number }> = {
 };
 
 export function LocationButton() {
-  const [cityName, setCityName] = useState<string>("Localisation…");
+  const [cityName, setCityName] = useState<string>("Villeneuve");
   const [loading, setLoading] = useState(false);
   const [editing, setEditing] = useState(false);
   const [inputValue, setInputValue] = useState("");
+  const requestId = useRef(0);
+  const hydrated = useAppStore((s) => s.hydrated);
   const setUserLocation = useAppStore((s) => s.setUserLocation);
+  const setManualCity = useAppStore((s) => s.setManualCity);
 
   const detectLocation = useCallback(async () => {
+    const currentRequest = ++requestId.current;
     setLoading(true);
-    setCityName("Localisation…");
 
-    // Méthode 1: Géolocalisation GPS
+    // La position IP n'est pas assez précise pour choisir une commune.
     if (navigator.geolocation) {
       try {
         const position = await new Promise<GeolocationPosition>((resolve, reject) => {
@@ -49,8 +53,18 @@ export function LocationButton() {
             maximumAge: 0, // Force une nouvelle détection
           });
         });
+        if (currentRequest !== requestId.current) return;
         const { latitude, longitude } = position.coords;
+        if (position.coords.accuracy > 5000) {
+          throw new Error("Position trop imprécise pour identifier une ville");
+        }
         setUserLocation(latitude, longitude);
+        setManualCity(null);
+        if (inVilleneuve(latitude, longitude)) {
+          setCityName("Villeneuve");
+          setLoading(false);
+          return;
+        }
         // Reverse geocoding
         try {
           const res = await fetch(
@@ -59,6 +73,7 @@ export function LocationButton() {
           );
           if (res.ok) {
             const data = await res.json();
+            if (currentRequest !== requestId.current) return;
             const city = data.address?.city || data.address?.town || data.address?.village || data.address?.municipality;
             if (city) {
               setCityName(city);
@@ -67,63 +82,46 @@ export function LocationButton() {
             }
           }
         } catch { /* fallback */ }
-        setCityName(`${latitude.toFixed(2)}°, ${longitude.toFixed(2)}°`);
+        setCityName("Position actuelle");
         setLoading(false);
         return;
       } catch (err) {
+        if (currentRequest !== requestId.current) return;
         console.log("[GPS] Échec:", err);
-        // GPS refusé ou timeout → fallback IP
+        // GPS refusé, indisponible ou imprécis : conserver le choix manuel.
       }
     }
 
-    // Méthode 2: Géolocalisation par IP
-    try {
-      const res = await fetch("https://ipapi.co/json/", { signal: AbortSignal.timeout(5000) });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.city) {
-          setCityName(data.city);
-          if (data.latitude && data.longitude) {
-            setUserLocation(data.latitude, data.longitude);
-          }
-          setLoading(false);
-          return;
-        }
-      }
-    } catch { /* fallback */ }
-
-    try {
-      const res = await fetch("https://ipwho.is/", { signal: AbortSignal.timeout(5000) });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.city) {
-          setCityName(data.city);
-          if (data.latitude && data.longitude) {
-            setUserLocation(data.latitude, data.longitude);
-          }
-          setLoading(false);
-          return;
-        }
-      }
-    } catch { /* fallback */ }
-
-    // Échec total → proposer saisie manuelle
-    setCityName("Clique pour saisir ta ville");
+    if (currentRequest !== requestId.current) return;
+    if (!useAppStore.getState().manualCity) {
+      setUserLocation(VILLENEUVE_CENTER.lat, VILLENEUVE_CENTER.lng);
+      setCityName("Villeneuve");
+    }
     setLoading(false);
-  }, [setUserLocation]);
+  }, [setManualCity, setUserLocation]);
 
-  // Détection automatique au montage
+  // Le catalogue est centré sur Villeneuve. Le GPS ne démarre que sur demande.
   useEffect(() => {
-    detectLocation();
-  }, [detectLocation]);
+    if (!hydrated) return;
+    const savedCity = useAppStore.getState().manualCity;
+    if (savedCity) {
+      setCityName(savedCity);
+    } else {
+      setUserLocation(VILLENEUVE_CENTER.lat, VILLENEUVE_CENTER.lng);
+      setCityName("Villeneuve");
+    }
+  }, [hydrated, setUserLocation]);
 
   // Saisie manuelle de la ville
   const handleManualCity = () => {
     const city = inputValue.trim().toLowerCase();
     if (!city) return;
+    const currentRequest = ++requestId.current;
+    setLoading(false);
     const coords = CITY_COORDS[city];
     if (coords) {
       setUserLocation(coords.lat, coords.lng);
+      setManualCity(inputValue.trim());
       setCityName(inputValue.trim());
       setEditing(false);
       setInputValue("");
@@ -132,9 +130,11 @@ export function LocationButton() {
       fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(inputValue)}&limit=1`)
         .then((res) => res.json())
         .then((data) => {
+          if (currentRequest !== requestId.current) return;
           if (data.length > 0) {
             const { lat, lon, display_name } = data[0];
             setUserLocation(parseFloat(lat), parseFloat(lon));
+            setManualCity(display_name.split(",")[0]);
             setCityName(display_name.split(",")[0]);
             setEditing(false);
             setInputValue("");
@@ -143,6 +143,7 @@ export function LocationButton() {
           }
         })
         .catch(() => {
+          if (currentRequest !== requestId.current) return;
           alert("Erreur de géocodage. Réessaie.");
         });
     }
@@ -150,14 +151,14 @@ export function LocationButton() {
 
   if (editing) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="absolute inset-x-4 top-3 z-30 flex items-center gap-1 rounded-xl bg-paper p-1 shadow-[var(--shadow-card)] sm:left-auto sm:w-96">
         <input
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleManualCity()}
           placeholder="Ta ville (ex: Lausanne)"
-          className="h-9 w-40 rounded-full bg-card px-3 text-sm shadow-[var(--shadow-card)] placeholder:text-faint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+          className="h-9 min-w-0 flex-1 rounded-full bg-card px-3 text-sm placeholder:text-faint focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
           autoFocus
         />
         <button
@@ -166,6 +167,17 @@ export function LocationButton() {
           className="rounded-full bg-lime px-3 py-1.5 text-xs font-semibold text-ink press"
         >
           OK
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setEditing(false);
+            detectLocation();
+          }}
+          className="rounded-full px-2 py-1.5 text-xs font-semibold text-ink hover:bg-soft press"
+          title="Réessayer la position GPS"
+        >
+          Ma position
         </button>
         <button
           type="button"
@@ -182,13 +194,8 @@ export function LocationButton() {
     <button
       type="button"
       onClick={() => {
-        // Si la détection auto a échoué → ouvrir la saisie manuelle
-        if (cityName.includes("Clique") || cityName === "Position inconnue") {
-          setEditing(true);
-        } else {
-          // Sinon → re-détecter
-          detectLocation();
-        }
+        setInputValue(cityName === "Position actuelle" ? "" : cityName);
+        setEditing(true);
       }}
       disabled={loading}
       className="inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-ink hover:bg-soft press disabled:opacity-50"
@@ -199,7 +206,7 @@ export function LocationButton() {
       ) : (
         <MapPin className="size-4 text-mute" />
       )}
-      <span>{cityName}</span>
+      <span>{loading ? "Localisation…" : cityName}</span>
     </button>
   );
 }

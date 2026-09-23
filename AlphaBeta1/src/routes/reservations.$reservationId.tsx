@@ -55,7 +55,14 @@ function ReservationDetail() {
           {RESERVATION_STATUS_LABELS[reservation.status]}
         </p>
 
-        <CopyableCode code={reservation.code} />
+        {reservation.status === "pending" ? (
+          <div className="mt-6 rounded-[var(--radius-md)] bg-soft px-4 py-4 text-left text-xs text-mute">
+            <p className="font-bold text-ink">Code de retrait en attente</p>
+            <p className="mt-1">Le commerçant doit confirmer la réservation. Le code sera envoyé dans le SMS fictif de confirmation.</p>
+          </div>
+        ) : reservation.status === "confirmed" || reservation.status === "picked" ? (
+          <CopyableCode code={reservation.code} />
+        ) : null}
 
         <Button asChild variant="outline" className="mt-6 w-full">
           <a href={maps} target="_blank" rel="noreferrer">
@@ -72,9 +79,9 @@ function ReservationDetail() {
           <Button
             variant="soft"
             className="mt-2 w-full"
-            onClick={() => {
-              cancel(reservation.id);
-              toast("Réservation annulée");
+            onClick={async () => {
+              const cancelled = await cancel(reservation.id);
+              toast(cancelled ? "Réservation annulée" : "Impossible d’annuler cette réservation");
             }}
           >
             Annuler la réservation

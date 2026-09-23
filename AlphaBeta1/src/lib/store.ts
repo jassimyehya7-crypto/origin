@@ -6,9 +6,10 @@ import {
   getMerchant,
   getOffer,
 } from "@/lib/data/catalog";
-import { createReservation as supabaseCreateReservation, decrementStock } from "@/lib/data/supabase-catalog";
-import { pickupCode } from "@/lib/format";
+import { cancelClientReservation, merchantCreateOffer, merchantHideOffer, reserveOfferAtomic, transitionReservationAtomic } from "@/lib/data/supabase-catalog";
+import { supabase } from "@/lib/supabase";
 import { PRO_SHOP_ID } from "@/lib/labels";
+import { isOfferReservable } from "@/lib/selectors";
 import type {
   CategoryId,
   InterestId,
@@ -43,11 +44,19 @@ function securePickupCode(): string {
 type AppState = {
   hydrated: boolean;
   setHydrated: (v: boolean) => void;
+  syncStatus: "offline" | "syncing" | "live";
+  setSyncStatus: (status: "offline" | "syncing" | "live") => void;
+  catalogRevision: number;
+  syncRemoteStocks: (offers: Offer[]) => void;
+  syncRemoteReservations: (reservations: Reservation[]) => void;
+  syncMerchantReservations: (reservations: Reservation[]) => void;
   locationId: LocationId;
   setLocationId: (id: LocationId) => void;
   userLat: number | null;
   userLng: number | null;
   setUserLocation: (lat: number, lng: number) => void;
+  manualCity: string | null;
+  setManualCity: (city: string | null) => void;
   radiusKm: number;
   setRadiusKm: (km: number) => void;
   category: CategoryId;
@@ -64,18 +73,22 @@ type AppState = {
   reservations: Reservation[];
   extraOffers: Offer[];
   hiddenOfferIds: string[];
-  reserve: (offerId: string, qty: number) => Reservation | null;
-  cancelReservation: (id: string) => void;
-  setReservationStatus: (id: string, status: ReservationStatus) => void;
+  reserve: (offerId: string, qty: number, requestId: string) => Promise<Reservation | null>;
+  cancelReservation: (id: string) => Promise<boolean>;
+  setReservationStatus: (id: string, status: ReservationStatus) => Promise<boolean>;
+  completePickup: (id: string, code: string) => Promise<boolean>;
   createOffer: (input: {
     title: string;
+    image?: string;
     price: number;
     originalPrice?: number;
     stock: number;
     type: OfferType;
     unit: string;
-  }) => Offer | null;
-  hideOffer: (id: string) => void;
+    availabilityMode: "lots" | "duration";
+    durationMinutes?: number;
+  }) => Promise<Offer | null>;
+  hideOffer: (id: string) => Promise<boolean>;
   resetDemo: () => void;
 };
 
@@ -98,11 +111,43 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       hydrated: false,
       setHydrated: (v) => set({ hydrated: v }),
+      syncStatus: "offline",
+      setSyncStatus: (syncStatus) => set({ syncStatus }),
+      catalogRevision: 0,
+      syncRemoteStocks: (offers) => set((s) => ({
+        stockByOffer: offers.reduce<Record<string, number>>(
+          (stocks, offer) => ({ ...stocks, [offer.id]: offer.stock }),
+          { ...s.stockByOffer },
+        ),
+        catalogRevision: s.catalogRevision + 1,
+      })),
+      syncRemoteReservations: (remoteReservations) => set((s) => {
+        const localMine = s.reservations.filter((reservation) => reservation.mine);
+        const remoteIds = new Set(remoteReservations.map((reservation) => reservation.id));
+        return {
+          reservations: [
+            ...remoteReservations.map((remote) => ({
+              ...remote,
+              mine: true,
+            })),
+            ...localMine.filter((local) => !remoteIds.has(local.id)),
+            ...s.reservations.filter((reservation) => !reservation.mine && !remoteIds.has(reservation.id)),
+          ],
+        };
+      }),
+      syncMerchantReservations: (merchantReservations) => set((s) => ({
+        reservations: [
+          ...s.reservations.filter((reservation) => reservation.mine),
+          ...merchantReservations.filter((reservation) => !s.reservations.some((local) => local.id === reservation.id && local.mine)),
+        ],
+      })),
       locationId: "villeneuve",
       setLocationId: (id) => set({ locationId: id }),
       userLat: null,
       userLng: null,
       setUserLocation: (lat, lng) => set({ userLat: lat, userLng: lng }),
+      manualCity: null,
+      setManualCity: (city) => set({ manualCity: city }),
       radiusKm: 5,
       setRadiusKm: (km) => set({ radiusKm: km }),
       category: "all",
@@ -131,17 +176,31 @@ export const useAppStore = create<AppState>()(
       notif: { nearby: true, favorites: true, flash: true, weekly: false },
       setNotif: (patch) => set((s) => ({ notif: { ...s.notif, ...patch } })),
       stockByOffer: {},
-      reservations: demoInbox(),
+      reservations: [],
       extraOffers: [],
       hiddenOfferIds: [],
-      reserve: (offerId, qty) => {
+      reserve: async (offerId, qty, requestId) => {
+        if (supabase && get().syncStatus !== "live") return null;
         const offer = lookupOffer(offerId, get().extraOffers, get().hiddenOfferIds);
         const merchant = offer ? getMerchant(offer.merchantId) : undefined;
         if (!offer || !merchant) return null;
         const stock = get().stockByOffer[offerId] ?? offer.stock;
-        if (qty < 1 || qty > stock) return null;
+        if (qty < 1) return null;
+        if (!supabase && (qty > stock || !isOfferReservable(offer, stock))) return null;
+        const remoteReservation = supabase
+          ? await reserveOfferAtomic({
+              offerId,
+              shopId: merchant.id,
+              quantity: qty,
+              clientName: "Utilisateur",
+              requestId,
+            })
+          : null;
+        if (supabase && !remoteReservation) return null;
+
         const reservation: Reservation = {
-          id: generateId("res"),
+          id: remoteReservation?.id ?? generateId("res"),
+          requestId,
           offerId,
           merchantId: merchant.id,
           title: offer.title,
@@ -155,36 +214,46 @@ export const useAppStore = create<AppState>()(
           address: merchant.address,
           createdAt: new Date().toISOString(),
           status: "pending",
-          code: securePickupCode(),
+          code: remoteReservation?.pickupCode ?? securePickupCode(),
           mine: true,
           clientName: "Utilisateur",
           unit: offer.unit,
         };
+        let committed = false;
         set((s) => {
           // Vérification atomique du stock dans le set()
           const currentStock = s.stockByOffer[offerId] ?? offer.stock;
-          if (qty < 1 || qty > currentStock) return s; // Annule si stock insuffisant
+          if (!remoteReservation && (qty < 1 || qty > currentStock)) return s;
+          const existing = s.reservations.find((item) => item.id === reservation.id);
+          if (existing) {
+            committed = true;
+            return s;
+          }
+          committed = true;
           return {
-            stockByOffer: { ...s.stockByOffer, [offerId]: currentStock - qty },
+            stockByOffer: { ...s.stockByOffer, [offerId]: remoteReservation?.remainingStock ?? currentStock - qty },
             reservations: [reservation, ...s.reservations],
           };
         });
-        // Créer la réservation dans Supabase (async, ne bloque pas l'UI)
-        supabaseCreateReservation({
-          offerId,
-          shopId: merchant.id,
-          quantity: qty,
-          clientName: "Utilisateur",
-        }).catch((err) => console.error("[Supabase] Erreur réservation:", err));
-        // Décrémenter le stock dans Supabase
-        decrementStock(offerId, qty).catch((err) => console.error("[Supabase] Erreur stock:", err));
-        return reservation;
+        return committed ? reservation : null;
       },
-      cancelReservation: (id) =>
+      cancelReservation: async (id) => {
+        const currentReservation = get().reservations.find((reservation) => reservation.id === id);
+        if (!currentReservation || !shouldRestoreStock("cancelled", currentReservation.status)) return false;
+        if (supabase) {
+          if (!currentReservation.requestId) return false;
+          try {
+            if (!(await cancelClientReservation(currentReservation.requestId))) return false;
+          } catch {
+            return false;
+          }
+        }
+        let changed = false;
         set((s) => {
           const res = s.reservations.find((r) => r.id === id);
           if (!res) return s;
           if (!shouldRestoreStock("cancelled", res.status)) return s;
+          changed = true;
           const current = s.stockByOffer[res.offerId];
           const offer = lookupOffer(res.offerId, s.extraOffers, s.hiddenOfferIds);
           const base = current ?? offer?.stock ?? 0;
@@ -197,11 +266,16 @@ export const useAppStore = create<AppState>()(
               [res.offerId]: base + res.qty,
             },
           };
-        }),
-      setReservationStatus: (id, status) =>
+        });
+        return changed;
+      },
+      setReservationStatus: async (id, status) => {
+        if (supabase && !(await transitionReservationAtomic(id, status))) return false;
+        let changed = false;
         set((s) => {
           const res = s.reservations.find((r) => r.id === id);
           if (!res) return s;
+          changed = true;
           const restore = shouldRestoreStock(status, res.status);
           const current = s.stockByOffer[res.offerId];
           const offer = lookupOffer(res.offerId, s.extraOffers, s.hiddenOfferIds);
@@ -212,39 +286,84 @@ export const useAppStore = create<AppState>()(
               ? { ...s.stockByOffer, [res.offerId]: base + res.qty }
               : s.stockByOffer,
           };
-        }),
-      createOffer: (input) => {
+        });
+        return changed;
+      },
+      completePickup: async (id, code) => {
+        const reservation = get().reservations.find((r) => r.id === id);
+        if (!reservation || reservation.status !== "confirmed" || reservation.code.toUpperCase() !== code.trim().toUpperCase()) {
+          return false;
+        }
+        if (supabase && !(await transitionReservationAtomic(id, "picked", code))) return false;
+        set((s) => ({
+          reservations: s.reservations.map((r) => (r.id === id ? { ...r, status: "picked" as const } : r)),
+        }));
+        return true;
+      },
+      createOffer: async (input) => {
         const merchant = getMerchant(PRO_SHOP_ID);
         if (!merchant) return null;
+        if (input.type === "ARRIVAGE" || input.type === "DERNIERE_MINUTE") {
+          const now = new Date();
+          const usedThisMonth = get().extraOffers.filter((offer) => {
+            if (offer.type !== input.type || !offer.createdAt) return false;
+            const created = new Date(offer.createdAt);
+            return created.getFullYear() === now.getFullYear() && created.getMonth() === now.getMonth();
+          }).length;
+          if (usedThisMonth >= 2) return null;
+        }
+        let remoteId: string | null = null;
+        if (supabase) {
+          try {
+            remoteId = await merchantCreateOffer({ ...input, shopId: merchant.id });
+          } catch (error) {
+            console.error("Publication Supabase impossible", error);
+            return null;
+          }
+          if (!remoteId) return null;
+        }
         const offer: Offer = {
-          id: generateId("pro"),
+          id: remoteId ?? generateId("pro"),
           merchantId: merchant.id,
           title: input.title,
-          image: merchant.cover,
+          image: input.image ?? merchant.cover,
           originalPrice: input.originalPrice,
           price: input.price,
           stock: input.stock,
           until: merchant.openUntil,
           type: input.type,
           unit: input.unit,
+          availabilityMode: input.availabilityMode,
+          durationMinutes: input.availabilityMode === "duration" ? input.durationMinutes : undefined,
+          createdAt: new Date().toISOString(),
           flags: flagsForType(input.type, input.originalPrice, input.price),
         };
         set((s) => ({ extraOffers: [offer, ...s.extraOffers] }));
         return offer;
       },
-      hideOffer: (id) =>
+      hideOffer: async (id) => {
+        if (supabase) {
+          try {
+            if (!(await merchantHideOffer(id))) return false;
+          } catch (error) {
+            console.error("Retrait Supabase impossible", error);
+            return false;
+          }
+        }
         set((s) => ({
           extraOffers: s.extraOffers.filter((o) => o.id !== id),
           hiddenOfferIds: s.hiddenOfferIds.includes(id)
             ? s.hiddenOfferIds
             : [...s.hiddenOfferIds, id],
-        })),
+        }));
+        return true;
+      },
       resetDemo: () =>
         set({
           favoriteOfferIds: [],
           followedMerchantIds: INITIAL_FOLLOWED,
           stockByOffer: {},
-          reservations: demoInbox(),
+          reservations: supabase ? [] : demoInbox(),
           extraOffers: [],
           hiddenOfferIds: [],
           category: "all",
@@ -255,7 +374,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "offreslocal-origin-v2",
-      version: 2,
+      version: 3,
       storage: createJSONStorage(() => localStorage),
       skipHydration: true,
       migrate: (persistedState: unknown, version: number) => {
@@ -269,14 +388,22 @@ export const useAppStore = create<AppState>()(
               clientName: "Utilisateur",
             }));
           }
+          if (version < 3) {
+            state.reservations = (state.reservations as Reservation[]).filter((r) => !r.id.startsWith("a1_resa_"));
+          }
           return state as AppState;
         }
-        return persistedState as AppState;
+        const state = persistedState as AppState;
+        if (version < 3 && Array.isArray(state.reservations)) {
+          state.reservations = state.reservations.filter((r) => !r.id.startsWith("a1_resa_"));
+        }
+        return state;
       },
       partialize: (s) => ({
         locationId: s.locationId,
         userLat: s.userLat,
         userLng: s.userLng,
+        manualCity: s.manualCity,
         radiusKm: s.radiusKm,
         favoriteOfferIds: s.favoriteOfferIds,
         followedMerchantIds: s.followedMerchantIds,
@@ -295,7 +422,14 @@ export function useStock(offerId: string, fallback: number) {
   return useAppStore((s) => s.stockByOffer[offerId] ?? fallback);
 }
 
+export function useCatalogRevision() {
+  return useAppStore((s) => s.catalogRevision);
+}
+
 export function useLiveOffer(offerId: string) {
+  // Force le recalcul après chaque injection ou rafraîchissement du catalogue
+  // Supabase, y compris lors d'une arrivée directe sur /offers/:id.
+  useAppStore((s) => s.catalogRevision);
   const extra = useAppStore((s) => s.extraOffers);
   const hidden = useAppStore((s) => s.hiddenOfferIds);
   return lookupOffer(offerId, extra, hidden);

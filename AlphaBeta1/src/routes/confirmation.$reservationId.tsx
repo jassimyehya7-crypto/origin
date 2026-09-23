@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CalendarPlus, Navigation } from "lucide-react";
+import { CalendarPlus, Check, Navigation } from "lucide-react";
 import { PageShell } from "@/components/back-header";
 import { CopyableCode } from "@/components/copyable-code";
 import { Photo } from "@/components/photo";
@@ -35,7 +35,12 @@ function Confirmation() {
   const maps = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(reservation.address)}`;
   const pending = reservation.status === "pending";
   const confirmed = reservation.status === "confirmed" || reservation.status === "picked";
+  const picked = reservation.status === "picked";
   const cancelled = reservation.status === "cancelled" || reservation.status === "refused";
+
+  if (picked) {
+    return <PickupSuccess reservation={reservation} />;
+  }
 
   function addToCalendar() {
     const today = new Date();
@@ -86,14 +91,27 @@ function Confirmation() {
             </h1>
             <p className="mt-3 text-sm leading-relaxed text-mute">
               {pending
-                ? "En attente du commerce. Garde ton code pour le retrait."
+                ? "En attente de la confirmation du commerce. Tu recevras un SMS de confirmation fictif avec ton code de retrait."
                 : confirmed
-                  ? "Présente ton code en magasin pour récupérer ta commande."
+                  ? "Ton SMS de confirmation fictif est prêt. Présente ce code en magasin pour récupérer ta commande."
                   : cancelled
                     ? "Le stock a été remis à disposition."
                     : "Consulte le détail ci-dessous."}
             </p>
-            <CopyableCode code={reservation.code} />
+            {pending ? (
+              <div className="mt-6 rounded-[var(--radius-md)] bg-soft px-4 py-4 text-left text-xs text-mute">
+                <p className="font-bold text-ink">SMS fictif en attente</p>
+                <p className="mt-1">Le code sera affiché ici dès que le commerçant aura confirmé la réservation.</p>
+              </div>
+            ) : confirmed ? (
+              <>
+                <div className="mt-5 rounded-[var(--radius-md)] bg-lime/25 px-4 py-3 text-left text-xs">
+                  <p className="font-bold text-ink">SMS fictif envoyé</p>
+                  <p className="mt-1 text-mute">Réservation confirmée · code de retrait {reservation.code}</p>
+                </div>
+                <CopyableCode code={reservation.code} />
+              </>
+            ) : null}
             <p className="mt-4 inline-flex items-center rounded-full bg-soft px-3 py-1.5 text-[11px] font-extrabold uppercase tracking-wide text-ink">
               {RESERVATION_STATUS_LABELS[reservation.status]}
             </p>
@@ -136,6 +154,24 @@ function Confirmation() {
         <Button asChild variant="outline" className="mt-2">
           <Link to="/">Autres offres</Link>
         </Button>
+      </div>
+    </PageShell>
+  );
+}
+
+function PickupSuccess({ reservation }: { reservation: NonNullable<ReturnType<typeof useAppStore.getState>["reservations"][number]> }) {
+  return (
+    <PageShell>
+      <div className="flex min-h-dvh flex-col items-center justify-center bg-lime px-6 text-center text-ink">
+        <div className="grid size-32 place-items-center rounded-full border-4 border-ink">
+          <Check className="size-20" strokeWidth={2.5} />
+        </div>
+        <h1 className="mt-8 font-display text-3xl font-bold tracking-tight">Commande bien récupérée</h1>
+        <p className="mt-3 max-w-xs text-base font-semibold leading-relaxed">Merci pour votre confiance.</p>
+        <p className="mt-2 text-sm text-ink/70">{reservation.title} · {reservation.merchantName}</p>
+        <Link to="/reservations" className="mt-10 inline-flex h-12 items-center rounded-[var(--radius-md)] bg-white px-6 text-sm font-bold text-ink shadow-[var(--shadow-card)]">
+          Voir mes réservations
+        </Link>
       </div>
     </PageShell>
   );

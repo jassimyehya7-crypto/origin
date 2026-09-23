@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
+import { SupabaseLoader } from "@/components/supabase-loader";
 import { useAppStore } from "@/lib/store";
 import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
@@ -51,6 +52,7 @@ export const Route = createRootRoute({
         <PreviewHostBridge />
         <AuthProvider>
           <HydrateStore />
+          <SupabaseLoader />
           <Outlet />
           <Toaster
             position="top-center"

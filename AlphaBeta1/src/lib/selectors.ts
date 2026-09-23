@@ -14,6 +14,7 @@ export function timeToMinutes(time: string): number {
 
 /** Vérifie si un commerce est actuellement ouvert */
 export function isMerchantOpen(merchant: Merchant, now: Date = new Date()): boolean {
+  if (now.getDay() === 0) return false;
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const openMinutes = timeToMinutes(merchant.openFrom);
   const closeMinutes = timeToMinutes(merchant.openUntil);
@@ -56,6 +57,54 @@ export function isOfferPaused(offer: Offer, now: Date = new Date()): boolean {
 
   // Les autres offres (promo, hot, new) se mettent en pause
   return true;
+}
+
+/** Temps réellement écoulé pendant les heures d'ouverture du commerce. */
+function elapsedOpenMinutes(offer: Offer, merchant: Merchant, now: Date): number {
+  if (!offer.createdAt) return 0;
+  const start = new Date(offer.createdAt);
+  if (!Number.isFinite(start.getTime()) || now <= start) return 0;
+
+  let elapsed = 0;
+  const day = new Date(start);
+  day.setHours(0, 0, 0, 0);
+  const lastDay = new Date(now);
+  lastDay.setHours(0, 0, 0, 0);
+  const openMinutes = timeToMinutes(merchant.openFrom);
+  const closeMinutes = timeToMinutes(merchant.openUntil);
+
+  while (day <= lastDay) {
+    const opening = new Date(day);
+    opening.setMinutes(openMinutes);
+    const closing = new Date(day);
+    closing.setMinutes(closeMinutes);
+    const from = Math.max(start.getTime(), opening.getTime());
+    const to = Math.min(now.getTime(), closing.getTime());
+    if (to > from) elapsed += (to - from) / 60000;
+    day.setDate(day.getDate() + 1);
+  }
+  return elapsed;
+}
+
+export function isDurationOfferValid(offer: Offer, now: Date = new Date()): boolean {
+  if (offer.availabilityMode !== "duration" || !offer.durationMinutes) return true;
+  const merchant = getMerchant(offer.merchantId);
+  if (!merchant) return false;
+  return elapsedOpenMinutes(offer, merchant, now) < offer.durationMinutes;
+}
+
+export function isOfferExpired(offer: Offer, now: Date = new Date()): boolean {
+  if (offer.type === "FLASH" && offer.createdAt) {
+    return new Date(offer.createdAt).toDateString() !== now.toDateString()
+      || Boolean(offer.endsAt && new Date(offer.endsAt).getTime() <= now.getTime());
+  }
+  if (offer.availabilityMode === "duration") return !isDurationOfferValid(offer, now);
+  return Boolean(offer.endsAt && new Date(offer.endsAt).getTime() <= now.getTime());
+}
+
+export function isOfferReservable(offer: Offer, stock: number, now: Date = new Date()): boolean {
+  const merchant = getMerchant(offer.merchantId);
+  return Boolean(merchant && isMerchantOpen(merchant, now) && stock > 0 && !isOfferExpired(offer, now));
 }
 
 export function extraMeters(locationId: LocationId) {
@@ -128,11 +177,15 @@ export function visibleOffers(opts: {
 
       const open = isMerchantOpen(merchant, now);
 
+      if (isOfferExpired(offer, now)) return false;
+
+      if (!isDurationOfferValid(offer, now)) return false;
+
       // --- OFFRES FLASH ---
       // Flash = éphémère. Si commerce fermé OU heure until dépassée → disparaît.
       if (offer.flags.includes("flash")) {
         if (!open) return false; // Commerce fermé → flash disparaît
-        if (offer.until) {
+        if (offer.until && !offer.endsAt) {
           const untilMin = timeToMinutes(offer.until);
           const currentMin = now.getHours() * 60 + now.getMinutes();
           if (currentMin >= untilMin) return false; // Heure dépassée → flash disparaît
@@ -149,9 +202,9 @@ export function visibleOffers(opts: {
       // 1. Stock épuisé
       // 2. Commerce ouvert ET heure until dépassée (expirée en journée)
       const stock = opts.stockByOffer[offer.id] ?? offer.stock;
-      if (stock < 1) return false; // Stock épuisé → disparaît
+      if (offer.availabilityMode !== "duration" && stock < 1) return false; // Lots épuisés → disparaît
 
-      if (open && offer.until) {
+      if (open && offer.until && !offer.endsAt && offer.availabilityMode !== "duration") {
         const untilMin = timeToMinutes(offer.until);
         const currentMin = now.getHours() * 60 + now.getMinutes();
         if (currentMin >= untilMin) return false; // Expirée en journée → disparaît
