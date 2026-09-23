@@ -4,6 +4,7 @@ import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { SupabaseLoader } from "@/components/supabase-loader";
 import { useAppStore } from "@/lib/store";
+import { initialAuthRedirect, supabase } from "@/lib/supabase";
 import { Toaster } from "sonner";
 import appCss from "../styles.css?url";
 
@@ -13,6 +14,18 @@ function HydrateStore() {
   useEffect(() => {
     void useAppStore.persist.rehydrate();
     useAppStore.getState().setHydrated(true);
+  }, []);
+  return null;
+}
+
+function InviteRedirect() {
+  useEffect(() => {
+    if (!initialAuthRedirect || !supabase) return;
+    void supabase.auth.getSession().then(async ({ data }) => {
+      if (!data.session) return;
+      const founder = await supabase!.rpc("founder_access_for_user");
+      if (founder.data === true) window.location.replace("/fondateur");
+    });
   }, []);
   return null;
 }
@@ -52,6 +65,7 @@ export const Route = createRootRoute({
         <PreviewHostBridge />
         <AuthProvider>
           <HydrateStore />
+          <InviteRedirect />
           <SupabaseLoader />
           <Outlet />
           <Toaster

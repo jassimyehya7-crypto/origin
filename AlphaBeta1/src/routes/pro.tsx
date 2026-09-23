@@ -1,10 +1,11 @@
 import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
-import { Bell, Home, ListChecks, Plus, Tag } from "lucide-react";
+import { Bell, Home, ListChecks, LogOut, Plus, Tag } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { ProLanguageSelector } from "@/components/pro-language-selector";
 import { ProAccessGate } from "@/components/pro-access-gate";
 import { useAppStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 
 export const Route = createFileRoute("/pro")({ component: () => <ProAccessGate><ProLayout /></ProAccessGate> });
 
@@ -30,6 +31,11 @@ function ProLayout() {
               <Bell className="size-5" />
               {pending > 0 ? <span className="absolute right-0.5 top-0.5 grid size-4 place-items-center rounded-full bg-deal text-[9px] font-bold text-white">{pending}</span> : null}
             </Link>
+            {supabase ? (
+              <button type="button" className="grid size-10 place-items-center rounded-full hover:bg-soft" aria-label="Se déconnecter" title="Se déconnecter" onClick={() => void supabase?.auth.signOut()}>
+                <LogOut className="size-5" />
+              </button>
+            ) : null}
           </div>
         </header>
 

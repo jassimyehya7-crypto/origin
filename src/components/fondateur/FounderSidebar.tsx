@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, LayoutDashboard, Store } from "lucide-react";
+import { LayoutDashboard, Store } from "lucide-react";
 import { Logo } from "../Logo";
 import { cn } from "@/lib/utils";
 
 const items = [
   { href: "/fondateur", label: "Pilotage", icon: LayoutDashboard },
 ];
+const appUrl = process.env.NEXT_PUBLIC_CLIENT_APP_URL || "http://localhost:5191";
 
 export function FounderSidebar({ liveClients }: { liveClients: number }) {
   const pathname = usePathname();
@@ -17,16 +18,6 @@ export function FounderSidebar({ liveClients }: { liveClients: number }) {
       <div className="border-b border-white/10 px-5 py-5">
         <Logo inverted />
         <p className="mt-1 text-xs text-white/60">Espace fondateur</p>
-      </div>
-      <div className="m-3 rounded-2xl bg-white/10 p-3">
-        <div className="flex items-center gap-2 text-xs text-white/70">
-          <span className="live-dot inline-block h-2 w-2 rounded-full bg-ec-leaf" />
-          Clients connectés
-        </div>
-        <div className="mt-1 flex items-end gap-2">
-          <span className="text-3xl font-bold">{liveClients}</span>
-          <Activity className="mb-1 h-4 w-4 text-ec-leaf" />
-        </div>
       </div>
       <nav className="flex-1 space-y-1 p-3">
         {items.map(({ href, label, icon: Icon }) => (
@@ -50,12 +41,12 @@ export function FounderSidebar({ liveClients }: { liveClients: number }) {
           <Store className="h-3.5 w-3.5" />
           Zone : Villeneuve VD
         </div>
-        <Link href="/pro" className="block text-ec-leaf hover:underline">
+        <a href={`${appUrl}/pro`} className="block text-ec-leaf hover:underline">
           Ouvrir Pro →
-        </Link>
-        <Link href="/" className="mt-1 block text-ec-leaf hover:underline">
+        </a>
+        <a href={appUrl} className="mt-1 block text-ec-leaf hover:underline">
           Feed client →
-        </Link>
+        </a>
       </div>
     </aside>
   );

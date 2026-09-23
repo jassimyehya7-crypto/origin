@@ -111,6 +111,14 @@ function main(argv) {
     process.exit(2);
   }
   const env = mergeAppEnv(readAppEnv(projectRoot()), process.env);
+  // The existing Vercel project exposes these public values under Next.js names.
+  // Copy only publishable client configuration for the Vite build.
+  if (!env.VITE_SUPABASE_URL && env.NEXT_PUBLIC_SUPABASE_URL) {
+    env.VITE_SUPABASE_URL = env.NEXT_PUBLIC_SUPABASE_URL;
+  }
+  if (!env.VITE_SUPABASE_ANON_KEY && env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    env.VITE_SUPABASE_ANON_KEY = env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  }
   const child = spawn(command, args, { stdio: "inherit", env });
   // The dev server is long-running and is stopped by signalling this wrapper.
   for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
