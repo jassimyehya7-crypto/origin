@@ -20,6 +20,16 @@ export function ProAccessGate({ children }: { children: ReactNode }) {
     if (!supabase) return;
     let active = true;
     async function check() {
+      const { data: sessionData, error: sessionError } = await supabase!.auth.getSession();
+      if (!active) return;
+      if (sessionError) {
+        setAccess("error");
+        return;
+      }
+      if (!sessionData.session) {
+        setAccess("signed-out");
+        return;
+      }
       const { data: userData, error: userError } = await supabase!.auth.getUser();
       if (!active) return;
       if (userError) {
